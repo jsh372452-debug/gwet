@@ -7,12 +7,12 @@ import { ChatArea } from './ChatArea';
 import { Communities } from './Communities';
 import { SettingsHub } from './SettingsHub';
 import { JoinedHub } from './JoinedHub';
-import { Search, Bell, Menu, Layout, Command, Shield, Zap } from 'lucide-react';
+import { Explore } from './Explore';
+import { Search, Bell, Command } from 'lucide-react';
 
-type Tab = 'feed' | 'communities' | 'chat' | 'settings' | 'joined';
+type Tab = 'feed' | 'explore' | 'communities' | 'chat' | 'settings' | 'joined';
 
 export const Dashboard: React.FC = () => {
-    const { user } = useAuthStore();
     const { t, isRTL } = useTranslation();
     const [activeTab, setActiveTab] = useState<Tab>('feed');
     const [chatTarget, setChatTarget] = useState<{ id: string, type: 'global' | 'community' | 'group' | 'private' }>({ id: 'global', type: 'global' });
@@ -27,9 +27,14 @@ export const Dashboard: React.FC = () => {
         setActiveTab('chat');
     };
 
+    const tabTitles: Record<Tab, string> = {
+        feed: 'FEED', explore: 'EXPLORE', communities: 'COMMUNITIES', chat: 'CHAT', settings: 'SETTINGS', joined: 'HUB'
+    };
+
     const renderContent = () => {
         switch (activeTab) {
             case 'feed': return <Feed />;
+            case 'explore': return <Explore />;
             case 'communities': return <Communities />;
             case 'chat': return <ChatArea targetId={chatTarget.id} type={chatTarget.id === 'global' ? 'global' : chatTarget.type} onBack={() => setActiveTab('joined')} />;
             case 'settings': return <SettingsHub />;
@@ -39,65 +44,36 @@ export const Dashboard: React.FC = () => {
     };
 
     return (
-        <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-dark)', direction: isRTL ? 'rtl' : 'ltr', position: 'relative', overflow: 'hidden' }}>
-            {/* Floating background particles */}
-            <div className="energy-blob blob-1" />
-            <div className="energy-blob blob-2" />
-            {[...Array(6)].map((_, i) => (
-                <div key={i} style={{
-                    position: 'fixed', borderRadius: '50%', pointerEvents: 'none', zIndex: 0,
-                    width: `${4 + i * 2}px`, height: `${4 + i * 2}px`,
-                    background: i % 2 === 0 ? 'var(--primary)' : 'var(--accent)',
-                    opacity: 0.15 + (i * 0.03),
-                    top: `${15 + i * 14}%`, left: `${30 + i * 10}%`,
-                    animation: `float-particle ${8 + i * 3}s infinite ease-in-out`,
-                    animationDelay: `${i * -2}s`,
-                    filter: `blur(${1 + i * 0.3}px)`,
-                }} />
-            ))}
+        <div className="app-layout" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+            <div className="bg-glow purple" />
+            <div className="bg-glow cyan" />
 
             <Sidebar activeTab={activeTab} setActiveTab={switchTab} />
 
-            <main style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', position: 'relative', zIndex: 1 }}>
+            <main className="main-content">
                 {/* Header */}
-                <header style={{
-                    padding: '1rem 2rem', borderBottom: '1px solid var(--glass-border)',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    background: 'rgba(10, 10, 12, 0.85)', backdropFilter: 'blur(12px)', zIndex: 10
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{ padding: '7px', borderRadius: '10px', background: 'var(--primary-glow)', color: 'var(--primary)', display: 'flex' }}>
-                            <Command size={18} />
+                <header className="top-header">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+                        <div style={{ padding: '6px', borderRadius: 'var(--radius-sm)', background: 'var(--primary-soft)', color: 'var(--primary)', display: 'flex' }}>
+                            <Command size={16} />
                         </div>
-                        <h1 style={{ fontSize: '1.1rem', fontWeight: '900', letterSpacing: '1px', color: 'white' }}>
-                            {activeTab === 'feed' ? 'FEED' : activeTab === 'communities' ? 'COMMUNITIES' : activeTab === 'chat' ? 'CHAT' : activeTab === 'settings' ? 'SETTINGS' : 'HUB'}
-                        </h1>
+                        <h1 style={{ fontSize: 'var(--font-md)', fontWeight: 800, letterSpacing: '1px' }}>{tabTitles[activeTab]}</h1>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
                         <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                            <Search size={16} style={{ position: 'absolute', [isRTL ? 'right' : 'left']: '12px', color: 'var(--text-dim)' }} />
-                            <input
-                                className="gaming-input"
-                                placeholder={t('search')}
-                                style={{ width: '250px', marginBottom: 0, padding: '0.55rem 1rem', [isRTL ? 'paddingRight' : 'paddingLeft']: '40px', fontSize: '0.75rem', borderRadius: '12px' }}
-                            />
+                            <Search size={14} style={{ position: 'absolute', left: '10px', color: 'var(--text-muted)' }} />
+                            <input className="input" placeholder={t('search')} style={{ width: '220px', paddingLeft: '32px', fontSize: 'var(--font-sm)' }} />
                         </div>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button className="btn-premium" style={{ padding: '8px', borderRadius: '11px' }}><Bell size={18} /></button>
-                            <button className="btn-premium" style={{ padding: '8px', borderRadius: '11px', background: 'var(--primary-glow)', border: '1px solid var(--primary)' }}>
-                                <Zap size={18} fill="white" />
-                            </button>
-                        </div>
+                        <button className="btn icon-only"><Bell size={16} /></button>
                     </div>
                 </header>
 
                 {/* Content */}
-                <div style={{ flex: 1, overflowY: 'auto', padding: '1.75rem', position: 'relative' }}>
+                <div className="content-area">
                     {renderContent()}
                 </div>
             </main>
         </div>
     );
 };
-

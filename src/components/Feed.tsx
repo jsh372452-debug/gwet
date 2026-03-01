@@ -1,133 +1,183 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { useGameStore, Post, Comment } from '../store/gameStore';
+import { useGameStore, Post } from '../store/gameStore';
 import { useTranslation } from '../i18n';
 import Flag from './Flag';
-import { Image as ImageIcon, Send, MessageSquare, Share2, Trophy, Tag, Plus, Search, X } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Image as ImageIcon, Send, MessageSquare, Share2, Trophy, Tag, Search, X, Loader } from 'lucide-react';
 
 export const Feed: React.FC = () => {
     const { user } = useAuthStore();
-    const { posts, addPost, wowPost, addComment, comments, syncData } = useGameStore();
+    const { posts, addPost, wowPost, addComment, loadComments, comments, loadPosts, loading } = useGameStore();
     const { t, isRTL } = useTranslation();
 
     const [content, setContent] = useState('');
-    const [image, setImage] = useState<Blob | null>(null);
     const [tag, setTag] = useState('Global');
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+    const [expandedPost, setExpandedPost] = useState<string | null>(null);
     const [commentText, setCommentText] = useState('');
+    const [posting, setPosting] = useState(false);
 
-    useEffect(() => { syncData(); }, [syncData]);
+    useEffect(() => { loadPosts(); }, [loadPosts]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!content.trim() || !user) return;
-        const { addXP } = useAuthStore.getState();
-        await addPost(content, image, user.id, user.displayName, tag, user.country || 'Global');
-        addXP(25);
-        setContent('');
-        setImage(null);
+        if (!content.trim() || !user || posting) return;
+        setPosting(true);
+        try {
+            const result = await addPost(content, tag);
+            if (result) {
+                useAuthStore.getState().setUser({ ...user, xp: result.xp, level: result.level, rank: result.rank });
+            }
+            setContent('');
+        } finally {
+            setPosting(false);
+        }
+    };
+
+    const handleToggleComments = async (postId: string) => {
+        if (expandedPost === postId) {
+            setExpandedPost(null);
+        } else {
+            setExpandedPost(postId);
+            await loadComments(postId);
+        }
     };
 
     const handleCommentSubmit = async (postId: string) => {
-        if (!commentText.trim() || !user) return;
-        await addComment(postId, user.id, user.displayName, commentText, user.country || 'Global');
+        if (!commentText.trim()) return;
+        await addComment(postId, commentText);
         setCommentText('');
     };
 
     const filteredPosts = posts.filter(p =>
         p.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.gameTag.toLowerCase().includes(searchQuery.toLowerCase())
+        p.game_tag.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
-        <div style={{ padding: '0 1rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: '800px', margin: '0 auto', direction: isRTL ? 'rtl' : 'ltr' }}>
-
-            <div className="glass-card" style={{ padding: '0.75rem 1.5rem', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                <Search size={18} color="var(--text-dim)" />
-                <input className="gaming-input" placeholder={t('search')} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} style={{ marginBottom: 0, background: 'none', border: 'none', boxShadow: 'none' }} />
-                {searchQuery && <X size={18} style={{ cursor: 'pointer' }} onClick={() => setSearchQuery('')} />}
+        <div className="page-container" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+            {/* Search */}
+            <div className="card compact" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+                <Search size={16} color="var(--text-muted)" />
+                <input className="input" placeholder={t('search')} value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+                    style={{ border: 'none', background: 'none', boxShadow: 'none', padding: '0.3rem 0' }} />
+                {searchQuery && <X size={16} style={{ cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => setSearchQuery('')} />}
             </div>
 
-            <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="glass-card" style={{ padding: '1.5rem', borderRadius: '24px' }}>
+            {/* Compose */}
+            <div className="card">
                 <form onSubmit={handleSubmit}>
-                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-                        <div className="avatar-premium" style={{ width: '44px', height: '44px', flexShrink: 0, backgroundImage: `url(${user?.avatarUrl})`, backgroundSize: 'cover' }}>
-                            {!user?.avatarUrl && <Plus size={20} color="white" />}
+                    <div style={{ display: 'flex', gap: 'var(--space-lg)', marginBottom: 'var(--space-lg)' }}>
+                        <div className="avatar md" style={{ backgroundImage: user?.avatarUrl ? `url(${user.avatarUrl})` : 'none' }}>
+                            {!user?.avatarUrl && (user?.displayName?.[0] || 'G').toUpperCase()}
                         </div>
-                        <textarea className="gaming-input" placeholder={t('share')} value={content} onChange={(e) => setContent(e.target.value)} style={{ minHeight: '80px', resize: 'none', marginBottom: 0 }} />
+                        <textarea className="input" placeholder={t('share')} value={content} onChange={(e) => setContent(e.target.value)}
+                            style={{ minHeight: '70px' }} />
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <label className="btn-premium" style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem', cursor: 'pointer' }}>
-                                <ImageIcon size={16} />
-                                <input type="file" hidden onChange={(e) => setImage(e.target.files?.[0] || null)} />
-                            </label>
-                            <button type="button" className="btn-premium" style={{ padding: '0.4rem 0.8rem', fontSize: '0.75rem' }}>
-                                <Tag size={16} /> {tag}
+                        <div className="btn-group">
+                            <button type="button" className="btn" style={{ fontSize: 'var(--font-xs)' }}>
+                                <Tag size={14} /> {tag}
                             </button>
                         </div>
-                        <button type="submit" className="btn-premium" disabled={!content.trim()}>{t('gweet')}</button>
+                        <button type="submit" className="btn primary" disabled={!content.trim() || posting}>
+                            {posting ? <Loader size={14} /> : null} {t('gweet')}
+                        </button>
                     </div>
                 </form>
-            </motion.div>
+            </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingBottom: '3rem' }}>
-                <AnimatePresence>
-                    {filteredPosts.map((post) => (
-                        <motion.div key={post.id} layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="glass-card" style={{ borderRadius: '20px' }}>
-                            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-                                <div className="avatar-premium" style={{ width: '48px', height: '48px', fontSize: '1rem' }}>{post.username?.charAt(0).toUpperCase()}</div>
+            {/* Posts */}
+            {loading && posts.length === 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
+                    {[1, 2, 3].map(i => (
+                        <div key={i} className="card">
+                            <div style={{ display: 'flex', gap: 'var(--space-lg)', marginBottom: 'var(--space-lg)' }}>
+                                <div className="skeleton" style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)' }} />
                                 <div style={{ flex: 1 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <Flag code={(post as any).country || 'Global'} size={22} />
-                                        <span style={{ fontWeight: '800', color: 'white' }}>{post.username}</span>
-                                        <span style={{ fontSize: '0.6rem', color: 'var(--text-dim)', fontWeight: '800' }}>{new Date(post.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                    </div>
-                                    <div style={{ marginTop: '0.75rem', color: 'rgba(255,255,255,0.9)', lineHeight: '1.6' }}>{post.content}</div>
+                                    <div className="skeleton" style={{ width: '30%', height: 14, marginBottom: 8 }} />
+                                    <div className="skeleton" style={{ width: '80%', height: 14 }} />
                                 </div>
                             </div>
-
-                            {post.image && <img src={URL.createObjectURL(post.image)} alt="Post" style={{ width: '100%', borderRadius: '14px', marginTop: '0.5rem', border: '1px solid var(--glass-border)' }} />}
-
-                            <div style={{ display: 'flex', gap: '1.5rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                                <button className="btn-premium" style={{ background: 'none', boxShadow: 'none', padding: 0, color: 'var(--text-dim)' }} onClick={() => wowPost(post.id)}>
-                                    <Trophy size={18} style={{ [isRTL ? 'marginLeft' : 'marginRight']: '6px', color: (post.wowCount || 0) > 0 ? 'var(--primary)' : 'inherit' }} /> {post.wowCount || 0}
-                                </button>
-                                <button className="btn-premium" style={{ background: 'none', boxShadow: 'none', padding: 0, color: 'var(--text-dim)' }} onClick={() => setSelectedPost(selectedPost?.id === post.id ? null : post)}>
-                                    <MessageSquare size={18} style={{ [isRTL ? 'marginLeft' : 'marginRight']: '6px' }} /> {comments[post.id]?.length || 0}
-                                </button>
-                                <button className="btn-premium" style={{ background: 'none', boxShadow: 'none', padding: 0, color: 'var(--text-dim)' }}><Share2 size={18} /></button>
-                            </div>
-
-                            {selectedPost?.id === post.id && (
-                                <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} style={{ marginTop: '1.5rem', overflow: 'hidden' }}>
-                                    <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
-                                        <input className="gaming-input" placeholder={t('comment')} value={commentText} onChange={e => setCommentText(e.target.value)} style={{ marginBottom: 0, flex: 1, padding: '0.6rem 1rem' }} />
-                                        <button className="btn-premium" style={{ padding: '0 1rem' }} onClick={() => handleCommentSubmit(post.id)}><Send size={16} /></button>
-                                    </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingLeft: isRTL ? 0 : '1rem', paddingRight: isRTL ? '1rem' : 0, borderLeft: isRTL ? 'none' : '2px solid rgba(255,255,255,0.05)', borderRight: isRTL ? '2px solid rgba(255,255,255,0.05)' : 'none' }}>
-                                        {comments[post.id]?.map(c => (
-                                            <div key={c.id} style={{ display: 'flex', gap: '0.75rem' }}>
-                                                <div className="avatar-premium" style={{ width: '28px', height: '28px', fontSize: '0.6rem' }}>{c.username.charAt(0)}</div>
-                                                <div style={{ flex: 1, background: 'rgba(255,255,255,0.02)', padding: '0.5rem 0.75rem', borderRadius: '12px' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px' }}>
-                                                        <Flag code={(c as any).country || 'Global'} size={16} />
-                                                        <span style={{ fontSize: '0.7rem', fontWeight: 'bold', color: 'var(--primary)' }}>{c.username}</span>
-                                                        <span style={{ fontSize: '0.6rem', color: 'var(--text-dim)' }}>{new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                                    </div>
-                                                    <p style={{ fontSize: '0.85rem', margin: 0 }}>{c.content}</p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </motion.div>
-                            )}
-                        </motion.div>
+                            <div className="skeleton" style={{ height: 60 }} />
+                        </div>
                     ))}
-                </AnimatePresence>
+                </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)', paddingBottom: 'var(--space-3xl)' }}>
+                {filteredPosts.length === 0 && !loading && (
+                    <div className="empty-state">
+                        <MessageSquare size={40} className="icon" />
+                        <h3>No posts yet</h3>
+                        <p>Be the first to share something!</p>
+                    </div>
+                )}
+
+                {filteredPosts.map((post) => (
+                    <div key={post.id} className="card">
+                        <div style={{ display: 'flex', gap: 'var(--space-lg)', marginBottom: 'var(--space-lg)' }}>
+                            <div className="avatar md" style={{ fontSize: 'var(--font-base)' }}>
+                                {post.username?.charAt(0).toUpperCase()}
+                            </div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
+                                    <Flag code={post.country || 'Global'} size={18} />
+                                    <span style={{ fontWeight: 700 }}>{post.username}</span>
+                                    {post.game_tag && post.game_tag !== 'Global' && (
+                                        <span className="badge accent" style={{ marginLeft: '4px' }}>{post.game_tag}</span>
+                                    )}
+                                    <span style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)', marginLeft: 'auto' }}>
+                                        {new Date(post.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </span>
+                                </div>
+                                <div style={{ marginTop: 'var(--space-md)', color: 'var(--text)', lineHeight: 1.6 }}>{post.content}</div>
+                            </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div style={{ display: 'flex', gap: 'var(--space-xl)', paddingTop: 'var(--space-md)', borderTop: '1px solid var(--border)' }}>
+                            <button className="btn ghost" onClick={() => wowPost(post.id)}>
+                                <Trophy size={16} style={{ color: (post.wow_count || 0) > 0 ? 'var(--primary)' : 'inherit' }} /> {post.wow_count || 0}
+                            </button>
+                            <button className="btn ghost" onClick={() => handleToggleComments(post.id)}>
+                                <MessageSquare size={16} /> {comments[post.id]?.length || 0}
+                            </button>
+                            <button className="btn ghost"><Share2 size={16} /></button>
+                        </div>
+
+                        {/* Comments */}
+                        {expandedPost === post.id && (
+                            <div style={{ marginTop: 'var(--space-lg)' }}>
+                                <div style={{ display: 'flex', gap: 'var(--space-sm)', marginBottom: 'var(--space-lg)' }}>
+                                    <input className="input" placeholder={t('comment')} value={commentText} onChange={e => setCommentText(e.target.value)}
+                                        onKeyDown={e => { if (e.key === 'Enter') handleCommentSubmit(post.id); }}
+                                        style={{ flex: 1 }} />
+                                    <button className="btn primary icon-only" onClick={() => handleCommentSubmit(post.id)}><Send size={14} /></button>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', paddingLeft: isRTL ? 0 : 'var(--space-lg)', paddingRight: isRTL ? 'var(--space-lg)' : 0, borderLeft: isRTL ? 'none' : '2px solid var(--border)', borderRight: isRTL ? '2px solid var(--border)' : 'none' }}>
+                                    {comments[post.id]?.map(c => (
+                                        <div key={c.id} style={{ display: 'flex', gap: 'var(--space-sm)' }}>
+                                            <div className="avatar sm">{c.username.charAt(0)}</div>
+                                            <div style={{ flex: 1, background: 'var(--bg-hover)', padding: 'var(--space-sm) var(--space-md)', borderRadius: 'var(--radius-md)' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '2px' }}>
+                                                    <Flag code={c.country || 'Global'} size={14} />
+                                                    <span style={{ fontSize: 'var(--font-xs)', fontWeight: 700, color: 'var(--primary)' }}>{c.username}</span>
+                                                    <span style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)' }}>{new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                </div>
+                                                <p style={{ fontSize: 'var(--font-base)', margin: 0 }}>{c.content}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {(!comments[post.id] || comments[post.id].length === 0) && (
+                                        <p style={{ fontSize: 'var(--font-sm)', color: 'var(--text-muted)', textAlign: 'center', padding: 'var(--space-md)' }}>No comments yet</p>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                ))}
             </div>
         </div>
     );

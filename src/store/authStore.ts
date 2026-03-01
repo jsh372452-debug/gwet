@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-import { getDB } from '../db/schema';
-import { CryptoUtils } from '../crypto/utils';
+import { api, setToken, clearToken } from '../lib/api';
 
 export interface User {
     id: string;
@@ -19,117 +18,61 @@ interface AuthState {
     user: User | null;
     loading: boolean;
     error: string | null;
-    encryptionKey: any | null; // CryptoKey
     login: (u: string, p: string) => Promise<void>;
     register: (u: string, p: string) => Promise<void>;
     signOut: () => void;
     checkSession: () => Promise<void>;
     updateProfile: (displayName: string, avatarUrl: string) => Promise<void>;
     updateIdentity: (country: string, language: 'ar' | 'en') => Promise<void>;
-    addXP: (amount: number) => void;
+    setUser: (user: User) => void;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
     user: null,
-    encryptionKey: null,
     loading: true,
     error: null,
 
-    updateProfile: async (displayName, avatarUrl) => {
-        const { user } = get();
-        if (!user) return;
-        const updatedUser = { ...user, displayName, avatarUrl, isOnboarded: true };
-        set({ user: updatedUser });
+    setUser: (user) => set({ user }),
 
-        const db = await getDB();
-        const record = await db.get('users', user.id);
-        if (record) {
-            await db.put('users', { ...record, displayName, avatarUrl, isOnboarded: true });
+    updateProfile: async (displayName, avatarUrl) => {
+        try {
+            const { user } = await api.auth.updateProfile({ displayName, avatarUrl, isOnboarded: true });
+            set({ user });
+        } catch (err: any) {
+            console.error('Update profile failed:', err);
         }
-        sessionStorage.setItem('gwet_session', JSON.stringify({ user: updatedUser }));
     },
 
     updateIdentity: async (country, language) => {
-        const { user } = get();
-        if (!user) return;
-        const updatedUser = { ...user, country, language };
-        set({ user: updatedUser });
-
-        const db = await getDB();
-        const record = await db.get('users', user.id);
-        if (record) {
-            await db.put('users', { ...record, country, language });
+        try {
+            const { user } = await api.auth.updateProfile({ country, language });
+            set({ user });
+        } catch (err: any) {
+            console.error('Update identity failed:', err);
         }
-        sessionStorage.setItem('gwet_session', JSON.stringify({ user: updatedUser }));
-    },
-
-    addXP: (amount) => {
-        const { user } = get();
-        if (!user) return;
-
-        let newXP = user.xp + amount;
-        let newLevel = user.level;
-        let leveledUp = false;
-
-        while (newXP >= 100) {
-            newXP -= 100;
-            newLevel += 1;
-            leveledUp = true;
-        }
-
-        const ranks = ['ROOKIE', 'SOLDIER', 'ELITE', 'COMMANDER', 'LEGEND'];
-        const rankIndex = Math.min(Math.floor(newLevel / 5), ranks.length - 1);
-        const newRank = ranks[rankIndex];
-
-        const updatedUser = { ...user, xp: newXP, level: newLevel, rank: newRank };
-        set({ user: updatedUser });
-
-        sessionStorage.setItem('gwet_session', JSON.stringify({ user: updatedUser }));
-        if (leveledUp) console.log(`LEVEL UP! Level ${newLevel}`);
     },
 
     checkSession: async () => {
-        const session = sessionStorage.getItem('gwet_session');
-        if (session) {
-            const { user } = JSON.parse(session);
-            set({ user, loading: false });
-        } else {
+        const token = localStorage.getItem('gwet_token');
+        if (!token) {
             set({ loading: false });
+            return;
+        }
+        try {
+            const { user } = await api.auth.session();
+            set({ user, loading: false });
+        } catch {
+            clearToken();
+            set({ user: null, loading: false });
         }
     },
 
     register: async (username, password) => {
         set({ loading: true, error: null });
         try {
-            const db = await getDB();
-            const salt = CryptoUtils.generateSalt();
-            const passwordHash = await CryptoUtils.hashPassword(password, salt);
-            const userId = crypto.randomUUID();
-
-            const newUser: User = {
-                id: userId,
-                username,
-                displayName: username,
-                avatarUrl: '',
-                xp: 0,
-                level: 1,
-                rank: 'ROOKIE',
-                isOnboarded: false,
-                country: 'Global',
-                language: 'en'
-            };
-
-            await db.add('users', {
-                ...newUser,
-                passwordHash,
-                salt: Array.from(salt).join(','),
-                profileDataEncrypted: '',
-                created_at: new Date().toISOString()
-            });
-
-            const key = await CryptoUtils.deriveKey(password, salt);
-            set({ user: newUser, encryptionKey: key, loading: false });
-            sessionStorage.setItem('gwet_session', JSON.stringify({ user: newUser }));
+            const { token, user } = await api.auth.register(username, password);
+            setToken(token);
+            set({ user, loading: false });
         } catch (err: any) {
             set({ error: err.message || 'Registration failed', loading: false });
         }
@@ -138,40 +81,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     login: async (username, password) => {
         set({ loading: true, error: null });
         try {
-            const db = await getDB();
-            const userRecords = await db.getAllFromIndex('users', 'by-username', username);
-
-            if (userRecords.length === 0) throw new Error('User not found');
-            const record = userRecords[0];
-
-            const salt = new Uint8Array(record.salt.split(',').map(Number));
-            const currentHash = await CryptoUtils.hashPassword(password, salt);
-
-            if (currentHash !== record.passwordHash) throw new Error('Invalid password');
-
-            const key = await CryptoUtils.deriveKey(password, salt);
-            const user: User = {
-                id: record.id,
-                username: record.username,
-                displayName: record.displayName || record.username,
-                avatarUrl: record.avatarUrl || '',
-                isOnboarded: record.isOnboarded || false,
-                xp: record.xp || 0,
-                level: record.level || 1,
-                rank: record.rank || 'ROOKIE',
-                country: record.country || 'Global',
-                language: record.language || 'en'
-            };
-
-            set({ user, encryptionKey: key, loading: false });
-            sessionStorage.setItem('gwet_session', JSON.stringify({ user }));
+            const { token, user } = await api.auth.login(username, password);
+            setToken(token);
+            set({ user, loading: false });
         } catch (err: any) {
             set({ error: err.message || 'Login failed', loading: false });
         }
     },
 
     signOut: () => {
-        set({ user: null, encryptionKey: null });
-        sessionStorage.removeItem('gwet_session');
+        clearToken();
+        set({ user: null });
     },
 }));

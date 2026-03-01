@@ -2,13 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useGameStore, Community } from '../store/gameStore';
 import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../i18n';
-import { Users, Plus, Shield, Zap, Sword, Target, Settings, Copy, Share2, MessageSquare, ArrowLeft } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Users, Plus, Shield, Sword, Target, Settings, Share2, MessageSquare, ArrowLeft } from 'lucide-react';
 import { CommunityAdmin } from './CommunityAdmin';
 import { ChatArea } from './ChatArea';
 
 export const Communities: React.FC = () => {
-    const { communities, groups, createCommunity, createGroup, syncData } = useGameStore();
+    const { communities, groups, createCommunity, createGroup, loadCommunities, loadGroups } = useGameStore();
     const { user } = useAuthStore();
     const { t, isRTL } = useTranslation();
 
@@ -21,231 +20,199 @@ export const Communities: React.FC = () => {
     const [groupName, setGroupName] = useState('');
     const [groupDesc, setGroupDesc] = useState('');
 
-    useEffect(() => { syncData(); }, [syncData]);
+    useEffect(() => { loadCommunities(); loadGroups(); }, [loadCommunities, loadGroups]);
 
     const handleCreate = async () => {
-        if (!name.trim() || !user) return;
-        await createCommunity(name, desc, user.id);
+        if (!name.trim()) return;
+        await createCommunity(name, desc);
         setShowCreate(false); setName(''); setDesc('');
     };
 
     const handleCreateGroup = async () => {
-        if (!groupName.trim() || !user) return;
-        await createGroup(groupName, groupDesc, user.id, null, 'standalone');
+        if (!groupName.trim()) return;
+        await createGroup(groupName, groupDesc, null, 'standalone');
         setShowCreateGroup(false); setGroupName(''); setGroupDesc('');
     };
 
     const copyInvite = (id: string) => {
         navigator.clipboard.writeText(`gwet://squad/invite/${id}`);
-        alert('Squad Invite Link Copied!');
     };
 
-    // If a squad is selected, show its chat
+    // Squad Detail View
     if (activeSquad) {
-        const squadGroups = groups.filter(g => g.communityId === activeSquad.id);
+        const squadGroups = groups.filter(g => g.community_id === activeSquad.id);
         return (
-            <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 10rem)', direction: isRTL ? 'rtl' : 'ltr' }}>
-                {/* Squad Header */}
-                <div className="glass-card" style={{ padding: '0.75rem 1.5rem', borderRadius: '16px', display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
-                    <button onClick={() => setActiveSquad(null)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}><ArrowLeft size={20} /></button>
-                    <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: activeSquad.themeColor || 'var(--primary-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Sword size={20} color="white" />
+            <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 8rem)', direction: isRTL ? 'rtl' : 'ltr' }}>
+                <div className="card compact" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', marginBottom: 'var(--space-md)' }}>
+                    <button onClick={() => setActiveSquad(null)} className="btn ghost icon-only"><ArrowLeft size={18} /></button>
+                    <div className="avatar" style={{ width: 36, height: 36, borderRadius: 'var(--radius-sm)', background: activeSquad.theme_color || 'var(--primary-soft)' }}>
+                        <Sword size={18} color="white" />
                     </div>
                     <div style={{ flex: 1 }}>
-                        <h2 style={{ fontSize: '1rem', fontWeight: '900', color: 'white', margin: 0 }}>{activeSquad.name}</h2>
-                        <span style={{ fontSize: '0.6rem', color: 'var(--text-dim)', fontWeight: '700' }}>{activeSquad.members?.length || 1} {t('members')}</span>
+                        <h2 style={{ fontSize: 'var(--font-md)', fontWeight: 800, margin: 0 }}>{activeSquad.name}</h2>
+                        <span style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)' }}>{activeSquad.member_count || 1} {t('members')}</span>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                        {activeSquad.ownerId === user?.id && (
-                            <button className="btn-premium" style={{ padding: '6px 10px', fontSize: '0.6rem' }} onClick={() => setAdminTarget(activeSquad)}>
-                                <Settings size={14} />
-                            </button>
+                    <div className="btn-group">
+                        {activeSquad.owner_id === user?.id && (
+                            <button className="btn icon-only" onClick={() => setAdminTarget(activeSquad)}><Settings size={14} /></button>
                         )}
-                        <button className="btn-premium" style={{ padding: '6px 10px', fontSize: '0.6rem' }} onClick={() => copyInvite(activeSquad.id)}>
-                            <Share2 size={14} />
-                        </button>
+                        <button className="btn icon-only" onClick={() => copyInvite(activeSquad.id)}><Share2 size={14} /></button>
                     </div>
                 </div>
 
-                {/* Squad Sub-groups bar */}
                 {squadGroups.length > 0 && (
-                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: 'var(--space-sm)', marginBottom: 'var(--space-md)', flexWrap: 'wrap' }}>
                         {squadGroups.map(g => (
-                            <div key={g.id} className="glass-card" style={{ padding: '0.4rem 0.8rem', borderRadius: '10px', fontSize: '0.7rem', fontWeight: '700', color: 'var(--accent)', cursor: 'pointer' }}>
-                                <Target size={12} style={{ marginRight: '4px' }} /> {g.name}
-                            </div>
+                            <span key={g.id} className="badge accent"><Target size={10} /> {g.name}</span>
                         ))}
                     </div>
                 )}
 
-                {/* Squad Chat */}
                 <div style={{ flex: 1, overflow: 'hidden' }}>
                     <ChatArea targetId={activeSquad.id} type="community" />
                 </div>
 
-                {/* Admin Modal */}
-                <AnimatePresence>
-                    {adminTarget && <CommunityAdmin community={adminTarget} onClose={() => setAdminTarget(null)} />}
-                </AnimatePresence>
+                {adminTarget && <CommunityAdmin community={adminTarget} onClose={() => setAdminTarget(null)} />}
             </div>
         );
     }
 
     return (
-        <div style={{ padding: '0 1rem', display: 'flex', flexDirection: 'column', gap: '2rem', maxWidth: '1000px', margin: '0 auto', direction: isRTL ? 'rtl' : 'ltr' }}>
+        <div className="page-container wide" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+            {adminTarget && <CommunityAdmin community={adminTarget} onClose={() => setAdminTarget(null)} />}
 
-            <AnimatePresence>
-                {adminTarget && <CommunityAdmin community={adminTarget} onClose={() => setAdminTarget(null)} />}
-            </AnimatePresence>
-
-            {/* Header with Create buttons */}
+            {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div className="avatar-premium" style={{ width: '40px', height: '40px', background: 'var(--primary-glow)', color: 'var(--primary)' }}>
-                        <Shield size={24} />
-                    </div>
+                <div className="section-header">
+                    <div className="icon-wrap"><Shield size={22} /></div>
                     <div>
-                        <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: 'white' }}>{t('squads')}</h2>
-                        <p style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontWeight: 'bold' }}>COORDINATE WITH YOUR TEAM</p>
+                        <h2>{t('squads')}</h2>
+                        <p className="subtitle">COORDINATE YOUR TEAM</p>
                     </div>
                 </div>
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
-                    <button className="btn-premium" onClick={() => setShowCreateGroup(!showCreateGroup)}>
-                        <Target size={18} /> {t('create_group')}
+                <div className="btn-group">
+                    <button className="btn" onClick={() => setShowCreateGroup(!showCreateGroup)}>
+                        <Target size={16} /> {t('create_group')}
                     </button>
-                    <button className="btn-premium" onClick={() => setShowCreate(!showCreate)}>
-                        <Plus size={20} /> FOUND SQUAD
+                    <button className="btn primary" onClick={() => setShowCreate(!showCreate)}>
+                        <Plus size={16} /> FOUND SQUAD
                     </button>
                 </div>
             </div>
 
             {/* Create Squad Form */}
             {showCreate && (
-                <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="glass-card" style={{ borderRadius: '24px' }}>
-                    <h3 style={{ marginBottom: '1.5rem', fontWeight: '800' }}>Initialize New Squad</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div className="card" style={{ borderLeft: '3px solid var(--primary)' }}>
+                    <h3 style={{ marginBottom: 'var(--space-xl)', fontWeight: 800 }}>New Squad</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
                         <div>
-                            <label style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>SQUAD DESIGNATION</label>
-                            <input className="gaming-input" placeholder="e.g. Apex Predators" value={name} onChange={e => setName(e.target.value)} style={{ marginBottom: 0 }} />
+                            <label className="label">SQUAD NAME</label>
+                            <input className="input" placeholder="e.g. Apex Predators" value={name} onChange={e => setName(e.target.value)} />
                         </div>
                         <div>
-                            <label style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>MISSION OBJECTIVE</label>
-                            <textarea className="gaming-input" placeholder="What are your goals?" value={desc} onChange={e => setDesc(e.target.value)} style={{ minHeight: '80px', resize: 'none', marginBottom: 0 }} />
+                            <label className="label">DESCRIPTION</label>
+                            <textarea className="input" placeholder="What are your goals?" value={desc} onChange={e => setDesc(e.target.value)} />
                         </div>
-                        <button className="btn-premium" style={{ width: '100%', justifyContent: 'center' }} onClick={handleCreate}>INITIALIZE SQUAD</button>
+                        <button className="btn primary" style={{ alignSelf: 'flex-end' }} onClick={handleCreate}>CREATE SQUAD</button>
                     </div>
-                </motion.div>
+                </div>
             )}
 
-            {/* Create Standalone Group Form */}
+            {/* Create Group Form */}
             {showCreateGroup && (
-                <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="glass-card" style={{ borderRadius: '24px', borderLeft: '4px solid var(--accent)' }}>
-                    <h3 style={{ marginBottom: '1.5rem', fontWeight: '800' }}>{t('create_group')}</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div className="card" style={{ borderLeft: '3px solid var(--accent)' }}>
+                    <h3 style={{ marginBottom: 'var(--space-xl)', fontWeight: 800 }}>{t('create_group')}</h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
                         <div>
-                            <label style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>{t('group_name')}</label>
-                            <input className="gaming-input" placeholder="e.g. Quick Strike" value={groupName} onChange={e => setGroupName(e.target.value)} style={{ marginBottom: 0 }} />
+                            <label className="label">{t('group_name')}</label>
+                            <input className="input" placeholder="e.g. Quick Strike" value={groupName} onChange={e => setGroupName(e.target.value)} />
                         </div>
                         <div>
-                            <label style={{ fontSize: '0.7rem', color: 'var(--text-dim)', fontWeight: 'bold', display: 'block', marginBottom: '0.5rem' }}>{t('group_desc')}</label>
-                            <textarea className="gaming-input" placeholder="Group purpose..." value={groupDesc} onChange={e => setGroupDesc(e.target.value)} style={{ minHeight: '60px', resize: 'none', marginBottom: 0 }} />
+                            <label className="label">{t('group_desc')}</label>
+                            <textarea className="input" placeholder="Group purpose..." value={groupDesc} onChange={e => setGroupDesc(e.target.value)} />
                         </div>
-                        <button className="btn-premium" style={{ width: '100%', justifyContent: 'center' }} onClick={handleCreateGroup}>CREATE GROUP</button>
+                        <button className="btn primary" style={{ alignSelf: 'flex-end' }} onClick={handleCreateGroup}>CREATE GROUP</button>
                     </div>
-                </motion.div>
+                </div>
             )}
 
             {/* Standalone Groups */}
             {groups.filter(g => g.type === 'standalone').length > 0 && (
                 <div>
-                    <h3 style={{ fontSize: '0.85rem', color: 'var(--text-dim)', fontWeight: '800', marginBottom: '1rem' }}>
-                        <Target size={16} style={{ marginRight: '6px' }} /> STANDALONE GROUPS
+                    <h3 style={{ fontSize: 'var(--font-sm)', color: 'var(--text-muted)', fontWeight: 700, marginBottom: 'var(--space-lg)', letterSpacing: '1px' }}>
+                        GROUPS
                     </h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '1rem' }}>
+                    <div className="grid grid-3">
                         {groups.filter(g => g.type === 'standalone').map(g => (
-                            <motion.div key={g.id} whileHover={{ y: -3 }} className="glass-card" style={{ borderRadius: '16px', padding: '1.25rem', cursor: 'pointer', borderLeft: '3px solid var(--accent)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.5rem' }}>
-                                    <Target size={20} color="var(--accent)" />
-                                    <h4 style={{ fontWeight: '800', color: 'white', flex: 1 }}>{g.name}</h4>
+                            <div key={g.id} className="card interactive compact" style={{ borderLeft: '3px solid var(--accent)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', marginBottom: 'var(--space-sm)' }}>
+                                    <Target size={16} color="var(--accent)" />
+                                    <h4 style={{ fontWeight: 700, flex: 1 }}>{g.name}</h4>
                                 </div>
-                                {g.description && <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', lineHeight: '1.4' }}>{g.description}</p>}
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.75rem', fontSize: '0.65rem', color: 'var(--text-dim)' }}>
-                                    <Users size={14} /> {g.members?.length || 1} members
+                                {g.description && <p style={{ fontSize: 'var(--font-sm)', color: 'var(--text-muted)', lineHeight: 1.4 }}>{g.description}</p>}
+                                <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)', marginTop: 'var(--space-md)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <Users size={12} /> {g.member_count || 1} members
                                 </div>
-                            </motion.div>
+                            </div>
                         ))}
                     </div>
                 </div>
             )}
 
             {/* Squads Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2rem', paddingBottom: '3rem' }}>
+            <div className="grid grid-2" style={{ paddingBottom: 'var(--space-3xl)' }}>
+                {communities.length === 0 && (
+                    <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
+                        <Shield size={40} className="icon" />
+                        <h3>No squads yet</h3>
+                        <p>Found your first squad to get started!</p>
+                    </div>
+                )}
+
                 {communities.map(c => {
-                    const isOwner = c.ownerId === user?.id;
+                    const isOwner = c.owner_id === user?.id;
                     return (
-                        <motion.div
-                            key={c.id}
-                            whileHover={{ y: -5 }}
-                            className="glass-card"
-                            style={{
-                                display: 'flex', flexDirection: 'column', gap: '1.25rem', borderRadius: '24px',
-                                borderLeft: isOwner ? `4px solid ${c.themeColor || 'var(--primary)'}` : 'none',
-                                overflow: 'hidden', padding: 0
-                            }}
-                        >
+                        <div key={c.id} className="card" style={{ padding: 0, overflow: 'hidden' }}>
                             {/* Banner */}
                             <div style={{
-                                height: '100px', background: c.themeColor || 'rgba(255,255,255,0.03)',
-                                backgroundImage: c.bannerBase64 ? `url(${c.bannerBase64})` : 'none',
+                                height: '80px', background: c.theme_color || 'var(--bg-elevated)',
+                                backgroundImage: c.banner_base64 ? `url(${c.banner_base64})` : 'none',
                                 backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative'
                             }}>
                                 <div style={{
-                                    position: 'absolute', bottom: '-20px', [isRTL ? 'right' : 'left']: '20px',
-                                    width: '64px', height: '64px', borderRadius: '16px', background: 'var(--bg-dark)',
+                                    position: 'absolute', bottom: '-16px', [isRTL ? 'right' : 'left']: '16px',
+                                    width: '48px', height: '48px', borderRadius: 'var(--radius-md)', background: 'var(--bg-base)',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    border: '3px solid var(--glass-border)', boxShadow: '0 4px 15px rgba(0,0,0,0.5)'
+                                    border: '2px solid var(--border)'
                                 }}>
-                                    <Sword size={32} color={c.themeColor || 'white'} />
+                                    <Sword size={24} color={c.theme_color || 'white'} />
                                 </div>
                                 {isOwner && (
-                                    <button
-                                        onClick={() => setAdminTarget(c)}
-                                        className="btn-premium"
-                                        style={{ position: 'absolute', top: '10px', [isRTL ? 'left' : 'right']: '10px', padding: '8px', background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(5px)' }}
-                                    >
-                                        <Settings size={18} />
+                                    <button onClick={() => setAdminTarget(c)} className="btn ghost icon-only"
+                                        style={{ position: 'absolute', top: 8, [isRTL ? 'left' : 'right']: 8, background: 'rgba(0,0,0,0.4)' }}>
+                                        <Settings size={14} />
                                     </button>
                                 )}
                             </div>
 
-                            <div style={{ padding: '2rem 1.5rem 1.5rem' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                                    <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'white' }}>{c.name}</h3>
-                                    <button onClick={() => copyInvite(c.id)} style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}>
-                                        <Share2 size={16} />
-                                    </button>
+                            <div style={{ padding: 'var(--space-2xl) var(--space-xl) var(--space-xl)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-sm)' }}>
+                                    <h3 style={{ fontSize: 'var(--font-lg)', fontWeight: 800 }}>{c.name}</h3>
+                                    <button onClick={() => copyInvite(c.id)} className="btn ghost icon-only"><Share2 size={14} /></button>
                                 </div>
-                                <p style={{ color: 'var(--text-dim)', fontSize: '0.85rem', lineHeight: '1.6', height: '3.2rem', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
-                                    {c.description}
+                                <p style={{ color: 'var(--text-muted)', fontSize: 'var(--font-sm)', lineHeight: 1.6, height: '2.6rem', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
+                                    {c.description || 'No description'}
                                 </p>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.5rem' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-dim)', fontSize: '0.75rem', fontWeight: '600' }}>
-                                        <Users size={16} /> {c.members?.length || 1} {t('members')}
-                                    </div>
-                                    <button
-                                        className="btn-premium"
-                                        style={{
-                                            padding: '0.6rem 1.25rem', fontSize: '0.8rem',
-                                            background: c.themeColor ? `${c.themeColor}22` : '',
-                                            color: c.themeColor || '', border: `1px solid ${c.themeColor || 'transparent'}`
-                                        }}
-                                        onClick={() => setActiveSquad(c)}
-                                    >
-                                        <MessageSquare size={16} /> ENTER HUB
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'var(--space-xl)' }}>
+                                    <span style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <Users size={14} /> {c.member_count || 1} {t('members')}
+                                    </span>
+                                    <button className="btn" onClick={() => setActiveSquad(c)}>
+                                        <MessageSquare size={14} /> ENTER
                                     </button>
                                 </div>
                             </div>
-                        </motion.div>
+                        </div>
                     );
                 })}
             </div>

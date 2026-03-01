@@ -1,12 +1,9 @@
-import { openDB, DBSchema, IDBPDatabase } from 'idb';
+// TypeScript interfaces for GWET data models
+// Database is now Cloudflare D1 (see schema.sql and functions/api/)
 
 export interface User {
     id: string;
     username: string;
-    passwordHash: string;
-    salt: string;
-    profileDataEncrypted: string;
-    created_at: string;
     displayName: string;
     avatarUrl: string;
     isOnboarded: boolean;
@@ -20,128 +17,58 @@ export interface User {
 export interface Post {
     id: string;
     content: string;
-    image: Blob | null;
+    image_url: string | null;
     created_at: string;
-    userId: string;
+    user_id: string;
     username: string;
-    gameTag: string;
-    wowCount: number;
-    is_deleted: boolean;
-    visibility: 'public' | 'private';
+    game_tag: string;
+    wow_count: number;
+    is_deleted: number;
+    visibility: string;
+    country: string;
 }
 
 export interface Comment {
     id: string;
-    postId: string;
-    userId: string;
+    post_id: string;
+    user_id: string;
     username: string;
     content: string;
     created_at: string;
+    country: string;
 }
 
 export interface Community {
     id: string;
     name: string;
     description: string;
-    ownerId: string;
-    themeColor: string;
-    bannerBase64: string | null;
-    bgStyle: 'default' | 'energetic' | 'calm' | 'matrix';
-    members: string[];
+    owner_id: string;
+    theme_color: string;
+    banner_base64: string | null;
+    bg_style: string;
+    member_count: number;
+    is_member: number;
 }
 
 export interface Group {
     id: string;
-    communityId: string | null; // null if standalone
+    community_id: string | null;
     name: string;
     description: string;
-    ownerId: string;
-    members: string[];
-    created_at: string;
-    type: 'community_sub' | 'standalone';
+    owner_id: string;
+    type: string;
+    member_count: number;
+    is_member: number;
 }
 
 export interface Message {
     id: string;
     content: string;
-    image: Blob | null;
     created_at: string;
-    userId: string;
-    targetId: string; // CommunityId, GroupId, or UserId (for private)
-    type: 'global' | 'community' | 'group' | 'private';
+    user_id: string;
+    display_name: string;
+    avatar_url: string;
+    country: string;
+    target_id: string;
+    type: string;
 }
-
-interface GwetDB extends DBSchema {
-    users: {
-        key: string;
-        value: User;
-        indexes: { 'by-username': string };
-    };
-    messages: {
-        key: string;
-        value: Message;
-        indexes: { 'by-user': string, 'by-target': string };
-    };
-    posts: {
-        key: string;
-        value: Post;
-        indexes: { 'by-user': string, 'by-date': string };
-    };
-    communities: {
-        key: string;
-        value: Community;
-        indexes: { 'by-owner': string };
-    };
-    groups: {
-        key: string;
-        value: Group;
-        indexes: { 'by-community': string, 'by-owner': string };
-    };
-    comments: {
-        key: string;
-        value: Comment;
-        indexes: { 'by-post': string };
-    };
-}
-
-let dbPromise: Promise<IDBPDatabase<GwetDB>>;
-
-export const initDB = () => {
-    dbPromise = openDB<GwetDB>('GWET_OFFLINE', 5, { // Upgrade to v5
-        upgrade(db, oldVersion) {
-            if (oldVersion < 1) {
-                const userStore = db.createObjectStore('users', { keyPath: 'id' });
-                userStore.createIndex('by-username', 'username', { unique: true });
-
-                const msgStore = db.createObjectStore('messages', { keyPath: 'id' });
-                msgStore.createIndex('by-user', 'userId');
-                msgStore.createIndex('by-target', 'targetId');
-            }
-            if (oldVersion < 3) {
-                if (!db.objectStoreNames.contains('posts')) {
-                    const postStore = db.createObjectStore('posts', { keyPath: 'id' });
-                    postStore.createIndex('by-user', 'userId');
-                    postStore.createIndex('by-date', 'created_at');
-                }
-                if (!db.objectStoreNames.contains('communities')) {
-                    const commStore = db.createObjectStore('communities', { keyPath: 'id' });
-                    commStore.createIndex('by-owner', 'ownerId');
-                }
-            }
-            if (oldVersion < 5) {
-                if (!db.objectStoreNames.contains('groups')) {
-                    const groupStore = db.createObjectStore('groups', { keyPath: 'id' });
-                    groupStore.createIndex('by-community', 'communityId');
-                    groupStore.createIndex('by-owner', 'ownerId');
-                }
-                if (!db.objectStoreNames.contains('comments')) {
-                    const commentStore = db.createObjectStore('comments', { keyPath: 'id' });
-                    commentStore.createIndex('by-post', 'postId');
-                }
-            }
-        },
-    });
-    return dbPromise;
-};
-
-export const getDB = () => dbPromise || initDB();

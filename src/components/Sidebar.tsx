@@ -3,8 +3,7 @@ import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../i18n';
 import { countries } from '../data/countries';
 import Flag from './Flag';
-import { Layout, Shield, Terminal, Settings, LogOut, Zap, User, Target, ChevronRight, Globe, Users } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Layout, Shield, Terminal, Settings, LogOut, User, Users, Compass } from 'lucide-react';
 
 interface SidebarProps {
     activeTab: string;
@@ -13,10 +12,11 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
     const { user, signOut } = useAuthStore();
-    const { t, isRTL } = useTranslation();
+    const { t } = useTranslation();
 
     const menuItems = [
         { id: 'feed', icon: Layout, label: t('network') },
+        { id: 'explore', icon: Compass, label: t('explore') },
         { id: 'joined', icon: Users, label: t('joined') },
         { id: 'communities', icon: Shield, label: t('squads') },
         { id: 'chat', icon: Terminal, label: t('comms') },
@@ -24,57 +24,50 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     ];
 
     return (
-        <aside style={{ width: '280px', background: '#0a0a0c', borderRight: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', height: '100vh', padding: '1.5rem', zIndex: 100 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2.5rem', padding: '0 0.5rem' }}>
-                <div style={{ padding: '8px', background: 'var(--primary-glow)', borderRadius: '12px', color: 'var(--primary)', display: 'flex' }}>
-                    <Shield size={24} />
+        <aside className="sidebar">
+            {/* Logo */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', marginBottom: 'var(--space-3xl)', padding: '0 var(--space-sm)' }}>
+                <div style={{ padding: '6px', background: 'var(--primary-soft)', borderRadius: 'var(--radius-md)', color: 'var(--primary)', display: 'flex' }}>
+                    <Shield size={22} />
                 </div>
-                <h1 style={{ fontSize: '1.5rem', fontWeight: '900', letterSpacing: '2px', color: 'white' }}>GWET</h1>
+                <h1 style={{ fontSize: 'var(--font-xl)', fontWeight: 900, letterSpacing: '2px' }}>GWET</h1>
             </div>
 
-            <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {menuItems.map((item) => {
-                    const isActive = activeTab === item.id;
-                    return (
-                        <button
-                            key={item.id}
-                            onClick={() => setActiveTab(item.id)}
-                            className={`btn-premium ${isActive ? 'active' : ''}`}
-                            style={{
-                                width: '100%', justifyContent: 'flex-start', border: 'none', background: isActive ? 'var(--primary-glow)' : 'transparent',
-                                color: isActive ? 'white' : 'var(--text-dim)', boxShadow: 'none'
-                            }}
-                        >
-                            <item.icon size={20} />
-                            <span style={{ fontSize: '0.85rem', fontWeight: '800' }}>{item.label}</span>
-                            {isActive && <motion.div layoutId="active-indicator" style={{ marginLeft: 'auto', width: '4px', height: '4px', borderRadius: '50%', background: 'white' }} />}
-                        </button>
-                    );
-                })}
+            {/* Navigation */}
+            <nav className="sidebar-nav">
+                {menuItems.map((item) => (
+                    <button
+                        key={item.id}
+                        onClick={() => setActiveTab(item.id)}
+                        className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
+                    >
+                        <item.icon size={18} />
+                        <span>{item.label}</span>
+                    </button>
+                ))}
             </nav>
 
+            {/* User Card */}
             <div style={{ marginTop: 'auto' }}>
-                <div className="glass-card" style={{ padding: '1.25rem', borderRadius: '20px', marginBottom: '1.25rem', border: '1px solid var(--primary-glow)', position: 'relative', overflow: 'hidden' }}>
-                    <div style={{ position: 'absolute', top: 0, right: 0, padding: '4px 8px', background: 'var(--primary)', color: 'white', fontSize: '0.5rem', fontWeight: '900', borderRadius: '0 0 0 10px' }}>PRO</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
-                        <div className="avatar-premium" style={{ width: '44px', height: '44px', backgroundImage: `url(${user?.avatarUrl})`, backgroundSize: 'cover' }}>
-                            {!user?.avatarUrl && <User size={20} />}
+                <div className="card compact" style={{ marginBottom: 'var(--space-md)', position: 'relative' }}>
+                    <div className="badge" style={{ position: 'absolute', top: 0, right: 0, borderRadius: '0 var(--radius-lg) 0 var(--radius-sm)', fontSize: '0.5rem' }}>PRO</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+                        <div className="avatar md" style={{ backgroundImage: user?.avatarUrl ? `url(${user.avatarUrl})` : 'none' }}>
+                            {!user?.avatarUrl && <User size={18} />}
                         </div>
                         <div>
-                            <div style={{ fontSize: '0.9rem', fontWeight: '900', color: 'white', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                {user?.displayName} <Flag code={user?.country || 'Global'} size={20} />
+                            <div style={{ fontSize: 'var(--font-base)', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                {user?.displayName} <Flag code={user?.country || 'Global'} size={18} />
                             </div>
-                            <div style={{ fontSize: '0.65rem', color: 'var(--text-dim)', fontWeight: 'bold' }}>LVL {user?.level} • {user?.rank}</div>
+                            <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)', fontWeight: 600 }}>
+                                LVL {user?.level} · {user?.rank}
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <button
-                    onClick={signOut}
-                    className="btn-premium"
-                    style={{ width: '100%', justifyContent: 'center', color: '#f87171', border: '1px solid rgba(248, 113, 113, 0.2)', background: 'rgba(248, 113, 113, 0.05)' }}
-                >
-                    <LogOut size={18} /> {t('logout')}
+                <button onClick={signOut} className="btn danger" style={{ width: '100%' }}>
+                    <LogOut size={16} /> {t('logout')}
                 </button>
             </div>
         </aside>

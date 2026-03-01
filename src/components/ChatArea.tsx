@@ -1,13 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { useGameStore } from '../store/gameStore';
-import { getDB } from '../db/schema';
-import { getGunApp } from '../db/gun';
+import { api } from '../lib/api';
 import { useTranslation } from '../i18n';
-import { getFlag } from '../data/countries';
 import Flag from './Flag';
-import { Send, Lock, Terminal, User as UserIcon, ArrowLeft, Target, Plus } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Send, Lock, Terminal, User as UserIcon, ArrowLeft, Target } from 'lucide-react';
 
 interface Props {
     targetId: string;
@@ -15,7 +11,7 @@ interface Props {
     onBack?: () => void;
 }
 
-const formatSafeTime = (dateStr: string | undefined) => {
+const formatTime = (dateStr: string | undefined) => {
     if (!dateStr) return '';
     try {
         const d = new Date(dateStr);
@@ -29,130 +25,137 @@ export const ChatArea: React.FC<Props> = ({ targetId, type, onBack }) => {
     const { t, isRTL } = useTranslation();
     const [messages, setMessages] = useState<any[]>([]);
     const [text, setText] = useState('');
-    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(true);
     const scrollRef = useRef<HTMLDivElement>(null);
-    const chatPath = `messages-${type}-${targetId}`;
+    const pollRef = useRef<any>(null);
+    const lastTimestampRef = useRef<string>('');
+
+    const loadMessages = useCallback(async (initial = false) => {
+        try {
+            const after = initial ? undefined : lastTimestampRef.current;
+            const { messages: newMsgs } = await api.messages.list(targetId, type, after || undefined);
+
+            if (initial) {
+                setMessages(newMsgs);
+                setLoading(false);
+            } else if (newMsgs.length > 0) {
+                setMessages(prev => {
+                    const ids = new Set(prev.map(m => m.id));
+                    const unique = newMsgs.filter(m => !ids.has(m.id));
+                    return unique.length > 0 ? [...prev, ...unique] : prev;
+                });
+            }
+
+            if (newMsgs.length > 0) {
+                lastTimestampRef.current = newMsgs[newMsgs.length - 1].created_at;
+            }
+        } catch (err) {
+            console.error('Load messages failed:', err);
+            if (initial) setLoading(false);
+        }
+    }, [targetId, type]);
 
     useEffect(() => {
-        let cancelled = false;
-        const load = async () => {
-            try {
-                const db = await getDB();
-                const allMessages = await db.getAll('messages');
-                const filtered = allMessages.filter((m: any) => m.targetId === targetId && m.type === type);
-                if (!cancelled) {
-                    setMessages(filtered.sort((a: any, b: any) => {
-                        const ta = new Date(a.created_at || 0).getTime();
-                        const tb = new Date(b.created_at || 0).getTime();
-                        return (isNaN(ta) ? 0 : ta) - (isNaN(tb) ? 0 : tb);
-                    }));
-                }
-            } catch (err) { console.error('Load messages failed:', err); }
-        };
-        load();
+        lastTimestampRef.current = '';
+        setMessages([]);
+        setLoading(true);
+        loadMessages(true);
 
-        let gunSub: any = null;
-        try {
-            gunSub = (getGunApp().get(chatPath).map() as any).on((data: any, id: string) => {
-                if (!data || !id || cancelled) return;
-                setMessages(prev => {
-                    if (prev.find((m: any) => m.id === id)) return prev;
-                    return [...prev, { ...data, id, targetId, type, image: null }].sort((a: any, b: any) =>
-                        (new Date(a.created_at || 0).getTime() || 0) - (new Date(b.created_at || 0).getTime() || 0)
-                    );
-                });
-            });
-        } catch (err) { console.error('Gun sub failed:', err); }
+        // Poll every 4 seconds for new messages
+        pollRef.current = setInterval(() => loadMessages(false), 4000);
+        return () => { if (pollRef.current) clearInterval(pollRef.current); };
+    }, [targetId, type, loadMessages]);
 
-        return () => { cancelled = true; };
-    }, [targetId, type, chatPath]);
-
-    useEffect(() => { scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight); }, [messages]);
+    useEffect(() => {
+        if (scrollRef.current) scrollRef.current.scrollTo(0, scrollRef.current.scrollHeight);
+    }, [messages]);
 
     const sendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!text.trim() || !user) return;
-        const msg = {
+
+        const optimistic = {
             id: crypto.randomUUID(), content: text, created_at: new Date().toISOString(),
-            userId: user.id, displayName: user.displayName || user.username,
-            avatarUrl: user.avatarUrl || '', country: user.country || 'Global',
-            targetId, type, image: null
+            user_id: user.id, display_name: user.displayName, avatar_url: user.avatarUrl, country: user.country || 'Global',
+            target_id: targetId, type
         };
-        setMessages(prev => [...prev, msg]);
+        setMessages(prev => [...prev, optimistic]);
         setText('');
+
         try {
-            const db = await getDB();
-            await db.add('messages', { id: msg.id, content: msg.content, image: null, created_at: msg.created_at, userId: msg.userId, targetId, type });
-        } catch (e) { console.error(e); }
-        try {
-            getGunApp().get(chatPath).get(msg.id).put({
-                content: msg.content, created_at: msg.created_at, userId: msg.userId,
-                displayName: msg.displayName, avatarUrl: msg.avatarUrl, country: msg.country, targetId, type
-            });
-        } catch (e) { console.error(e); }
+            await api.messages.send(text, targetId, type);
+        } catch (e) { console.error('Send failed:', e); }
     };
 
+    const chatLabel = type === 'global' ? t('comms') : type === 'community' ? t('squads') : type === 'group' ? t('groups') : t('private_chat');
+
     return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '0.75rem', direction: isRTL ? 'rtl' : 'ltr', position: 'relative' }}>
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', direction: isRTL ? 'rtl' : 'ltr' }}>
             {/* Header */}
-            <div className="glass-card" style={{ padding: '0.65rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: '16px', zIndex: 2 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    {onBack && <button onClick={onBack} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: '4px' }}><ArrowLeft size={20} /></button>}
-                    <div className="avatar-premium" style={{ width: '32px', height: '32px', background: 'var(--primary-glow)', color: 'var(--primary)' }}>
-                        {type === 'private' ? <UserIcon size={18} /> : (type === 'group' ? <Target size={18} /> : <Terminal size={18} />)}
+            <div className="card compact" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+                    {onBack && <button onClick={onBack} className="btn ghost icon-only"><ArrowLeft size={18} /></button>}
+                    <div className="avatar" style={{ width: 32, height: 32, background: 'var(--primary-soft)', color: 'var(--primary)', borderRadius: 'var(--radius-sm)' }}>
+                        {type === 'private' ? <UserIcon size={16} /> : type === 'group' ? <Target size={16} /> : <Terminal size={16} />}
                     </div>
                     <div>
-                        <h1 style={{ fontSize: '0.85rem', fontWeight: '900', color: 'white', margin: 0 }}>
-                            {type === 'global' ? t('comms') : (type === 'community' ? t('squads') : (type === 'group' ? t('groups') : t('private_chat')))}
-                        </h1>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.55rem', color: 'var(--accent)', fontWeight: 'bold' }}>
-                            <div style={{ width: '5px', height: '5px', borderRadius: '50%', background: '#10b981' }}></div> {t('online')} • <Lock size={9} /> SECURE
+                        <h1 style={{ fontSize: 'var(--font-base)', fontWeight: 800, margin: 0 }}>{chatLabel}</h1>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: 'var(--font-xs)', color: 'var(--accent)', fontWeight: 600 }}>
+                            <div className="status-dot" /> {t('online')} · <Lock size={8} /> SECURE
                         </div>
                     </div>
                 </div>
-                {type === 'community' && (
-                    <button className="btn-premium" style={{ fontSize: '0.6rem', padding: '5px 10px' }} onClick={() => {
-                        const name = prompt('Group Name:');
-                        if (name && user) useGameStore.getState().createGroup(name, '', user.id, targetId, 'community_sub');
-                    }}><Plus size={14} /> NEW GROUP</button>
-                )}
             </div>
 
             {/* Messages */}
-            <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem', padding: '0 0.5rem', zIndex: 2 }}>
-                {messages.length === 0 && (
-                    <div style={{ textAlign: 'center', color: 'var(--text-dim)', padding: '3rem', fontSize: '0.8rem' }}>No messages yet. Be the first to transmit!</div>
+            <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', padding: '0 var(--space-sm)' }}>
+                {loading && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', padding: 'var(--space-xl)' }}>
+                        {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 40, borderRadius: 'var(--radius-md)' }} />)}
+                    </div>
                 )}
-                <AnimatePresence>
-                    {messages.map((msg) => {
-                        const isMe = msg.userId === user?.id;
-                        return (
-                            <motion.div key={msg.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} style={{ alignSelf: isMe ? 'flex-end' : 'flex-start', maxWidth: '70%' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px', padding: '0 6px', justifyContent: isMe ? 'flex-end' : 'flex-start' }}>
-                                    <Flag code={msg.country || 'Global'} size={18} />
-                                    {!isMe && <span style={{ fontSize: '0.7rem', fontWeight: '900', color: 'var(--accent)' }}>{msg.displayName || msg.userId?.slice(0, 8)}</span>}
-                                    <span style={{ fontSize: '0.55rem', color: 'var(--text-dim)', fontWeight: '700' }}>{formatSafeTime(msg.created_at)}</span>
+
+                {!loading && messages.length === 0 && (
+                    <div className="empty-state">
+                        <Terminal size={32} className="icon" />
+                        <h3>No messages yet</h3>
+                        <p>Be the first to send a message!</p>
+                    </div>
+                )}
+
+                {messages.map((msg) => {
+                    const isMe = msg.user_id === user?.id;
+                    return (
+                        <div key={msg.id} style={{ alignSelf: isMe ? 'flex-end' : 'flex-start', maxWidth: '70%' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px', padding: '0 4px', justifyContent: isMe ? 'flex-end' : 'flex-start' }}>
+                                <Flag code={msg.country || 'Global'} size={14} />
+                                {!isMe && <span style={{ fontSize: 'var(--font-xs)', fontWeight: 700, color: 'var(--accent)' }}>{msg.display_name || 'User'}</span>}
+                                <span style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)' }}>{formatTime(msg.created_at)}</span>
+                            </div>
+                            <div style={{ display: 'flex', gap: 'var(--space-sm)', alignItems: 'flex-end', flexDirection: isMe ? 'row-reverse' : 'row' }}>
+                                <div className="avatar sm" style={{ backgroundImage: msg.avatar_url ? `url(${msg.avatar_url})` : 'none', border: isMe ? '1.5px solid var(--primary)' : '1.5px solid var(--border)' }}>
+                                    {!msg.avatar_url && (msg.display_name?.[0] || 'A').toUpperCase()}
                                 </div>
-                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end', flexDirection: isMe ? 'row-reverse' : 'row' }}>
-                                    <div className="avatar-premium" style={{ width: '30px', height: '30px', flexShrink: 0, backgroundImage: msg.avatarUrl ? `url(${msg.avatarUrl})` : 'none', backgroundSize: 'cover', border: isMe ? '2px solid var(--primary)' : '2px solid var(--glass-border)', fontSize: '0.65rem' }}>
-                                        {!msg.avatarUrl && (msg.displayName?.[0] || 'A').toUpperCase()}
-                                    </div>
-                                    <div className="glass-card" style={{ padding: '0.6rem 1rem', borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px', background: isMe ? 'var(--primary-glow)' : 'rgba(255,255,255,0.03)', border: isMe ? '1px solid var(--primary)' : '1px solid var(--glass-border)', boxShadow: isMe ? '0 4px 12px rgba(168,85,247,0.2)' : 'none' }}>
-                                        <p style={{ fontSize: '0.9rem', lineHeight: '1.5', color: 'white', margin: 0 }}>{msg.content}</p>
-                                    </div>
+                                <div className="card compact" style={{
+                                    borderRadius: isMe ? 'var(--radius-lg) var(--radius-lg) var(--radius-xs) var(--radius-lg)' : 'var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-xs)',
+                                    background: isMe ? 'var(--primary-soft)' : 'var(--bg-card)',
+                                    border: isMe ? '1px solid var(--border-active)' : '1px solid var(--border)',
+                                    padding: 'var(--space-sm) var(--space-md)'
+                                }}>
+                                    <p style={{ fontSize: 'var(--font-base)', lineHeight: 1.5, margin: 0 }}>{msg.content}</p>
                                 </div>
-                            </motion.div>
-                        );
-                    })}
-                </AnimatePresence>
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
 
             {/* Input */}
-            <form onSubmit={sendMessage} className="glass-card" style={{ padding: '0.6rem', borderRadius: '20px', display: 'flex', gap: '0.75rem', alignItems: 'flex-end', zIndex: 2 }}>
-                <textarea className="gaming-input" placeholder="Transmit intel..." value={text} onChange={(e) => setText(e.target.value)}
+            <form onSubmit={sendMessage} className="card compact" style={{ display: 'flex', gap: 'var(--space-sm)', alignItems: 'flex-end' }}>
+                <textarea className="input" placeholder="Type your message..." value={text} onChange={(e) => setText(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(e); } }}
-                    style={{ marginBottom: 0, minHeight: '48px', maxHeight: '120px', resize: 'none', background: 'rgba(0,0,0,0.2)', flex: 1 }} />
-                <button type="submit" className="btn-premium" style={{ height: '48px', width: '48px', padding: 0, borderRadius: '14px', background: 'var(--primary)', color: 'white', flexShrink: 0 }}><Send size={18} /></button>
+                    style={{ minHeight: '44px', maxHeight: '100px', flex: 1 }} />
+                <button type="submit" className="btn primary icon-only" style={{ width: 44, height: 44 }}><Send size={16} /></button>
             </form>
         </div>
     );

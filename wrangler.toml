@@ -1,0 +1,10 @@
+name = "gwet"
+compatibility_date = "2024-09-23"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "gwet-db"
+database_id = "YOUR_DATABASE_ID_HERE"
+
+[vars]
+JWT_SECRET = "gwet-dev-secret-change-in-production"
