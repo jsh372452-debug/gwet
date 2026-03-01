@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://cloudflare-workers-autoconfig-gwet.jsh372452.workers.dev/sitemap.xml
+Sitemap: https://cloudflare-workers-autoconfig-gwet.jsh372452.workers.dev/sitemap-index.xml
