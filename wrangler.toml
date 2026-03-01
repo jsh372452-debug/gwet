@@ -1,13 +1,10 @@
 name = "gwet"
-compatibility_date = "2024-09-23"
+pages_build_output_dir = "./dist"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "gwet-db"
 database_id = "2fc2e771-863d-4773-a454-3d851929a240"
-
-[assets]
-directory = "./dist"
 
 [vars]
 JWT_SECRET = "gwet-dev-secret-change-in-production"
