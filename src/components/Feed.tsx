@@ -59,9 +59,9 @@ export const Feed: React.FC = () => {
     };
 
     const filteredPosts = posts.filter(p =>
-        p.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.game_tag.toLowerCase().includes(searchQuery.toLowerCase())
+        (p.content?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+        (p.username?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+        (p.game_tag?.toLowerCase() || '').includes(searchQuery.toLowerCase())
     );
 
     return (

@@ -222,33 +222,60 @@ async function handleGetPosts(env: Env, url: URL) {
     let query = '';
     if (sort === 'fire') {
         // Algorithm: Score = (fire_count + 1) / (hours_alive + 2)^1.5
-        // Using julianday('now') - julianday(created_at) * 24 for hours_alive
         query = `
-            SELECT *, 
-            ( (fire_count + 1.0) / ( (julianday('now') - julianday(created_at)) * 24.0 + 2.0 ) ) as score 
-            FROM posts 
-            WHERE is_deleted = 0
+            SELECT p.*, u.display_name as user_display_name, u.avatar_url, u.xp as user_xp, u.post_count as user_post_count, u.message_count as user_message_count, u.total_helpful_ai_flags as user_total_helpful_ai_flags,
+            (SELECT SUM(fire_count) FROM posts WHERE user_id = u.id) as user_total_fire,
+            ( (p.fire_count + 1.0) / ( (julianday('now') - julianday(p.created_at)) * 24.0 + 2.0 ) ) as score 
+            FROM posts p
+            LEFT JOIN users u ON p.user_id = u.id
+            WHERE p.is_deleted = 0
         `;
     } else {
-        query = 'SELECT * FROM posts WHERE is_deleted = 0';
+        query = `
+            SELECT p.*, u.display_name as user_display_name, u.avatar_url, u.xp as user_xp, u.post_count as user_post_count, u.message_count as user_message_count, u.total_helpful_ai_flags as user_total_helpful_ai_flags,
+            (SELECT SUM(fire_count) FROM posts WHERE user_id = u.id) as user_total_fire
+            FROM posts p
+            LEFT JOIN users u ON p.user_id = u.id
+            WHERE p.is_deleted = 0
+        `;
     }
 
     if (gameTag && gameTag !== 'all') {
-        query += ' AND game_tag = ?';
+        query += ' AND p.game_tag = ?';
         params.push(gameTag);
     }
 
     if (sort === 'fire') {
-        query += ' ORDER BY score DESC, created_at DESC';
+        query += ' ORDER BY score DESC, p.created_at DESC';
     } else {
-        query += ' ORDER BY created_at DESC';
+        query += ' ORDER BY p.created_at DESC';
     }
 
     query += ' LIMIT ? OFFSET ?';
     params.push(limit, offset);
 
-    const posts = await env.DB.prepare(query).bind(...params).all();
-    return json({ posts: posts.results || [] });
+    const postsRes = await env.DB.prepare(query).bind(...params).all();
+    const results = postsRes.results || [];
+
+    // Enrich with reputation tiers
+    const enriched = results.map((p: any) => {
+        const reputation = (p.user_total_fire * 5) + ((p.user_xp || 0) / 10) + ((p.user_post_count || 0) * 2) + ((p.user_message_count || 0) * 1) + ((p.user_total_helpful_ai_flags || 0) * 50);
+        let tier = 'BRONZE';
+        if (reputation > 5000) tier = 'MYTHIC';
+        else if (reputation > 2500) tier = 'LEGEND';
+        else if (reputation > 1000) tier = 'DIAMOND';
+        else if (reputation > 500) tier = 'PLATINUM';
+        else if (reputation > 250) tier = 'GOLD';
+        else if (reputation > 100) tier = 'SILVER';
+
+        return {
+            ...p,
+            reputation_tier: tier,
+            username: p.user_display_name || p.username
+        };
+    });
+
+    return json({ posts: enriched });
 }
 
 async function handleCreatePost(env: Env, request: Request, jwt: JWTPayload) {
@@ -267,7 +294,12 @@ async function handleCreatePost(env: Env, request: Request, jwt: JWTPayload) {
 
     await env.DB.prepare('UPDATE users SET post_count = post_count + 1 WHERE id = ?').bind(jwt.sub).run();
 
-    const post = await env.DB.prepare('SELECT * FROM posts WHERE id = ?').bind(id).first() as any;
+    const post = await env.DB.prepare(`
+        SELECT p.*, u.display_name as user_display_name, u.avatar_url, u.reputation_tier 
+        FROM posts p
+        JOIN users u ON p.user_id = u.id
+        WHERE p.id = ?
+    `).bind(id).first() as any;
 
     // Reward XP
     const newXp = (user.xp || 0) + 10;
@@ -278,7 +310,7 @@ async function handleCreatePost(env: Env, request: Request, jwt: JWTPayload) {
     const newRank = ranks[Math.min(Math.floor(newLevel / 5), ranks.length - 1)];
     await env.DB.prepare('UPDATE users SET xp = ?, level = ?, rank = ? WHERE id = ?').bind(xpRemaining, newLevel, newRank, jwt.sub).run();
 
-    return json({ post, xp: xpRemaining, level: newLevel, rank: newRank }, 201);
+    return json({ post: { ...post, username: post.user_display_name || post.username }, xp: xpRemaining, level: newLevel, rank: newRank }, 201);
 }
 
 async function handleFirePost(env: Env, postId: string) {

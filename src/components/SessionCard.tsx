@@ -27,46 +27,40 @@ export const SessionCard: React.FC<Props> = ({ post }) => {
     };
 
     return (
-        <div className="card" style={{ border: '1px solid var(--primary)', background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.05) 0%, rgba(10, 10, 12, 0) 100%)', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ position: 'absolute', top: 0, right: 0, padding: '4px 12px', background: 'var(--primary)', color: 'white', fontSize: '10px', fontWeight: 900, borderBottomLeftRadius: 'var(--radius-sm)', textTransform: 'uppercase' }}>
-                PLAY SESSION
+        <div className="glass-card sharp neon-border" style={{ border: '1px solid var(--primary)', background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.05) 0%, rgba(10, 10, 12, 0) 100%)', position: 'relative', overflow: 'hidden', padding: '1.5rem' }}>
+            <div style={{ position: 'absolute', top: 0, right: 0, padding: '4px 12px', background: 'var(--primary)', color: 'white', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                LIVE SESSION
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', marginBottom: 'var(--space-md)' }}>
-                <div className="avatar sm" style={{ background: 'var(--primary-soft)', color: 'var(--primary)' }}>
-                    <Sword size={16} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                <div className="avatar-premium" style={{ width: 44, height: 44, fontSize: '1rem' }}>
+                    {post.username?.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                    <h4 style={{ margin: 0, fontSize: 'var(--font-sm)', fontWeight: 800 }}>{post.username}'s Lobby</h4>
-                    <p style={{ margin: 0, fontSize: '10px', color: 'var(--text-muted)' }}>{post.game_tag}</p>
+                    <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 900, letterSpacing: '0.5px' }}>{post.username.toUpperCase()}'S LOBBY</h4>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                        <span style={{ fontSize: '10px', background: 'var(--primary-soft)', color: 'var(--primary)', padding: '2px 8px', fontWeight: 900 }}>{post.game_tag.toUpperCase()}</span>
+                    </div>
                 </div>
             </div>
 
-            <p style={{ fontSize: 'var(--font-sm)', marginBottom: 'var(--space-lg)', color: 'var(--text-main)', lineHeight: 1.5 }}>
+            <p style={{ fontSize: '15px', marginBottom: '1.5rem', color: 'var(--text-main)', lineHeight: 1.6 }}>
                 {post.content}
             </p>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', marginTop: 'var(--space-md)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', flex: 1, background: 'rgba(0,0,0,0.2)', padding: 'var(--space-md)', borderRadius: 'var(--radius-md)', border: '1px solid var(--glass-border)' }}>
-                    <Users size={14} color="var(--accent)" />
-                    <span style={{ fontSize: 'var(--font-sm)', fontWeight: 800 }}>{currentSlots} / {maxSlots} SLOTS</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: 'auto' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, background: 'rgba(255,255,255,0.03)', padding: '0.75rem 1rem', border: '1px solid var(--glass-border)' }}>
+                    <Users size={16} color="var(--accent)" />
+                    <span style={{ fontSize: '11px', fontWeight: 900, color: 'var(--accent)' }}>{currentSlots} / {maxSlots} OPERATORS</span>
                 </div>
 
-                <button className={`btn ${isFull ? 'ghost' : 'primary'}`} disabled={isFull} onClick={handleJoin} style={{ padding: '0.6rem 1.5rem', fontSize: '10px', fontWeight: 900 }}>
-                    {isFull ? 'FULL' : 'JOIN SESSION'}
-                </button>
-
-                <button className="btn" onClick={() => {
-                    const url = `${window.location.origin}?join=${squadId || ''}`;
-                    navigator.clipboard.writeText(url);
-                    alert('Link copied!');
-                }} style={{ padding: '0.6rem' }}>
-                    <Calendar size={14} />
+                <button className={`btn sharp ${isFull ? 'ghost' : 'accent'}`} disabled={isFull} onClick={handleJoin} style={{ height: '44px', padding: '0 20px', fontSize: '11px', fontWeight: 900 }}>
+                    {isFull ? 'DEPLOYED' : 'JOIN OPERATION'}
                 </button>
             </div>
 
-            {/* Decorative pulse if not full */}
-            {!isFull && <div className="pulse" style={{ position: 'absolute', bottom: 10, left: 10, width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)' }}></div>}
+            {/* Decorative status indicator */}
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '2px', background: isFull ? 'var(--text-muted)' : 'var(--accent)', opacity: 0.5 }}></div>
         </div>
     );
 };
