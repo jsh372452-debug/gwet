@@ -89,10 +89,10 @@ export const api = {
     // ─── Squads ──────────────────────────────────────────────
 
     squads: {
-        list: () => request<{ squads: any[] }>('squads'),
+        list: (category?: string) => request<{ squads: any[] }>(`squads${category ? `?category=${category}` : ''}`),
 
-        create: (name: string, description: string) =>
-            request<{ squad: any }>('squads', { method: 'POST', body: JSON.stringify({ name, description }) }),
+        create: (name: string, description: string, gameCategory?: string) =>
+            request<{ squad: any }>('squads', { method: 'POST', body: JSON.stringify({ name, description, game_category: gameCategory }) }),
 
         join: (squadId: string) =>
             request('squads/' + squadId + '/join', { method: 'POST' }),
