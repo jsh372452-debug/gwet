@@ -8,8 +8,11 @@ export interface Post {
     created_at: string;
     user_id: string;
     username: string;
+    reputation_tier?: string;
     game_tag: string;
     fire_count: number;
+    post_count?: number;
+    message_count?: number;
     post_type: 'normal' | 'session';
     metadata_json: string;
     is_deleted: number;
@@ -22,6 +25,7 @@ export interface Comment {
     post_id: string;
     user_id: string;
     username: string;
+    reputation_tier?: string;
     content: string;
     created_at: string;
     country: string;
@@ -31,6 +35,7 @@ export interface Squad {
     id: string;
     name: string;
     description: string;
+    game_category?: string;
     owner_id: string;
     theme_color: string;
     banner_base64: string | null;

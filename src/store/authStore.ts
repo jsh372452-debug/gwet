@@ -10,6 +10,13 @@ export interface User {
     xp: number;
     level: number;
     rank: string;
+    reputation_tier?: string;
+    post_count?: number;
+    message_count?: number;
+    total_helpful_ai_flags?: number;
+    bio?: string;
+    game_id?: string;
+    game_username?: string;
     whatsapp?: string;
     telegram?: string;
     country?: string;
@@ -24,7 +31,7 @@ interface AuthState {
     register: (u: string, p: string) => Promise<void>;
     signOut: () => void;
     checkSession: () => Promise<void>;
-    updateProfile: (displayName: string, avatarUrl: string, whatsapp?: string, telegram?: string) => Promise<void>;
+    updateProfile: (displayName: string, avatarUrl: string, whatsapp?: string, telegram?: string, bio?: string, gameId?: string, gameUsername?: string) => Promise<void>;
     updateIdentity: (country: string, language: 'ar' | 'en') => Promise<void>;
     setUser: (user: User) => void;
 }
@@ -36,9 +43,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     setUser: (user) => set({ user }),
 
-    updateProfile: async (displayName, avatarUrl, whatsapp, telegram) => {
+    updateProfile: async (displayName, avatarUrl, whatsapp, telegram, bio, gameId, gameUsername) => {
         try {
-            const { user } = await api.auth.updateProfile({ displayName, avatarUrl, whatsapp, telegram });
+            const { user } = await api.auth.updateProfile({ displayName, avatarUrl, whatsapp, telegram, bio, gameId, gameUsername });
             set({ user });
         } catch (err) {
             console.error('Update profile failed:', err);

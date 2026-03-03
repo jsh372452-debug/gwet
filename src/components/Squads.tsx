@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useGameStore, Squad } from '../store/gameStore';
 import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../i18n';
-import { Users, Plus, Shield, Sword, Target, Settings, Share2, MessageSquare, ArrowLeft, Bot } from 'lucide-react';
+import { Users, Plus, Shield, Sword, Target, Settings, Share2, MessageSquare, ArrowLeft, Bot, Gamepad2, Zap } from 'lucide-react';
 import { SquadAdmin } from './SquadAdmin';
 import { ChatArea } from './ChatArea';
 import { SquadAiAssistant } from './SquadAiAssistant';
@@ -22,6 +22,7 @@ export const Squads: React.FC = () => {
     const [isVoiceActive, setIsVoiceActive] = useState(false);
     const [name, setName] = useState('');
     const [desc, setDesc] = useState('');
+    const [gameCategory, setGameCategory] = useState('Global');
     const [groupName, setGroupName] = useState('');
     const [groupDesc, setGroupDesc] = useState('');
 
@@ -30,7 +31,7 @@ export const Squads: React.FC = () => {
     const handleCreate = async () => {
         if (!name.trim()) return;
         await createSquad(name, desc);
-        setShowCreate(false); setName(''); setDesc('');
+        setShowCreate(false); setName(''); setDesc(''); setGameCategory('Global');
     };
 
     const handleCreateGroup = async () => {
@@ -48,35 +49,26 @@ export const Squads: React.FC = () => {
         const squadGroups = groups.filter(g => g.squad_id === activeSquad.id);
         return (
             <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 8rem)', direction: isRTL ? 'rtl' : 'ltr' }}>
-                <div className="card compact" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', marginBottom: 'var(--space-md)' }}>
+                <div className="glass-card sharp compact" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', marginBottom: 'var(--space-md)', borderBottom: `2px solid ${activeSquad.theme_color || 'var(--primary)'}` }}>
                     <button onClick={() => setActiveSquad(null)} className="btn ghost icon-only"><ArrowLeft size={18} /></button>
-                    <div className="avatar" style={{ width: 36, height: 36, borderRadius: 'var(--radius-sm)', background: activeSquad.theme_color || 'var(--primary-soft)' }}>
+                    <div className="avatar-premium" style={{ width: 36, height: 36, fontSize: '1rem', background: activeSquad.theme_color || 'var(--primary-glow)' }}>
                         <Sword size={18} color="white" />
                     </div>
                     <div style={{ flex: 1 }}>
-                        <h2 style={{ fontSize: 'var(--font-md)', fontWeight: 800, margin: 0 }}>{activeSquad.name}</h2>
-                        <span style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)' }}>{activeSquad.member_count || 1} {t('members')}</span>
+                        <h2 style={{ fontSize: '1.1rem', fontWeight: 900, margin: 0, letterSpacing: '0.5px' }}>{activeSquad.name.toUpperCase()}</h2>
+                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700 }}>{activeSquad.member_count || 1} {t('members').toUpperCase()} · {activeSquad.game_category?.toUpperCase() || 'GLOBAL'}</span>
                     </div>
-                    <div className="btn-group">
-                        <button className={`btn ${view === 'chat' ? 'primary' : 'ghost'} icon-only`} onClick={() => setView('chat')} title="Squad Chat"><MessageSquare size={14} /></button>
-                        <button className={`btn ${view === 'ai' ? 'primary' : 'ghost'} icon-only`} onClick={() => setView('ai')} title="AI Master"><Bot size={14} /></button>
-                        <button className={`btn ${isVoiceActive ? 'accent' : 'ghost'} icon-only`} onClick={() => setIsVoiceActive(!isVoiceActive)} title="Voice Chat">
-                            <Mic size={14} style={{ color: isVoiceActive ? 'white' : 'inherit' }} />
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                        <button className={`btn sharp sm ${view === 'chat' ? 'primary' : 'ghost'}`} onClick={() => setView('chat')}><MessageSquare size={14} /></button>
+                        <button className={`btn sharp sm ${view === 'ai' ? 'primary' : 'ghost'}`} onClick={() => setView('ai')}><Bot size={14} /></button>
+                        <button className={`btn sharp sm ${isVoiceActive ? 'accent' : 'ghost'}`} onClick={() => setIsVoiceActive(!isVoiceActive)}>
+                            <Mic size={14} />
                         </button>
                         {activeSquad.owner_id === user?.id && (
-                            <button className="btn ghost icon-only" onClick={() => setAdminTarget(activeSquad)}><Settings size={14} /></button>
+                            <button className="btn sharp sm ghost" onClick={() => setAdminTarget(activeSquad)}><Settings size={14} /></button>
                         )}
-                        <button className="btn ghost icon-only" onClick={() => copyInvite(activeSquad.id)}><Share2 size={14} /></button>
                     </div>
                 </div>
-
-                {squadGroups.length > 0 && (
-                    <div style={{ display: 'flex', gap: 'var(--space-sm)', marginBottom: 'var(--space-md)', flexWrap: 'wrap' }}>
-                        {squadGroups.map(g => (
-                            <span key={g.id} className="badge accent"><Target size={10} /> {g.name}</span>
-                        ))}
-                    </div>
-                )}
 
                 <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                     {isVoiceActive && (
@@ -99,134 +91,103 @@ export const Squads: React.FC = () => {
         <div className="page-container wide" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
             {adminTarget && <SquadAdmin squad={adminTarget} onClose={() => setAdminTarget(null)} />}
 
-            {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div className="section-header">
-                    <div className="icon-wrap"><Shield size={22} /></div>
-                    <div>
-                        <h2>{t('squads')}</h2>
-                        <p className="subtitle">COORDINATE YOUR TEAM</p>
-                    </div>
+            <div className="section-header">
+                <div className="icon-wrap" style={{ background: 'var(--primary-glow)', color: 'var(--primary)' }}><Shield size={22} /></div>
+                <div>
+                    <h2 style={{ textTransform: 'uppercase', letterSpacing: '2px' }}>{isRTL ? 'فرق العمليات' : 'TACTICAL SQUADS'}</h2>
+                    <p className="subtitle">COORDINATE AND CONQUER</p>
                 </div>
-                <div className="btn-group">
-                    <button className="btn" onClick={() => setShowCreateGroup(!showCreateGroup)}>
-                        <Target size={16} /> {t('create_group')}
+                <div style={{ marginLeft: 'auto', display: 'flex', gap: '10px' }}>
+                    <button className="btn sharp ghost" onClick={() => setShowCreateGroup(!showCreateGroup)}>
+                        <Target size={16} /> {t('create_group').toUpperCase()}
                     </button>
-                    <button className="btn primary" onClick={() => setShowCreate(!showCreate)}>
+                    <button className="btn sharp primary" onClick={() => setShowCreate(!showCreate)}>
                         <Plus size={16} /> FOUND SQUAD
                     </button>
                 </div>
             </div>
 
-            {/* Create Squad Form */}
             {showCreate && (
-                <div className="card" style={{ borderLeft: '3px solid var(--primary)' }}>
-                    <h3 style={{ marginBottom: 'var(--space-xl)', fontWeight: 800 }}>New Squad</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
+                <div className="glass-card sharp neon-border" style={{ marginBottom: '2rem' }}>
+                    <h3 style={{ marginBottom: '1.5rem', fontWeight: 900, letterSpacing: '1px' }}>FOUND NEW ELITE SQUAD</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
                         <div>
                             <label className="label">SQUAD NAME</label>
-                            <input className="input" placeholder="e.g. Apex Predators" value={name} onChange={e => setName(e.target.value)} />
+                            <input className="gaming-input" placeholder="e.g. Apex Predators" value={name} onChange={e => setName(e.target.value)} />
                         </div>
                         <div>
-                            <label className="label">DESCRIPTION</label>
-                            <textarea className="input" placeholder="What are your goals?" value={desc} onChange={e => setDesc(e.target.value)} />
+                            <label className="label">GAME CATEGORY</label>
+                            <select className="gaming-input" value={gameCategory} onChange={e => setGameCategory(e.target.value)}>
+                                <option value="Global">Universal</option>
+                                <option value="Valorant">Valorant</option>
+                                <option value="League of Legends">League of Legends</option>
+                                <option value="Counter-Strike">Counter-Strike</option>
+                                <option value="Overwatch">Overwatch</option>
+                                <option value="Fortnite">Fortnite</option>
+                                <option value="Call of Duty">Call of Duty</option>
+                            </select>
                         </div>
-                        <button className="btn primary" style={{ alignSelf: 'flex-end' }} onClick={handleCreate}>CREATE SQUAD</button>
+                    </div>
+                    <div>
+                        <label className="label">DESCRIPTION</label>
+                        <textarea className="gaming-input" placeholder="Rules of engagement..." value={desc} onChange={e => setDesc(e.target.value)} style={{ minHeight: '80px' }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+                        <button className="btn sharp primary" onClick={handleCreate} style={{ padding: '0.75rem 2rem', fontWeight: 900 }}>INITIALIZE SQUAD</button>
                     </div>
                 </div>
             )}
 
-            {/* Create Group Form */}
-            {showCreateGroup && (
-                <div className="card" style={{ borderLeft: '3px solid var(--accent)' }}>
-                    <h3 style={{ marginBottom: 'var(--space-xl)', fontWeight: 800 }}>{t('create_group')}</h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-lg)' }}>
-                        <div>
-                            <label className="label">{t('group_name')}</label>
-                            <input className="input" placeholder="e.g. Quick Strike" value={groupName} onChange={e => setGroupName(e.target.value)} />
-                        </div>
-                        <div>
-                            <label className="label">{t('group_desc')}</label>
-                            <textarea className="input" placeholder="Group purpose..." value={groupDesc} onChange={e => setGroupDesc(e.target.value)} />
-                        </div>
-                        <button className="btn primary" style={{ alignSelf: 'flex-end' }} onClick={handleCreateGroup}>CREATE GROUP</button>
-                    </div>
-                </div>
-            )}
-
-            {/* Standalone Groups */}
-            {groups.filter(g => g.type === 'standalone' && !g.squad_id).length > 0 && (
-                <div>
-                    <h3 style={{ fontSize: 'var(--font-sm)', color: 'var(--text-muted)', fontWeight: 700, marginBottom: 'var(--space-lg)', letterSpacing: '1px' }}>
-                        GROUPS
-                    </h3>
-                    <div className="grid grid-3">
-                        {groups.filter(g => g.type === 'standalone' && !g.squad_id).map(g => (
-                            <div key={g.id} className="card interactive compact" style={{ borderLeft: '3px solid var(--accent)' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', marginBottom: 'var(--space-sm)' }}>
-                                    <Target size={16} color="var(--accent)" />
-                                    <h4 style={{ fontWeight: 700, flex: 1 }}>{g.name}</h4>
-                                </div>
-                                {g.description && <p style={{ fontSize: 'var(--font-sm)', color: 'var(--text-muted)', lineHeight: 1.4 }}>{g.description}</p>}
-                                <div style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)', marginTop: 'var(--space-md)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                    <Users size={12} /> {g.member_count || 1} members
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {/* Squads Grid */}
-            <div className="grid grid-2" style={{ paddingBottom: 'var(--space-3xl)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1.5rem', paddingBottom: '4rem' }}>
                 {squads.length === 0 && (
-                    <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
-                        <Shield size={40} className="icon" />
-                        <h3>No squads yet</h3>
-                        <p>Found your first squad to get started!</p>
+                    <div className="glass-card sharp" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem' }}>
+                        <Shield size={48} color="var(--text-muted)" style={{ marginBottom: '1rem', opacity: 0.2 }} />
+                        <h3 style={{ opacity: 0.5 }}>NO ACTIVE SQUADS FOUND</h3>
                     </div>
                 )}
 
                 {squads.map(s => {
                     const isOwner = s.owner_id === user?.id;
                     return (
-                        <div key={s.id} className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                            {/* Banner */}
+                        <div key={s.id} className="glass-card sharp" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--glass-border)' }}>
                             <div style={{
-                                height: '80px', background: s.theme_color || 'var(--bg-elevated)',
+                                height: '100px', background: s.theme_color || 'linear-gradient(135deg, #1e1e2e, #11111b)',
                                 backgroundImage: s.banner_base64 ? `url(${s.banner_base64})` : 'none',
                                 backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative'
                             }}>
                                 <div style={{
-                                    position: 'absolute', bottom: '-16px', [isRTL ? 'right' : 'left']: '16px',
-                                    width: '48px', height: '48px', borderRadius: 'var(--radius-md)', background: 'var(--bg-base)',
+                                    position: 'absolute', bottom: '-20px', left: isRTL ? 'auto' : '20px', right: isRTL ? '20px' : 'auto',
+                                    width: '56px', height: '56px', background: 'var(--bg-dark)',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    border: '2px solid var(--border)'
+                                    border: `2px solid ${s.theme_color || 'var(--primary)'}`
                                 }}>
-                                    <Sword size={24} color={s.theme_color || 'white'} />
+                                    <Sword size={28} color={s.theme_color || 'var(--primary)'} />
                                 </div>
                                 {isOwner && (
-                                    <button onClick={() => setAdminTarget(s)} className="btn ghost icon-only"
-                                        style={{ position: 'absolute', top: 8, [isRTL ? 'left' : 'right']: 8, background: 'rgba(0,0,0,0.4)' }}>
+                                    <button onClick={() => setAdminTarget(s)} className="btn ghost sharp icon-only sm"
+                                        style={{ position: 'absolute', top: 12, right: 12, background: 'rgba(0,0,0,0.6)' }}>
                                         <Settings size={14} />
                                     </button>
                                 )}
                             </div>
 
-                            <div style={{ padding: 'var(--space-2xl) var(--space-xl) var(--space-xl)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-sm)' }}>
-                                    <h3 style={{ fontSize: 'var(--font-lg)', fontWeight: 800 }}>{s.name}</h3>
-                                    <button onClick={() => copyInvite(s.id)} className="btn ghost icon-only"><Share2 size={14} /></button>
+                            <div style={{ padding: '2rem 1.5rem 1.5rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                    <h3 style={{ fontSize: '1.25rem', fontWeight: 900, margin: 0 }}>{s.name.toUpperCase()}</h3>
+                                    <div style={{ fontSize: '10px', background: 'var(--primary-soft)', color: 'var(--primary)', padding: '2px 8px', fontWeight: 900 }}>{s.game_category?.toUpperCase() || 'GLOBAL'}</div>
                                 </div>
-                                <p style={{ color: 'var(--text-muted)', fontSize: 'var(--font-sm)', lineHeight: 1.6, height: '2.6rem', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' as any }}>
-                                    {s.description || 'No description'}
+                                <p style={{ color: 'var(--text-muted)', fontSize: '13px', lineHeight: 1.6, height: '40px', overflow: 'hidden', marginBottom: '1.5rem' }}>
+                                    {s.description || 'No operational directive defined.'}
                                 </p>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'var(--space-xl)' }}>
-                                    <span style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                        <Users size={14} /> {s.member_count || 1} {t('members')}
-                                    </span>
-                                    <button className="btn" onClick={() => setActiveSquad(s)}>
-                                        <MessageSquare size={14} /> ENTER
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1rem', borderTop: '1px solid var(--glass-border)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            <Users size={14} /> {s.member_count || 1}
+                                        </div>
+                                        <button onClick={() => copyInvite(s.id)} className="btn ghost sharp icon-only sm"><Share2 size={12} /></button>
+                                    </div>
+                                    <button className="btn primary sharp" onClick={() => setActiveSquad(s)} style={{ fontWeight: 900, height: '36px', padding: '0 20px' }}>
+                                        ACCESS HUB
                                     </button>
                                 </div>
                             </div>

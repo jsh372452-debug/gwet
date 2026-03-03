@@ -6,11 +6,19 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash TEXT NOT NULL,
   salt TEXT NOT NULL,
   display_name TEXT,
+  bio TEXT DEFAULT '',
   avatar_url TEXT DEFAULT '',
   is_onboarded INTEGER DEFAULT 0,
   xp INTEGER DEFAULT 0,
   level INTEGER DEFAULT 1,
   rank TEXT DEFAULT 'ROOKIE',
+  reputation_tier TEXT DEFAULT 'BRONZE', -- BRONZE, SILVER, GOLD, PLATINUM, DIAMOND, LEGEND, MYTHIC
+  post_count INTEGER DEFAULT 0,
+  message_count INTEGER DEFAULT 0,
+  total_likes INTEGER DEFAULT 0,
+  total_helpful_ai_flags INTEGER DEFAULT 0,
+  game_id TEXT DEFAULT '',
+  game_username TEXT DEFAULT '',
   country TEXT DEFAULT 'Global',
   language TEXT DEFAULT 'en',
   whatsapp TEXT DEFAULT '',
@@ -26,12 +34,12 @@ CREATE TABLE IF NOT EXISTS posts (
   user_id TEXT NOT NULL,
   username TEXT NOT NULL,
   game_tag TEXT DEFAULT 'Global',
-  fire_count INTEGER DEFAULT 0, -- Renamed from wow_count to match "Global Fire Feed"
+  fire_count INTEGER DEFAULT 0,
   is_deleted INTEGER DEFAULT 0,
   visibility TEXT DEFAULT 'public',
   country TEXT DEFAULT 'Global',
-  post_type TEXT DEFAULT 'normal', -- normal, session
-  metadata_json TEXT DEFAULT '{}', -- stores session info: {squadId, maxSlots, currentSlots}
+  post_type TEXT DEFAULT 'normal',
+  metadata_json TEXT DEFAULT '{}',
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
@@ -55,7 +63,8 @@ CREATE TABLE IF NOT EXISTS squads (
   theme_color TEXT DEFAULT '#a855f7',
   banner_base64 TEXT,
   bg_style TEXT DEFAULT 'default',
-  squad_type TEXT DEFAULT 'public', -- public, private, premium
+  squad_type TEXT DEFAULT 'public',
+  game_category TEXT DEFAULT 'Global', -- Linked to specific game
   created_at TEXT DEFAULT (datetime('now')),
   FOREIGN KEY (owner_id) REFERENCES users(id)
 );
@@ -63,7 +72,7 @@ CREATE TABLE IF NOT EXISTS squads (
 CREATE TABLE IF NOT EXISTS squad_members (
   squad_id TEXT NOT NULL,
   user_id TEXT NOT NULL,
-  role TEXT DEFAULT 'member', -- owner, admin, mod, member, ai_bot
+  role TEXT DEFAULT 'member',
   joined_at TEXT DEFAULT (datetime('now')),
   PRIMARY KEY (squad_id, user_id),
   FOREIGN KEY (squad_id) REFERENCES squads(id),
@@ -76,7 +85,7 @@ CREATE TABLE IF NOT EXISTS squad_ai_configs (
   ai_name TEXT DEFAULT 'Squad Master',
   personality TEXT DEFAULT 'professional',
   welcome_message TEXT DEFAULT 'Welcome to our Squad!',
-  auto_mod_level INTEGER DEFAULT 5, -- 1-10 severity
+  auto_mod_level INTEGER DEFAULT 5,
   custom_instructions TEXT DEFAULT '',
   FOREIGN KEY (squad_id) REFERENCES squads(id)
 );
@@ -87,12 +96,15 @@ CREATE TABLE IF NOT EXISTS events (
   creator_id TEXT NOT NULL,
   title TEXT NOT NULL,
   description TEXT,
+  rules TEXT DEFAULT '', -- New: Custom rules/text
   start_time TEXT NOT NULL,
   end_time TEXT,
-  event_type TEXT DEFAULT 'tournament', -- tournament, raid, hangout, bootcamp
+  event_type TEXT DEFAULT 'tournament',
+  frame_type TEXT DEFAULT 'none', -- New: Custom SVG frame
   prize_pool TEXT DEFAULT '0',
   registration_fee TEXT DEFAULT 'free',
-  status TEXT DEFAULT 'upcoming', -- upcoming, live, completed, cancelled
+  max_slots INTEGER DEFAULT 0, -- New: Max participants
+  status TEXT DEFAULT 'upcoming',
   created_at TEXT DEFAULT (datetime('now')),
   FOREIGN KEY (squad_id) REFERENCES squads(id),
   FOREIGN KEY (creator_id) REFERENCES users(id)
@@ -100,7 +112,7 @@ CREATE TABLE IF NOT EXISTS events (
 
 CREATE TABLE IF NOT EXISTS reputation_scores (
   user_id TEXT PRIMARY KEY,
-  trust_score INTEGER DEFAULT 100, -- Base 100
+  trust_score INTEGER DEFAULT 100,
   total_deals INTEGER DEFAULT 0,
   positive_reviews INTEGER DEFAULT 0,
   negative_reviews INTEGER DEFAULT 0,
@@ -138,7 +150,8 @@ CREATE TABLE IF NOT EXISTS messages (
   avatar_url TEXT DEFAULT '',
   country TEXT DEFAULT 'Global',
   target_id TEXT NOT NULL,
-  type TEXT NOT NULL
+  type TEXT NOT NULL,
+  is_helpful INTEGER DEFAULT 0 -- For AI tracking
 );
 
 -- Indexes for performance

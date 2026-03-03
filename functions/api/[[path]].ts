@@ -84,6 +84,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
         if (method === 'GET' && path === 'events') return handleGetEvents(env, url);
         if (method === 'POST' && path === 'events') return handleCreateEvent(env, request, user);
+        if (method === 'GET' && path === 'leaderboard') return handleGetLeaderboard(env);
         const eventJoin = path.match(/^events\/([^/]+)\/join$/);
         if (method === 'POST' && eventJoin) return handleJoinEvent(env, eventJoin[1], user);
 
@@ -149,7 +150,7 @@ async function handleSession(env: Env, jwt: JWTPayload) {
 }
 
 async function handleUpdateProfile(env: Env, request: Request, jwt: JWTPayload) {
-    const { displayName, avatarUrl, country, language, isOnboarded, whatsapp, telegram } = await request.json() as any;
+    const { displayName, avatarUrl, country, language, isOnboarded, bio, gameId, gameUsername, whatsapp, telegram } = await request.json() as any;
     const sets: string[] = [];
     const vals: any[] = [];
 
@@ -158,6 +159,9 @@ async function handleUpdateProfile(env: Env, request: Request, jwt: JWTPayload) 
     if (country !== undefined) { sets.push('country = ?'); vals.push(country); }
     if (language !== undefined) { sets.push('language = ?'); vals.push(language); }
     if (isOnboarded !== undefined) { sets.push('is_onboarded = ?'); vals.push(isOnboarded ? 1 : 0); }
+    if (bio !== undefined) { sets.push('bio = ?'); vals.push(bio); }
+    if (gameId !== undefined) { sets.push('game_id = ?'); vals.push(gameId); }
+    if (gameUsername !== undefined) { sets.push('game_username = ?'); vals.push(gameUsername); }
     if (whatsapp !== undefined) { sets.push('whatsapp = ?'); vals.push(whatsapp); }
     if (telegram !== undefined) { sets.push('telegram = ?'); vals.push(telegram); }
 
@@ -179,20 +183,29 @@ async function handleUpdateProfile(env: Env, request: Request, jwt: JWTPayload) 
 }
 
 async function handleGetUserProfile(env: Env, userId: string) {
-    const user = await env.DB.prepare('SELECT id, username, display_name, avatar_url, country, xp, level, rank, whatsapp, telegram FROM users WHERE id = ?').bind(userId).first() as any;
+    const user = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(userId).first() as any;
     if (!user) return error('User not found');
 
-    // Calculate reputation (Simplified logic for now)
+    // Enhanced Reputation Calculation
     const fireData = await env.DB.prepare('SELECT SUM(fire_count) as total FROM posts WHERE user_id = ?').bind(userId).first() as any;
     const totalFire = fireData?.total || 0;
-    const reputation = (totalFire * 5) + ((user.xp || 0) / 10);
+
+    // Rep Formula: (Fire * 5) + (XP / 10) + (PostCount * 2) + (MsgCount * 1) + (HelpfulAI * 50)
+    const reputation = (totalFire * 5) + ((user.xp || 0) / 10) + ((user.post_count || 0) * 2) + ((user.message_count || 0) * 1) + ((user.total_helpful_ai_flags || 0) * 50);
+
+    let tier = 'BRONZE';
+    if (reputation > 5000) tier = 'MYTHIC';
+    else if (reputation > 2500) tier = 'LEGEND';
+    else if (reputation > 1000) tier = 'DIAMOND';
+    else if (reputation > 500) tier = 'PLATINUM';
+    else if (reputation > 250) tier = 'GOLD';
+    else if (reputation > 100) tier = 'SILVER';
 
     return json({
         profile: {
-            id: user.id, username: user.username, displayName: user.display_name,
-            avatarUrl: user.avatar_url || '', country: user.country, xp: user.xp,
-            level: user.level, rank: user.rank, whatsapp: user.whatsapp || '',
-            telegram: user.telegram || '', reputation
+            ...user,
+            reputation,
+            tier
         }
     });
 }
@@ -251,6 +264,8 @@ async function handleCreatePost(env: Env, request: Request, jwt: JWTPayload) {
     await env.DB.prepare(
         'INSERT INTO posts (id, content, user_id, username, game_tag, country, post_type, metadata_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     ).bind(id, content, jwt.sub, user.display_name || jwt.username, gameTag || 'Global', user.country || 'Global', postType, metadataStr).run();
+
+    await env.DB.prepare('UPDATE users SET post_count = post_count + 1 WHERE id = ?').bind(jwt.sub).run();
 
     const post = await env.DB.prepare('SELECT * FROM posts WHERE id = ?').bind(id).first() as any;
 
@@ -452,12 +467,44 @@ async function handleSendMessage(env: Env, request: Request, jwt: JWTPayload) {
     const user = await env.DB.prepare('SELECT display_name, avatar_url, country FROM users WHERE id = ?').bind(jwt.sub).first() as any;
     const id = crypto.randomUUID();
 
+    // AI Helpfulness Analysis (Background-ish but inline for MVP)
+    let isHelpful = 0;
+    try {
+        if (content.length > 20 && env.AI) {
+            const aiRes = await env.AI.run('@cf/meta/llama-3-8b-instruct', {
+                messages: [
+                    { role: 'system', content: 'You are a gaming community moderator. Analyze the message and reply with ONLY "HELPFUL" if the user is providing tips, helping others, or being positive. Otherwise reply "NORMAL".' },
+                    { role: 'user', content }
+                ]
+            }) as any;
+            if (aiRes.response.includes('HELPFUL')) {
+                isHelpful = 1;
+                await env.DB.prepare('UPDATE users SET total_helpful_ai_flags = total_helpful_ai_flags + 1 WHERE id = ?').bind(jwt.sub).run();
+            }
+        }
+    } catch (e) {
+        console.error('AI Reputation Check Failed:', e);
+    }
+
     await env.DB.prepare(
-        'INSERT INTO messages (id, content, user_id, display_name, avatar_url, country, target_id, type) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-    ).bind(id, content, jwt.sub, user.display_name || jwt.username, user.avatar_url || '', user.country || 'Global', targetId || 'global', type || 'global').run();
+        'INSERT INTO messages (id, content, user_id, display_name, avatar_url, country, target_id, type, is_helpful) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).bind(id, content, jwt.sub, user.display_name || jwt.username, user.avatar_url || '', user.country || 'Global', targetId || 'global', type || 'global', isHelpful).run();
+
+    await env.DB.prepare('UPDATE users SET message_count = message_count + 1 WHERE id = ?').bind(jwt.sub).run();
 
     const msg = await env.DB.prepare('SELECT * FROM messages WHERE id = ?').bind(id).first();
     return json({ message: msg }, 201);
+}
+
+async function handleGetLeaderboard(env: Env) {
+    const users = await env.DB.prepare(`
+        SELECT *, 
+        ( (CAST(xp AS FLOAT)/10.0) + (post_count * 2) + (message_count * 1) + (total_helpful_ai_flags * 50) ) as reputation_score 
+        FROM users 
+        ORDER BY reputation_score DESC 
+        LIMIT 10
+    `).all();
+    return json({ leaderboard: users.results || [] });
 }
 
 async function handleSquadAiChat(env: Env, request: Request, jwt: JWTPayload, squadId: string) {
@@ -528,13 +575,13 @@ async function handleGetEvents(env: Env, url: URL) {
 }
 
 async function handleCreateEvent(env: Env, request: Request, jwt: JWTPayload) {
-    const { title, description, startTime, eventType, prizePool, registrationFee, squadId } = await request.json() as any;
+    const { title, description, startTime, eventType, prizePool, registrationFee, squadId, rules, frameType, maxSlots } = await request.json() as any;
     if (!title || !startTime) return error('Title and Start Time required');
 
     const id = crypto.randomUUID();
     await env.DB.prepare(
-        'INSERT INTO events (id, title, description, start_time, event_type, prize_pool, registration_fee, squad_id, creator_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-    ).bind(id, title, description || '', startTime, eventType || 'tournament', prizePool || '0', registrationFee || 'free', squadId || null, jwt.sub).run();
+        'INSERT INTO events (id, title, description, start_time, event_type, prize_pool, registration_fee, squad_id, creator_id, rules, frame_type, max_slots) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).bind(id, title, description || '', startTime, eventType || 'tournament', prizePool || '0', registrationFee || 'free', squadId || null, jwt.sub, rules || '', frameType || 'none', maxSlots || 0).run();
 
     const event = await env.DB.prepare('SELECT * FROM events WHERE id = ?').bind(id).first();
     return json({ event }, 201);

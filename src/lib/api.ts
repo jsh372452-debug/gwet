@@ -41,7 +41,7 @@ export const api = {
 
         session: () => request<{ user: any }>('auth/session'),
 
-        updateProfile: (data: { displayName?: string; avatarUrl?: string; country?: string; language?: string; isOnboarded?: boolean; whatsapp?: string; telegram?: string }) =>
+        updateProfile: (data: { displayName?: string; avatarUrl?: string; country?: string; language?: string; isOnboarded?: boolean; whatsapp?: string; telegram?: string; bio?: string; gameId?: string; gameUsername?: string }) =>
             request<{ user: any }>('auth/profile', { method: 'PUT', body: JSON.stringify(data) }),
 
         getUserProfile: (userId: string) =>
@@ -141,10 +141,13 @@ export const api = {
             return request<{ events: any[] }>(`events?${q}`);
         },
 
-        create: (data: { title: string; description: string; startTime: string; eventType: string; prizePool: string; registrationFee: string; squadId?: string }) =>
+        create: (data: { title: string; description: string; startTime: string; eventType: string; rules?: string; frameType?: string; maxSlots?: number; prizePool?: string; registrationFee?: string; squadId?: string }) =>
             request<{ event: any }>('events', { method: 'POST', body: JSON.stringify(data) }),
 
         join: (eventId: string) =>
             request<{ success: true; message: string }>(`events/${eventId}/join`, { method: 'POST' }),
+    },
+    leaderboard: {
+        get: () => request<{ leaderboard: any[] }>('leaderboard')
     },
 };

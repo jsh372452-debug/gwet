@@ -1,19 +1,22 @@
 /* GWET — Fonts loaded in index.html via preconnect for performance */
 
 :root {
-  --primary: #a855f7;
-  --primary-glow: rgba(168, 85, 247, 0.15);
-  --primary-vivid: rgba(168, 85, 247, 0.6);
+  --primary: #8b5cf6;
+  /* Saturated Purple */
+  --primary-glow: rgba(139, 92, 246, 0.3);
+  --primary-vivid: #8b5cf6;
   --accent: #06b6d4;
-  --accent-glow: rgba(6, 182, 212, 0.15);
-  --gold: #f59e0b;
-  --bg-dark: #0a0a0c;
-  --bg-card: rgba(18, 18, 22, 0.75);
-  --glass-border: rgba(255, 255, 255, 0.07);
-  --text-main: #f1f5f9;
-  --text-dim: #64748b;
-  --stable-radius: 20px;
-  --transition-smooth: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Saturated Cyan */
+  --accent-glow: rgba(6, 182, 212, 0.3);
+  --gold: #fbbf24;
+  --bg-dark: #050507;
+  --bg-card: #121218;
+  --glass-border: #1f1f27;
+  --text-main: #ffffff;
+  --text-dim: #94a3b8;
+  --stable-radius: 4px;
+  /* Shorter for sharp feel */
+  --transition-fast: all 0.2s ease;
 }
 
 * {
@@ -61,18 +64,26 @@ body {
    ======================== */
 .glass-card {
   background: var(--bg-card);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
   border: 1px solid var(--glass-border);
   border-radius: var(--stable-radius);
   padding: 1.5rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.03);
-  transition: var(--transition-smooth);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  transition: var(--transition-fast);
 }
 
 .glass-card:hover {
-  border-color: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  border-color: var(--primary);
+  box-shadow: 0 0 15px var(--primary-glow);
+  transform: translateY(-2px);
+}
+
+.sharp {
+  border-radius: 0 !important;
+}
+
+.neon-border {
+  border-color: var(--primary);
+  box-shadow: 0 0 10px var(--primary-glow);
 }
 
 /* ========================
