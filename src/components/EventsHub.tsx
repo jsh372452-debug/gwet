@@ -161,7 +161,7 @@ export const EventsHub: React.FC = () => {
                                             </div>
                                         </div>
 
-                                        <button className="btn primary sharp" disabled={event.participant_count >= (event.max_slots || 99999)} onClick={() => handleJoin(event.id)} style={{ width: '100%', marginTop: '0.5rem', height: '40px', fontWeight: 900 }}>
+                                        <button className="btn primary sharp" disabled={(event.participant_count || 0) >= (event.max_slots || 99999)} onClick={() => handleJoin(event.id)} style={{ width: '100%', marginTop: '0.5rem', height: '40px', fontWeight: 900 }}>
                                             {isRTL ? 'التسجيل الآن' : 'REGISTER NOW'}
                                         </button>
                                     </div>
