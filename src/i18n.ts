@@ -11,6 +11,8 @@ const translations = {
         network: 'FEED',
         comms: 'CHAT',
         squads: 'SQUADS',
+        events: 'EVENTS',
+        reputation: 'RANKINGS',
         settings: 'SETTINGS',
         logout: 'LOGOUT',
         search: 'Search...',
@@ -29,7 +31,7 @@ const translations = {
         theme: 'THEME COLOR',
         banner: 'BANNER',
         members: 'MEMBERS',
-        wow: 'WOW',
+        fire: 'FIRE',
         comment: 'Write a comment...',
         comments: 'COMMENTS',
         private_chat: 'DIRECT MESSAGE',
@@ -42,7 +44,13 @@ const translations = {
         explore: 'EXPLORE',
         latest: 'LATEST',
         popular: 'POPULAR',
-        by_game: 'BY GAME'
+        by_game: 'BY GAME',
+        ai_master: 'SQUAD MASTER AI',
+        ai_powered: 'LLAMA-3 POWERED',
+        ai_active: 'Squad Intelligence Active',
+        ai_placeholder: 'Ask me about tactics, squad status...',
+        ai_processing: 'NEURAL PROCESSING...',
+        ai_input: 'Communicate with Squad Master...'
     },
     ar: {
         welcome: 'أهلاً بك',
@@ -54,6 +62,8 @@ const translations = {
         network: 'المنشورات',
         comms: 'المحادثات',
         squads: 'الفرق',
+        events: 'الفعاليات',
+        reputation: 'التصنيفات',
         settings: 'الإعدادات',
         logout: 'خروج',
         search: 'بحث...',
@@ -72,7 +82,7 @@ const translations = {
         theme: 'اللون',
         banner: 'الغلاف',
         members: 'الأعضاء',
-        wow: 'واو',
+        fire: 'نار',
         comment: 'اكتب تعليقاً...',
         comments: 'التعليقات',
         private_chat: 'رسالة خاصة',
@@ -85,7 +95,13 @@ const translations = {
         explore: 'استكشاف',
         latest: 'الأحدث',
         popular: 'الأكثر تفاعلاً',
-        by_game: 'حسب اللعبة'
+        by_game: 'حسب اللعبة',
+        ai_master: 'ذكاء الفرقة الآلي',
+        ai_powered: 'مدعوم بـ Llama-3',
+        ai_active: 'ذكاء الفرقة نشط',
+        ai_placeholder: 'اسألني عن التكتيكات، حالة الفريق، أو لرفع الحماس!',
+        ai_processing: 'جاري المعالجة العصبية...',
+        ai_input: 'تحدث مع قائد الفريق الآلي...'
     }
 };
 

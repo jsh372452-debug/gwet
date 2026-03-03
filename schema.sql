@@ -1,4 +1,4 @@
--- GWET D1 Database Schema
+-- GWET D1 Database Schema - Optimized for Squads & Gaming Economy
 
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS users (
   rank TEXT DEFAULT 'ROOKIE',
   country TEXT DEFAULT 'Global',
   language TEXT DEFAULT 'en',
+  whatsapp TEXT DEFAULT '',
+  telegram TEXT DEFAULT '',
   created_at TEXT DEFAULT (datetime('now'))
 );
 
@@ -24,10 +26,12 @@ CREATE TABLE IF NOT EXISTS posts (
   user_id TEXT NOT NULL,
   username TEXT NOT NULL,
   game_tag TEXT DEFAULT 'Global',
-  wow_count INTEGER DEFAULT 0,
+  fire_count INTEGER DEFAULT 0, -- Renamed from wow_count to match "Global Fire Feed"
   is_deleted INTEGER DEFAULT 0,
   visibility TEXT DEFAULT 'public',
   country TEXT DEFAULT 'Global',
+  post_type TEXT DEFAULT 'normal', -- normal, session
+  metadata_json TEXT DEFAULT '{}', -- stores session info: {squadId, maxSlots, currentSlots}
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
@@ -43,7 +47,7 @@ CREATE TABLE IF NOT EXISTS comments (
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
-CREATE TABLE IF NOT EXISTS communities (
+CREATE TABLE IF NOT EXISTS squads (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   description TEXT DEFAULT '',
@@ -51,28 +55,69 @@ CREATE TABLE IF NOT EXISTS communities (
   theme_color TEXT DEFAULT '#a855f7',
   banner_base64 TEXT,
   bg_style TEXT DEFAULT 'default',
+  squad_type TEXT DEFAULT 'public', -- public, private, premium
   created_at TEXT DEFAULT (datetime('now')),
   FOREIGN KEY (owner_id) REFERENCES users(id)
 );
 
-CREATE TABLE IF NOT EXISTS community_members (
-  community_id TEXT NOT NULL,
+CREATE TABLE IF NOT EXISTS squad_members (
+  squad_id TEXT NOT NULL,
   user_id TEXT NOT NULL,
+  role TEXT DEFAULT 'member', -- owner, admin, mod, member, ai_bot
   joined_at TEXT DEFAULT (datetime('now')),
-  PRIMARY KEY (community_id, user_id),
-  FOREIGN KEY (community_id) REFERENCES communities(id),
+  PRIMARY KEY (squad_id, user_id),
+  FOREIGN KEY (squad_id) REFERENCES squads(id),
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS squad_ai_configs (
+  squad_id TEXT PRIMARY KEY,
+  is_active INTEGER DEFAULT 0,
+  ai_name TEXT DEFAULT 'Squad Master',
+  personality TEXT DEFAULT 'professional',
+  welcome_message TEXT DEFAULT 'Welcome to our Squad!',
+  auto_mod_level INTEGER DEFAULT 5, -- 1-10 severity
+  custom_instructions TEXT DEFAULT '',
+  FOREIGN KEY (squad_id) REFERENCES squads(id)
+);
+
+CREATE TABLE IF NOT EXISTS events (
+  id TEXT PRIMARY KEY,
+  squad_id TEXT,
+  creator_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  start_time TEXT NOT NULL,
+  end_time TEXT,
+  event_type TEXT DEFAULT 'tournament', -- tournament, raid, hangout, bootcamp
+  prize_pool TEXT DEFAULT '0',
+  registration_fee TEXT DEFAULT 'free',
+  status TEXT DEFAULT 'upcoming', -- upcoming, live, completed, cancelled
+  created_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (squad_id) REFERENCES squads(id),
+  FOREIGN KEY (creator_id) REFERENCES users(id)
+);
+
+CREATE TABLE IF NOT EXISTS reputation_scores (
+  user_id TEXT PRIMARY KEY,
+  trust_score INTEGER DEFAULT 100, -- Base 100
+  total_deals INTEGER DEFAULT 0,
+  positive_reviews INTEGER DEFAULT 0,
+  negative_reviews INTEGER DEFAULT 0,
+  last_updated TEXT DEFAULT (datetime('now')),
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 CREATE TABLE IF NOT EXISTS groups (
   id TEXT PRIMARY KEY,
-  community_id TEXT,
+  squad_id TEXT,
   name TEXT NOT NULL,
   description TEXT DEFAULT '',
   owner_id TEXT NOT NULL,
   type TEXT DEFAULT 'standalone',
   created_at TEXT DEFAULT (datetime('now')),
-  FOREIGN KEY (owner_id) REFERENCES users(id)
+  FOREIGN KEY (owner_id) REFERENCES users(id),
+  FOREIGN KEY (squad_id) REFERENCES squads(id)
 );
 
 CREATE TABLE IF NOT EXISTS group_members (
@@ -100,10 +145,12 @@ CREATE TABLE IF NOT EXISTS messages (
 CREATE INDEX IF NOT EXISTS idx_posts_created ON posts(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_posts_user ON posts(user_id);
 CREATE INDEX IF NOT EXISTS idx_posts_game_tag ON posts(game_tag);
-CREATE INDEX IF NOT EXISTS idx_posts_wow ON posts(wow_count DESC);
+CREATE INDEX IF NOT EXISTS idx_posts_fire ON posts(fire_count DESC);
 CREATE INDEX IF NOT EXISTS idx_comments_post ON comments(post_id);
 CREATE INDEX IF NOT EXISTS idx_messages_target ON messages(target_id, type);
 CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(created_at);
-CREATE INDEX IF NOT EXISTS idx_community_members_user ON community_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_squad_members_user ON squad_members(user_id);
 CREATE INDEX IF NOT EXISTS idx_group_members_user ON group_members(user_id);
-CREATE INDEX IF NOT EXISTS idx_groups_community ON groups(community_id);
+CREATE INDEX IF NOT EXISTS idx_groups_squad ON groups(squad_id);
+CREATE INDEX IF NOT EXISTS idx_events_squad ON events(squad_id);
+CREATE INDEX IF NOT EXISTS idx_events_start ON events(start_time);

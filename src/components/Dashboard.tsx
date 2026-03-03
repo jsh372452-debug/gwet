@@ -1,41 +1,76 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useGameStore, Squad } from '../store/gameStore';
 import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../i18n';
 import { Sidebar } from './Sidebar';
 import { Feed } from './Feed';
 import { ChatArea } from './ChatArea';
-import { Communities } from './Communities';
+import { Squads } from './Squads';
 import { SettingsHub } from './SettingsHub';
 import { JoinedHub } from './JoinedHub';
 import { Explore } from './Explore';
-import { Search, Bell, Command } from 'lucide-react';
+import { EventsHub } from './EventsHub';
+import { ReputationHub } from './ReputationHub';
+import { Search, Bell, Command, Calendar, Shield, Trophy } from 'lucide-react';
 
-type Tab = 'feed' | 'explore' | 'communities' | 'chat' | 'settings' | 'joined';
+type Tab = 'feed' | 'explore' | 'squads' | 'events' | 'reputation' | 'chat' | 'settings' | 'joined';
 
 export const Dashboard: React.FC = () => {
     const { t, isRTL } = useTranslation();
+    const { loadPosts, loadSquads, loadGroups, squads } = useGameStore(); // Added useGameStore hook
     const [activeTab, setActiveTab] = useState<Tab>('feed');
-    const [chatTarget, setChatTarget] = useState<{ id: string, type: 'global' | 'community' | 'group' | 'private' }>({ id: 'global', type: 'global' });
+    const [chatTarget, setChatTarget] = useState<{ id: string, type: 'global' | 'squad' | 'group' | 'private' }>({ id: 'global', type: 'global' });
+    const [selectedSquad, setSelectedSquad] = useState<any | null>(null); // Added state for selectedSquad
+
+    useEffect(() => {
+        loadPosts();
+        loadSquads();
+        loadGroups();
+
+        // Handle Deep-linking: ?join=SQUAD_ID
+        const params = new URLSearchParams(window.location.search);
+        const joinId = params.get('join');
+        if (joinId) {
+            setActiveTab('squads');
+            // We set the current squad if it exists in store
+            const s = squads.find(x => x.id === joinId);
+            if (s) setSelectedSquad(s);
+            // Clean URL
+            window.history.replaceState({}, '', window.location.pathname);
+        }
+    }, [loadPosts, loadSquads, loadGroups]);
+
+    // Re-check squads for deep-link if they weren't loaded yet
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const joinId = params.get('join');
+        if (joinId && squads.length > 0 && !selectedSquad) {
+            const s = squads.find(x => x.id === joinId);
+            if (s) setSelectedSquad(s);
+        }
+    }, [squads, selectedSquad]);
 
     const switchTab = (tab: Tab) => {
         if (tab === 'chat') setChatTarget({ id: 'global', type: 'global' });
         setActiveTab(tab);
     };
 
-    const handleSelectChat = (id: string, type: 'community' | 'group' | 'private') => {
+    const handleSelectChat = (id: string, type: 'squad' | 'group' | 'private') => {
         setChatTarget({ id, type });
         setActiveTab('chat');
     };
 
     const tabTitles: Record<Tab, string> = {
-        feed: 'FEED', explore: 'EXPLORE', communities: 'COMMUNITIES', chat: 'CHAT', settings: 'SETTINGS', joined: 'HUB'
+        feed: 'FEED', explore: 'EXPLORE', squads: 'SQUADS', events: 'EVENTS', reputation: 'REPUTATION', chat: 'CHAT', settings: 'SETTINGS', joined: 'HUB'
     };
 
     const renderContent = () => {
         switch (activeTab) {
             case 'feed': return <Feed />;
             case 'explore': return <Explore />;
-            case 'communities': return <Communities />;
+            case 'squads': return <Squads />;
+            case 'events': return <EventsHub />;
+            case 'reputation': return <ReputationHub />;
             case 'chat': return <ChatArea targetId={chatTarget.id} type={chatTarget.id === 'global' ? 'global' : chatTarget.type} onBack={() => setActiveTab('joined')} />;
             case 'settings': return <SettingsHub />;
             case 'joined': return <JoinedHub onSelect={handleSelectChat} />;

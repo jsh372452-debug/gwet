@@ -3,11 +3,13 @@ import { useAuthStore } from '../store/authStore';
 import { useGameStore, Post } from '../store/gameStore';
 import { useTranslation } from '../i18n';
 import Flag from './Flag';
-import { Image as ImageIcon, Send, MessageSquare, Share2, Trophy, Tag, Search, X, Loader } from 'lucide-react';
+import { SessionCard } from './SessionCard';
+import { UserProfile } from './UserProfile';
+import { Image as ImageIcon, Send, MessageSquare, Share2, Flame, Tag, Search, X, Loader, Sword, Users } from 'lucide-react';
 
 export const Feed: React.FC = () => {
     const { user } = useAuthStore();
-    const { posts, addPost, wowPost, addComment, loadComments, comments, loadPosts, loading } = useGameStore();
+    const { posts, addPost, firePost, addComment, loadComments, comments, loadPosts, loading } = useGameStore();
     const { t, isRTL } = useTranslation();
 
     const [content, setContent] = useState('');
@@ -16,19 +18,25 @@ export const Feed: React.FC = () => {
     const [expandedPost, setExpandedPost] = useState<string | null>(null);
     const [commentText, setCommentText] = useState('');
     const [posting, setPosting] = useState(false);
+    const [isSession, setIsSession] = useState(false);
+    const [maxSlots, setMaxSlots] = useState(5);
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+    const [sort, setSort] = useState<'latest' | 'fire'>('fire');
 
-    useEffect(() => { loadPosts(); }, [loadPosts]);
+    useEffect(() => { loadPosts(undefined, sort); }, [loadPosts, sort]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!content.trim() || !user || posting) return;
         setPosting(true);
         try {
-            const result = await addPost(content, tag);
+            const metadata = isSession ? { maxSlots, currentSlots: 1 } : {};
+            const result = await addPost(content, tag, isSession ? 'session' : 'normal', metadata);
             if (result) {
                 useAuthStore.getState().setUser({ ...user, xp: result.xp, level: result.level, rank: result.rank });
             }
             setContent('');
+            setIsSession(false);
         } finally {
             setPosting(false);
         }
@@ -65,6 +73,16 @@ export const Feed: React.FC = () => {
                 {searchQuery && <X size={16} style={{ cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => setSearchQuery('')} />}
             </div>
 
+            {/* Feed Sort Tabs */}
+            <div style={{ display: 'flex', gap: 'var(--space-md)', marginBottom: 'var(--space-lg)' }}>
+                <button className={`btn ${sort === 'fire' ? 'primary' : 'ghost'} `} onClick={() => setSort('fire')} style={{ flex: 1, borderRadius: 'var(--radius-lg)' }}>
+                    <Flame size={14} style={{ marginRight: 8 }} /> {t('popular')}
+                </button>
+                <button className={`btn ${sort === 'latest' ? 'primary' : 'ghost'} `} onClick={() => setSort('latest')} style={{ flex: 1, borderRadius: 'var(--radius-lg)' }}>
+                    <Loader size={14} style={{ marginRight: 8 }} /> {t('latest')}
+                </button>
+            </div>
+
             {/* Compose */}
             <div className="card">
                 <form onSubmit={handleSubmit}>
@@ -77,14 +95,23 @@ export const Feed: React.FC = () => {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div className="btn-group">
+                            <button type="button" className={`btn ${isSession ? 'accent' : ''} `} style={{ fontSize: 'var(--font-xs)' }} onClick={() => setIsSession(!isSession)}>
+                                <Sword size={14} /> {isSession ? 'SESSION MODE' : 'NORMAL POST'}
+                            </button>
                             <button type="button" className="btn" style={{ fontSize: 'var(--font-xs)' }}>
                                 <Tag size={14} /> {tag}
                             </button>
                         </div>
                         <button type="submit" className="btn primary" disabled={!content.trim() || posting}>
-                            {posting ? <Loader size={14} /> : null} {t('gweet')}
+                            {posting ? <Loader size={14} /> : null} {isSession ? 'INVITE' : t('gweet')}
                         </button>
                     </div>
+                    {isSession && (
+                        <div style={{ marginTop: 'var(--space-md)', display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+                            <span style={{ fontSize: 'var(--font-xs)', fontWeight: 700 }}>AVAILABLE SLOTS:</span>
+                            <input type="number" className="input" value={maxSlots} onChange={e => setMaxSlots(parseInt(e.target.value))} style={{ width: 60, padding: '4px 8px', margin: 0 }} min={2} max={20} />
+                        </div>
+                    )}
                 </form>
             </div>
 
@@ -115,70 +142,76 @@ export const Feed: React.FC = () => {
                     </div>
                 )}
 
-                {filteredPosts.map((post) => (
-                    <div key={post.id} className="card">
-                        <div style={{ display: 'flex', gap: 'var(--space-lg)', marginBottom: 'var(--space-lg)' }}>
-                            <div className="avatar md" style={{ fontSize: 'var(--font-base)' }}>
-                                {post.username?.charAt(0).toUpperCase()}
-                            </div>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
-                                    <Flag code={post.country || 'Global'} size={18} />
-                                    <span style={{ fontWeight: 700 }}>{post.username}</span>
-                                    {post.game_tag && post.game_tag !== 'Global' && (
-                                        <span className="badge accent" style={{ marginLeft: '4px' }}>{post.game_tag}</span>
-                                    )}
-                                    <span style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)', marginLeft: 'auto' }}>
-                                        {new Date(post.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </span>
+                {filteredPosts.map(post => (
+                    post.post_type === 'session' ? (
+                        <SessionCard key={post.id} post={post} />
+                    ) : (
+                        <div key={post.id} className="card">
+                            <div style={{ display: 'flex', gap: 'var(--space-lg)', marginBottom: 'var(--space-lg)' }}>
+                                <div className="avatar md" style={{ fontSize: 'var(--font-base)', cursor: 'pointer' }} onClick={() => setSelectedUserId(post.user_id)}>
+                                    {post.username?.charAt(0).toUpperCase()}
                                 </div>
-                                <div style={{ marginTop: 'var(--space-md)', color: 'var(--text)', lineHeight: 1.6 }}>{post.content}</div>
-                            </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div style={{ display: 'flex', gap: 'var(--space-xl)', paddingTop: 'var(--space-md)', borderTop: '1px solid var(--border)' }}>
-                            <button className="btn ghost" onClick={() => wowPost(post.id)}>
-                                <Trophy size={16} style={{ color: (post.wow_count || 0) > 0 ? 'var(--primary)' : 'inherit' }} /> {post.wow_count || 0}
-                            </button>
-                            <button className="btn ghost" onClick={() => handleToggleComments(post.id)}>
-                                <MessageSquare size={16} /> {comments[post.id]?.length || 0}
-                            </button>
-                            <button className="btn ghost"><Share2 size={16} /></button>
-                        </div>
-
-                        {/* Comments */}
-                        {expandedPost === post.id && (
-                            <div style={{ marginTop: 'var(--space-lg)' }}>
-                                <div style={{ display: 'flex', gap: 'var(--space-sm)', marginBottom: 'var(--space-lg)' }}>
-                                    <input className="input" placeholder={t('comment')} value={commentText} onChange={e => setCommentText(e.target.value)}
-                                        onKeyDown={e => { if (e.key === 'Enter') handleCommentSubmit(post.id); }}
-                                        style={{ flex: 1 }} />
-                                    <button className="btn primary icon-only" onClick={() => handleCommentSubmit(post.id)}><Send size={14} /></button>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
+                                        <Flag code={post.country || 'Global'} size={18} />
+                                        <span style={{ fontWeight: 700, cursor: 'pointer' }} onClick={() => setSelectedUserId(post.user_id)}>{post.username}</span>
+                                        {post.game_tag && post.game_tag !== 'Global' && (
+                                            <span className="badge accent" style={{ marginLeft: '4px' }}>{post.game_tag}</span>
+                                        )}
+                                        <span style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)', marginLeft: 'auto' }}>
+                                            {new Date(post.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                        </span>
+                                    </div>
+                                    <div style={{ marginTop: 'var(--space-md)', color: 'var(--text)', lineHeight: 1.6 }}>{post.content}</div>
                                 </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', paddingLeft: isRTL ? 0 : 'var(--space-lg)', paddingRight: isRTL ? 'var(--space-lg)' : 0, borderLeft: isRTL ? 'none' : '2px solid var(--border)', borderRight: isRTL ? '2px solid var(--border)' : 'none' }}>
-                                    {comments[post.id]?.map(c => (
-                                        <div key={c.id} style={{ display: 'flex', gap: 'var(--space-sm)' }}>
-                                            <div className="avatar sm">{c.username.charAt(0)}</div>
-                                            <div style={{ flex: 1, background: 'var(--bg-hover)', padding: 'var(--space-sm) var(--space-md)', borderRadius: 'var(--radius-md)' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '2px' }}>
-                                                    <Flag code={c.country || 'Global'} size={14} />
-                                                    <span style={{ fontSize: 'var(--font-xs)', fontWeight: 700, color: 'var(--primary)' }}>{c.username}</span>
-                                                    <span style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)' }}>{new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: 'var(--space-xl)', paddingTop: 'var(--space-md)', borderTop: '1px solid var(--border)' }}>
+                                <button className="btn ghost" onClick={() => firePost(post.id)}>
+                                    <Flame size={16} style={{ color: (post.fire_count || 0) > 0 ? '#ff4d00' : 'inherit' }} /> {post.fire_count || 0}
+                                </button>
+                                <button className="btn ghost" onClick={() => handleToggleComments(post.id)}>
+                                    <MessageSquare size={16} /> {comments[post.id]?.length || 0}
+                                </button>
+                                <button className="btn ghost"><Share2 size={16} /></button>
+                            </div>
+
+                            {expandedPost === post.id && (
+                                <div style={{ marginTop: 'var(--space-lg)' }}>
+                                    <div style={{ display: 'flex', gap: 'var(--space-sm)', marginBottom: 'var(--space-lg)' }}>
+                                        <input className="input" placeholder={t('comment')} value={commentText} onChange={e => setCommentText(e.target.value)}
+                                            onKeyDown={e => { if (e.key === 'Enter') handleCommentSubmit(post.id); }}
+                                            style={{ flex: 1 }} />
+                                        <button className="btn primary icon-only" onClick={() => handleCommentSubmit(post.id)}><Send size={14} /></button>
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', paddingLeft: isRTL ? 0 : 'var(--space-lg)', paddingRight: isRTL ? 'var(--space-lg)' : 0, borderLeft: isRTL ? 'none' : '2px solid var(--border)', borderRight: isRTL ? '2px solid var(--border)' : 'none' }}>
+                                        {comments[post.id]?.map(c => (
+                                            <div key={c.id} style={{ display: 'flex', gap: 'var(--space-sm)' }}>
+                                                <div className="avatar sm">{c.username.charAt(0)}</div>
+                                                <div style={{ flex: 1, background: 'var(--bg-hover)', padding: 'var(--space-sm) var(--space-md)', borderRadius: 'var(--radius-md)' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '2px' }}>
+                                                        <Flag code={c.country || 'Global'} size={14} />
+                                                        <span style={{ fontSize: 'var(--font-xs)', fontWeight: 700, color: 'var(--primary)' }}>{c.username}</span>
+                                                        <span style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)' }}>{new Date(c.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                    </div>
+                                                    <p style={{ fontSize: 'var(--font-base)', margin: 0 }}>{c.content}</p>
                                                 </div>
-                                                <p style={{ fontSize: 'var(--font-base)', margin: 0 }}>{c.content}</p>
                                             </div>
-                                        </div>
-                                    ))}
-                                    {(!comments[post.id] || comments[post.id].length === 0) && (
-                                        <p style={{ fontSize: 'var(--font-sm)', color: 'var(--text-muted)', textAlign: 'center', padding: 'var(--space-md)' }}>No comments yet</p>
-                                    )}
+                                        ))}
+                                        {(!comments[post.id] || comments[post.id].length === 0) && (
+                                            <p style={{ fontSize: 'var(--font-sm)', color: 'var(--text-muted)', textAlign: 'center', padding: 'var(--space-md)' }}>No comments yet</p>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        )}
-                    </div>
+                            )}
+                        </div>
+                    )
                 ))}
             </div>
+
+            {selectedUserId && (
+                <UserProfile userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
+            )}
         </div>
     );
 };

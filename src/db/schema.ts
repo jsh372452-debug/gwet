@@ -22,7 +22,7 @@ export interface Post {
     user_id: string;
     username: string;
     game_tag: string;
-    wow_count: number;
+    fire_count: number;
     is_deleted: number;
     visibility: string;
     country: string;
@@ -38,7 +38,7 @@ export interface Comment {
     country: string;
 }
 
-export interface Community {
+export interface Squad {
     id: string;
     name: string;
     description: string;
@@ -52,7 +52,7 @@ export interface Community {
 
 export interface Group {
     id: string;
-    community_id: string | null;
+    squad_id: string | null;
     name: string;
     description: string;
     owner_id: string;

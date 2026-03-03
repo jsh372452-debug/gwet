@@ -1,4 +1,4 @@
-name = "gwet"
+name = "gwett"
 pages_build_output_dir = "./dist"
 compatibility_date = "2024-09-23"
 
@@ -9,3 +9,5 @@ database_id = "2fc2e771-863d-4773-a454-3d851929a240"
 
 [vars]
 JWT_SECRET = "gwet-dev-secret-change-in-production"
+LIVEKIT_API_KEY = "API9dopQ7tCPvhP"
+LIVEKIT_API_SECRET = "nl2DfQrZgvWSZeF6IHTKYVTfBcetbe8QEbFTHizFRPTB"

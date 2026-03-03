@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../i18n';
 import { countries } from '../data/countries';
-import { User, Globe, Languages, Save, Camera, ShieldCheck } from 'lucide-react';
+import { User, Globe, Languages, Save, Camera, ShieldCheck, MessageCircle, Send } from 'lucide-react';
 
 export const SettingsHub: React.FC = () => {
     const { user, updateProfile, updateIdentity } = useAuthStore();
@@ -12,6 +12,8 @@ export const SettingsHub: React.FC = () => {
     const [country, setCountry] = useState(user?.country || 'Global');
     const [language, setLanguage] = useState(user?.language || 'en');
     const [avatarPreview, setAvatarPreview] = useState(user?.avatarUrl || '');
+    const [whatsapp, setWhatsapp] = useState(user?.whatsapp || '');
+    const [telegram, setTelegram] = useState(user?.telegram || '');
     const [saved, setSaved] = useState(false);
 
     const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -24,7 +26,7 @@ export const SettingsHub: React.FC = () => {
     };
 
     const handleSave = async () => {
-        await updateProfile(displayName, avatarPreview);
+        await updateProfile(displayName, avatarPreview, whatsapp, telegram);
         await updateIdentity(country, language as 'ar' | 'en');
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
@@ -71,6 +73,17 @@ export const SettingsHub: React.FC = () => {
                             <button className={`btn ${language === 'en' ? 'primary' : ''}`} style={{ flex: 1 }} onClick={() => setLanguage('en')}>English</button>
                             <button className={`btn ${language === 'ar' ? 'primary' : ''}`} style={{ flex: 1 }} onClick={() => setLanguage('ar')}>العربية</button>
                         </div>
+                    </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 'var(--space-2xl)' }}>
+                    <div>
+                        <label className="label"><MessageCircle size={12} style={{ marginRight: '6px' }} /> WhatsApp</label>
+                        <input className="input" placeholder="+123456789" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} />
+                    </div>
+                    <div>
+                        <label className="label"><Send size={12} style={{ marginRight: '6px' }} /> Telegram Username</label>
+                        <input className="input" placeholder="username" value={telegram} onChange={e => setTelegram(e.target.value)} />
                     </div>
                 </div>
 

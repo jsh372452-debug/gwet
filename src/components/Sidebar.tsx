@@ -3,7 +3,7 @@ import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../i18n';
 import { countries } from '../data/countries';
 import Flag from './Flag';
-import { Layout, Shield, Terminal, Settings, LogOut, User, Users, Compass } from 'lucide-react';
+import { Layout, Shield, Terminal, Settings, LogOut, User, Users, Compass, Trophy } from 'lucide-react';
 
 interface SidebarProps {
     activeTab: string;
@@ -15,12 +15,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     const { t } = useTranslation();
 
     const menuItems = [
-        { id: 'feed', icon: Layout, label: t('network') },
-        { id: 'explore', icon: Compass, label: t('explore') },
-        { id: 'joined', icon: Users, label: t('joined') },
-        { id: 'communities', icon: Shield, label: t('squads') },
-        { id: 'chat', icon: Terminal, label: t('comms') },
-        { id: 'settings', icon: Settings, label: t('settings') },
+        { id: 'feed', icon: Layout, label: t('network') || 'NETWORK' },
+        { id: 'explore', icon: Compass, label: t('explore') || 'EXPLORE' },
+        { id: 'joined', icon: Users, label: t('joined') || 'HUBS' },
+        { id: 'squads', icon: Users, label: t('squads') || 'SQUADS' },
+        { id: 'events', icon: Trophy, label: t('events') || 'EVENTS' },
+        { id: 'reputation', icon: Shield, label: t('reputation') || 'RANKINGS' },
+        { id: 'chat', icon: Terminal, label: t('comms') || 'COMMS' },
+        { id: 'settings', icon: Settings, label: t('settings') || 'SETTINGS' },
     ];
 
     return (

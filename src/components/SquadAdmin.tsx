@@ -1,21 +1,21 @@
 import React, { useState } from 'react';
-import { useGameStore, Community } from '../store/gameStore';
+import { useGameStore, Squad } from '../store/gameStore';
 import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../i18n';
 import { Settings, X, Upload, Palette, Users, UserX } from 'lucide-react';
 
 interface Props {
-    community: Community;
+    squad: Squad;
     onClose: () => void;
 }
 
-export const CommunityAdmin: React.FC<Props> = ({ community, onClose }) => {
-    const { updateCommunity, kickMember } = useGameStore();
+export const SquadAdmin: React.FC<Props> = ({ squad, onClose }) => {
+    const { updateSquad, kickMember } = useGameStore();
     const { user } = useAuthStore();
     const { t } = useTranslation();
 
-    const [themeColor, setThemeColor] = useState(community.theme_color || '#a855f7');
-    const [bannerB64, setBannerB64] = useState(community.banner_base64 || '');
+    const [themeColor, setThemeColor] = useState(squad.theme_color || '#a855f7');
+    const [bannerB64, setBannerB64] = useState(squad.banner_base64 || '');
     const [saving, setSaving] = useState(false);
 
     const handleBanner = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -29,7 +29,7 @@ export const CommunityAdmin: React.FC<Props> = ({ community, onClose }) => {
 
     const handleSave = async () => {
         setSaving(true);
-        await updateCommunity(community.id, { theme_color: themeColor, banner_base64: bannerB64 } as any);
+        await updateSquad(squad.id, { theme_color: themeColor, banner_base64: bannerB64 } as any);
         setSaving(false);
         onClose();
     };

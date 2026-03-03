@@ -7,7 +7,7 @@ import { Send, Lock, Terminal, User as UserIcon, ArrowLeft, Target } from 'lucid
 
 interface Props {
     targetId: string;
-    type: 'global' | 'community' | 'group' | 'private';
+    type: 'global' | 'squad' | 'group' | 'private';
     onBack?: () => void;
 }
 
@@ -87,7 +87,7 @@ export const ChatArea: React.FC<Props> = ({ targetId, type, onBack }) => {
         } catch (e) { console.error('Send failed:', e); }
     };
 
-    const chatLabel = type === 'global' ? t('comms') : type === 'community' ? t('squads') : type === 'group' ? t('groups') : t('private_chat');
+    const chatLabel = type === 'global' ? t('comms') : type === 'squad' ? t('squads') : type === 'group' ? t('groups') : t('private_chat');
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', direction: isRTL ? 'rtl' : 'ltr' }}>

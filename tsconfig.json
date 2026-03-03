@@ -6,7 +6,9 @@
       "DOM.Iterable",
       "ESNext"
     ],
-    "types": [],
+    "types": [
+      "@cloudflare/workers-types"
+    ],
     "allowJs": false,
     "skipLibCheck": true,
     "esModuleInterop": false,
@@ -21,6 +23,7 @@
     "jsx": "react"
   },
   "include": [
-    "src"
+    "src",
+    "functions"
   ]
 }

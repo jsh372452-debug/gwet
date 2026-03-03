@@ -4,12 +4,14 @@ import { api } from '../lib/api';
 export interface Post {
     id: string;
     content: string;
-    image_url: string | null;
+    image_url?: string;
     created_at: string;
     user_id: string;
     username: string;
     game_tag: string;
-    wow_count: number;
+    fire_count: number;
+    post_type: 'normal' | 'session';
+    metadata_json: string;
     is_deleted: number;
     visibility: string;
     country: string;
@@ -25,7 +27,7 @@ export interface Comment {
     country: string;
 }
 
-export interface Community {
+export interface Squad {
     id: string;
     name: string;
     description: string;
@@ -39,7 +41,7 @@ export interface Community {
 
 export interface Group {
     id: string;
-    community_id: string | null;
+    squad_id: string | null;
     name: string;
     description: string;
     owner_id: string;
@@ -50,35 +52,35 @@ export interface Group {
 
 interface GameState {
     posts: Post[];
-    communities: Community[];
+    squads: Squad[];
     groups: Group[];
     comments: Record<string, Comment[]>;
     loading: boolean;
-    loadPosts: () => Promise<void>;
-    loadCommunities: () => Promise<void>;
+    loadPosts: (gameTag?: string, sort?: 'latest' | 'fire') => Promise<void>;
+    loadSquads: () => Promise<void>;
     loadGroups: () => Promise<void>;
-    addPost: (content: string, gameTag: string) => Promise<any>;
-    wowPost: (postId: string) => Promise<void>;
+    addPost: (content: string, game_tag: string, type?: 'normal' | 'session', metadata?: any) => Promise<any>;
+    firePost: (postId: string) => Promise<void>;
     addComment: (postId: string, content: string) => Promise<void>;
     loadComments: (postId: string) => Promise<void>;
-    createCommunity: (name: string, description: string) => Promise<void>;
-    joinCommunity: (communityId: string) => Promise<void>;
-    createGroup: (name: string, desc: string, communityId: string | null, type: string) => Promise<void>;
-    updateCommunity: (id: string, data: Partial<Community>) => Promise<void>;
-    kickMember: (communityId: string, userId: string) => Promise<void>;
+    createSquad: (name: string, description: string) => Promise<void>;
+    joinSquad: (squadId: string) => Promise<void>;
+    createGroup: (name: string, desc: string, squadId: string | null, type: string) => Promise<void>;
+    updateSquad: (id: string, data: Partial<Squad>) => Promise<void>;
+    kickMember: (squadId: string, userId: string) => Promise<void>;
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
     posts: [],
-    communities: [],
+    squads: [],
     groups: [],
     comments: {},
     loading: false,
 
-    loadPosts: async () => {
+    loadPosts: async (gameTag, sort) => {
         set({ loading: true });
         try {
-            const { posts } = await api.posts.list({ limit: 50 });
+            const { posts } = await api.posts.list({ limit: 50, gameTag, sort });
             set({ posts, loading: false });
         } catch (err) {
             console.error('Load posts failed:', err);
@@ -86,12 +88,12 @@ export const useGameStore = create<GameState>((set, get) => ({
         }
     },
 
-    loadCommunities: async () => {
+    loadSquads: async () => {
         try {
-            const { communities } = await api.communities.list();
-            set({ communities });
+            const { squads } = await api.squads.list();
+            set({ squads });
         } catch (err) {
-            console.error('Load communities failed:', err);
+            console.error('Load squads failed:', err);
         }
     },
 
@@ -104,9 +106,9 @@ export const useGameStore = create<GameState>((set, get) => ({
         }
     },
 
-    addPost: async (content, gameTag) => {
+    addPost: async (content, gameTag, type = 'normal', metadata = {}) => {
         try {
-            const result = await api.posts.create(content, gameTag);
+            const result = await api.posts.create(content, gameTag, type, metadata);
             set(state => ({ posts: [result.post, ...state.posts] }));
             return result;
         } catch (err) {
@@ -114,14 +116,14 @@ export const useGameStore = create<GameState>((set, get) => ({
         }
     },
 
-    wowPost: async (postId) => {
+    firePost: async (postId) => {
         try {
-            const { wowCount } = await api.posts.wow(postId);
+            const { fireCount } = await api.posts.fire(postId);
             set(state => ({
-                posts: state.posts.map(p => p.id === postId ? { ...p, wow_count: wowCount } : p)
+                posts: state.posts.map(p => p.id === postId ? { ...p, fire_count: fireCount } : p)
             }));
         } catch (err) {
-            console.error('Wow failed:', err);
+            console.error('Fire failed:', err);
         }
     },
 
@@ -148,51 +150,51 @@ export const useGameStore = create<GameState>((set, get) => ({
         }
     },
 
-    createCommunity: async (name, description) => {
+    createSquad: async (name, description) => {
         try {
-            const { community } = await api.communities.create(name, description);
-            set(state => ({ communities: [community, ...state.communities] }));
+            const { squad } = await api.squads.create(name, description);
+            set(state => ({ squads: [squad, ...state.squads] }));
         } catch (err) {
-            console.error('Create community failed:', err);
+            console.error('Create squad failed:', err);
         }
     },
 
-    joinCommunity: async (communityId) => {
+    joinSquad: async (squadId) => {
         try {
-            await api.communities.join(communityId);
+            await api.squads.join(squadId);
             set(state => ({
-                communities: state.communities.map(c =>
-                    c.id === communityId ? { ...c, is_member: 1, member_count: c.member_count + 1 } : c
+                squads: state.squads.map(s =>
+                    s.id === squadId ? { ...s, is_member: 1, member_count: s.member_count + 1 } : s
                 )
             }));
         } catch (err) {
-            console.error('Join community failed:', err);
+            console.error('Join squad failed:', err);
         }
     },
 
-    createGroup: async (name, description, communityId, type) => {
+    createGroup: async (name, description, squadId, type) => {
         try {
-            const { group } = await api.groups.create(name, description, communityId || undefined, type);
+            const { group } = await api.groups.create(name, description, squadId || undefined, type);
             set(state => ({ groups: [group, ...state.groups] }));
         } catch (err) {
             console.error('Create group failed:', err);
         }
     },
 
-    updateCommunity: async (id, data) => {
+    updateSquad: async (id, data) => {
         try {
-            await api.communities.update(id, data);
+            await api.squads.update(id, data);
             set(state => ({
-                communities: state.communities.map(c => c.id === id ? { ...c, ...data } : c)
+                squads: state.squads.map(s => s.id === id ? { ...s, ...data } : s)
             }));
         } catch (err) {
-            console.error('Update community failed:', err);
+            console.error('Update squad failed:', err);
         }
     },
 
-    kickMember: async (communityId, userId) => {
+    kickMember: async (squadId, userId) => {
         try {
-            await api.communities.kick(communityId, userId);
+            await api.squads.kick(squadId, userId);
         } catch (err) {
             console.error('Kick member failed:', err);
         }
