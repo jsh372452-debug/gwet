@@ -5,13 +5,15 @@ import { countries } from '../data/countries';
 import { User, Globe, Languages, ChevronRight, Camera } from 'lucide-react';
 
 export const ProfileOnboarding: React.FC = () => {
-    const { user, updateProfile, updateIdentity } = useAuthStore();
+    const { user, completeOnboarding } = useAuthStore();
     const { t, isRTL } = useTranslation();
     const [step, setStep] = useState(0);
     const [displayName, setDisplayName] = useState(user?.displayName || user?.username || '');
     const [avatarPreview, setAvatarPreview] = useState('');
     const [country, setCountry] = useState('Global');
     const [language, setLanguage] = useState<'en' | 'ar'>('en');
+
+    const [loading, setLoading] = useState(false);
 
     const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -23,8 +25,16 @@ export const ProfileOnboarding: React.FC = () => {
     };
 
     const handleFinish = async () => {
-        await updateProfile(displayName, avatarPreview);
-        await updateIdentity(country, language);
+        if (loading) return;
+        setLoading(true);
+        try {
+            await completeOnboarding(displayName, avatarPreview, country, language);
+        } catch (err) {
+            console.error('Failed to complete onboarding:', err);
+            alert('FAILED TO COMPLETE ONBOARDING. PLEASE TRY AGAIN.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -77,8 +87,9 @@ export const ProfileOnboarding: React.FC = () => {
                                 <button className={`btn ${language === 'ar' ? 'primary' : 'ghost'}`} style={{ flex: 1 }} onClick={() => setLanguage('ar')}>العربية</button>
                             </div>
                         </div>
-                        <button className="btn primary" style={{ width: '100%', padding: '1rem' }} onClick={handleFinish}>
-                            COMPLETE ONBOARDING <ChevronRight size={18} />
+                        <button className="btn primary" style={{ width: '100%', padding: '1rem' }} onClick={handleFinish} disabled={loading}>
+                            {loading ? (isRTL ? 'جاري التحميل...' : 'INITIALIZING...') : (isRTL ? 'إكمال التسجيل' : 'COMPLETE ONBOARDING')}
+                            {!loading && <ChevronRight size={18} />}
                         </button>
                     </div>
                 )}

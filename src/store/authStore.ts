@@ -33,6 +33,7 @@ interface AuthState {
     checkSession: () => Promise<void>;
     updateProfile: (displayName: string, avatarUrl: string, whatsapp?: string, telegram?: string, bio?: string, gameId?: string, gameUsername?: string) => Promise<void>;
     updateIdentity: (country: string, language: 'ar' | 'en') => Promise<void>;
+    completeOnboarding: (displayName: string, avatarUrl: string, country: string, language: 'ar' | 'en') => Promise<void>;
     setUser: (user: User) => void;
 }
 
@@ -58,6 +59,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             set({ user });
         } catch (err: any) {
             console.error('Update identity failed:', err);
+        }
+    },
+
+    completeOnboarding: async (displayName, avatarUrl, country, language) => {
+        try {
+            const { user } = await api.auth.updateProfile({
+                displayName,
+                avatarUrl,
+                country,
+                language,
+                isOnboarded: true
+            });
+            set({ user });
+        } catch (err: any) {
+            console.error('Complete onboarding failed:', err);
+            throw err;
         }
     },
 
