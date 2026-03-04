@@ -26,12 +26,15 @@ export const ProfileOnboarding: React.FC = () => {
 
     const handleFinish = async () => {
         if (loading) return;
+        console.log('HANDLING ONBOARDING FINISH...', { displayName, country, language });
         setLoading(true);
         try {
             await completeOnboarding(displayName, avatarPreview, country, language);
-        } catch (err) {
+            console.log('ONBOARDING COMPLETED SUCCESSFULLY');
+            alert('ONBOARDING SUCCESSFUL! INITIALIZING DASHBOARD...');
+        } catch (err: any) {
             console.error('Failed to complete onboarding:', err);
-            alert('FAILED TO COMPLETE ONBOARDING. PLEASE TRY AGAIN.');
+            alert(`FAILED TO COMPLETE ONBOARDING: ${err.message || 'UNKNOWN ERROR'}`);
         } finally {
             setLoading(false);
         }
