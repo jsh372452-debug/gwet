@@ -155,7 +155,7 @@ export const Feed: React.FC = () => {
                     post.post_type === 'session' ? (
                         <SessionCard key={post.id} post={post} />
                     ) : (
-                        <div key={post.id} className="glass-card sharp" style={{ padding: '1.5rem' }}>
+                        <div key={post.id} className="glass-card sharp premium-pattern" style={{ padding: '1.5rem' }}>
                             <div style={{ display: 'flex', gap: '1.25rem' }}>
                                 <div className="avatar-premium" style={{ width: 44, height: 44, fontSize: '1rem', cursor: 'pointer' }} onClick={() => setSelectedUserId(post.user_id)}>
                                     {post.username?.charAt(0).toUpperCase()}
