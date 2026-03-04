@@ -21,11 +21,28 @@ async function request<T = any>(path: string, options: RequestInit = {}): Promis
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
     const res = await fetch(`${API_BASE}/${path}`, { ...options, headers });
-    const data = await res.json();
+
+    // Safety check for Content-Type
+    const contentType = res.headers.get('Content-Type') || '';
+    let data: any;
+
+    try {
+        if (contentType.includes('application/json')) {
+            data = await res.json();
+        } else {
+            const text = await res.text();
+            data = { error: `Unexpected response format: ${contentType}`, details: text.slice(0, 200) };
+        }
+    } catch (err) {
+        data = { error: 'Failed to parse response body' };
+    }
 
     if (!res.ok) {
-        throw new Error((data as any).error || `Request failed (${res.status})`);
+        const errMsg = data?.error || `Request failed with status ${res.status}`;
+        console.error(`📡 API ERROR [${res.status}]:`, errMsg, data);
+        throw new Error(errMsg);
     }
+
     return data as T;
 }
 

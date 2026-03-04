@@ -116,9 +116,9 @@ export const ChatArea: React.FC<Props> = ({ targetId, type, onBack }) => {
                 )}
 
                 {!loading && messages.length === 0 && (
-                    <div className="glass-card" style={{ marginTop: '2rem', textAlign: 'center' }}>
+                    <div className="glass-card" style={{ marginTop: '2rem', textAlign: 'center', padding: '2rem' }}>
                         <Terminal size={32} color="var(--primary)" style={{ marginBottom: '1rem', opacity: 0.5 }} />
-                        <h3 style={{ fontWeight: 900 }}>NO DATA STREAMS DETECTED</h3>
+                        <h3 style={{ fontWeight: 900, letterSpacing: '1px' }}>NO DATA STREAMS DETECTED</h3>
                         <p style={{ color: 'var(--text-dim)', fontSize: '13px' }}>Initialize communication to begin mission briefing.</p>
                     </div>
                 )}
@@ -127,11 +127,11 @@ export const ChatArea: React.FC<Props> = ({ targetId, type, onBack }) => {
                     const isMe = msg.user_id === user?.id;
                     return (
                         <div key={msg.id} style={{
-                            alignSelf: isMe ? 'flex-start' : 'flex-end', // Request: Sender on left, others on right
+                            alignSelf: isMe ? 'flex-start' : 'flex-end', // Request: Me on left, Others on right
                             display: 'flex',
                             flexDirection: 'column',
                             gap: '4px',
-                            maxWidth: '100%',
+                            maxWidth: '85%',
                             width: 'fit-content'
                         }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 4px', flexDirection: isMe ? 'row' : 'row-reverse' }}>
@@ -144,12 +144,13 @@ export const ChatArea: React.FC<Props> = ({ targetId, type, onBack }) => {
                                 <div className="avatar sm" style={{
                                     width: 28, height: 28, borderRadius: '8px',
                                     backgroundImage: msg.avatar_url ? `url(${msg.avatar_url})` : 'none',
-                                    border: `1.5px solid ${isMe ? 'var(--primary)' : 'var(--glass-border)'}`
+                                    border: `1.5px solid ${isMe ? 'var(--primary)' : 'var(--glass-border)'}`,
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', fontWeight: 900
                                 }}>
                                     {!msg.avatar_url && (msg.display_name?.[0] || 'A').toUpperCase()}
                                 </div>
                                 <div className={`bubble ${isMe ? 'me' : 'them'}`}>
-                                    <p style={{ margin: 0 }}>{msg.content}</p>
+                                    <p style={{ margin: 0, overflowWrap: 'anywhere' }}>{msg.content}</p>
                                 </div>
                             </div>
                         </div>

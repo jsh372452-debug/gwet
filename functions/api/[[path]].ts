@@ -17,6 +17,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     const path = url.pathname.replace('/api/', '');
     const method = request.method;
 
+    console.log(`\n🌐 [${method}] REQUEST: ${path}`);
+
     // CORS
     if (method === 'OPTIONS') {
         return new Response(null, {
@@ -286,6 +288,8 @@ async function handleCreatePost(env: Env, request: Request, jwt: JWTPayload) {
         console.warn('🛠️ BACKEND: Empty content received');
         return error('Content required');
     }
+
+    console.log('🛠️ BACKEND: Fetching user info from context sub:', jwt.sub);
 
     const user = await env.DB.prepare('SELECT display_name, country, xp, level, rank FROM users WHERE id = ?').bind(jwt.sub).first() as any;
     if (!user) {

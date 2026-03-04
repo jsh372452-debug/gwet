@@ -53,7 +53,8 @@ const translations = {
         ai_input: 'Communicate with Squad Master...',
         found_squad: 'FOUND SQUAD',
         access_hub: 'ACCESS HUB',
-        join_squad: 'JOIN SQUAD'
+        join_squad: 'JOIN SQUAD',
+        upload: 'UPLOAD'
     },
     ar: {
         welcome: 'أهلاً بك',
@@ -107,7 +108,8 @@ const translations = {
         ai_input: 'تحدث مع قائد الفريق الآلي...',
         found_squad: 'تأسيس فرقة',
         access_hub: 'دخول المركز',
-        join_squad: 'انضمام للفريق'
+        join_squad: 'انضمام للفريق',
+        upload: 'رفع'
     }
 };
 
