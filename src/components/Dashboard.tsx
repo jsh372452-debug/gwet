@@ -11,6 +11,7 @@ import { JoinedHub } from './JoinedHub';
 import { Explore } from './Explore';
 import { EventsHub } from './EventsHub';
 import { ReputationHub } from './ReputationHub';
+import { Logo } from './Logo';
 import { Search, Bell, Command, Calendar, Shield, Trophy } from 'lucide-react';
 
 type Tab = 'feed' | 'explore' | 'squads' | 'events' | 'reputation' | 'chat' | 'settings' | 'joined';
@@ -89,9 +90,7 @@ export const Dashboard: React.FC = () => {
                 {/* Header */}
                 <header className="top-header">
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
-                        <div style={{ padding: '6px', borderRadius: 'var(--radius-sm)', background: 'var(--primary-soft)', color: 'var(--primary)', display: 'flex' }}>
-                            <Command size={16} />
-                        </div>
+                        <Logo size={28} />
                         <h1 style={{ fontSize: 'var(--font-md)', fontWeight: 800, letterSpacing: '1px' }}>{tabTitles[activeTab]}</h1>
                     </div>
 

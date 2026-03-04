@@ -10,7 +10,6 @@
   --accent-glow: rgba(0, 242, 255, 0.3);
   --gold: #facc15;
   --bg-dark: #010410;
-  /* Near black with a hint of navy */
   --bg-card: rgba(13, 17, 23, 0.7);
   --glass-border: rgba(255, 255, 255, 0.08);
   --text-main: #f0f6fc;
@@ -18,6 +17,14 @@
   --stable-radius: 16px;
   --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Legacy/Layout Compatibility Variables */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --space-md: 0.75rem;
+  --space-xl: 1.5rem;
+  --font-sm: 0.75rem;
+  --font-md: 1rem;
 }
 
 * {
@@ -61,12 +68,101 @@ body {
 }
 
 /* ========================
+   LAYOUT SYSTEM
+   ======================== */
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+  background: var(--bg-dark);
+  position: relative;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+.top-header {
+  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(1, 4, 16, 0.82);
+  backdrop-filter: blur(14px);
+  z-index: 10;
+}
+
+.sidebar {
+  width: 280px;
+  background: #010410;
+  border-right: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  padding: 2rem;
+  z-index: 100;
+}
+
+.sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 0.85rem 1.1rem;
+  border: none;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--text-dim);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+}
+
+.nav-item:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.nav-item.active {
+  color: white;
+  background: var(--primary-glow);
+  border: 1px solid var(--primary);
+  box-shadow: 0 0 20px rgba(0, 209, 255, 0.15);
+}
+
+.content-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 2.5rem;
+}
+
+.page-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* ========================
    GLASSMORPHISM
    ======================== */
 .glass-card {
   background: var(--bg-card);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--glass-border);
   border-radius: 24px;
   padding: 2rem;
@@ -75,10 +171,13 @@ body {
 }
 
 .glass-card:hover {
-  border-color: rgba(0, 209, 255, 0.2);
+  border-color: rgba(0, 209, 255, 0.25);
   box-shadow: 0 0 50px rgba(0, 209, 255, 0.1);
 }
 
+/* ========================
+   BUTTONS
+   ======================== */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -118,6 +217,17 @@ body {
   border-color: var(--primary);
 }
 
+.btn.danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.btn.danger:hover:not(:disabled) {
+  background: #ef4444;
+  color: white;
+}
+
 .btn:active {
   transform: translateY(0) scale(0.97);
 }
@@ -132,10 +242,17 @@ body {
   font-size: 0.75rem;
 }
 
+.btn.icon-only {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+}
+
 /* ========================
    INPUTS
    ======================== */
-.gaming-input {
+.gaming-input,
+.input {
   width: 100%;
   padding: 1rem 1.25rem;
   background: rgba(0, 0, 0, 0.3);
@@ -149,58 +266,20 @@ body {
   outline: none;
 }
 
-.gaming-input::placeholder {
+.gaming-input::placeholder,
+.input::placeholder {
   color: #4b5563;
 }
 
-.gaming-input:focus {
+.gaming-input:focus,
+.input:focus {
   background: rgba(0, 0, 0, 0.5);
   border-color: var(--primary);
   box-shadow: 0 0 0 4px rgba(0, 209, 255, 0.1);
 }
 
 /* ========================
-   ENERGY BLOBS
-   ======================== */
-.energy-blob {
-  position: fixed;
-  border-radius: 50%;
-  filter: blur(120px);
-  z-index: -1;
-  pointer-events: none;
-  opacity: 0.4;
-  animation: float-blob 25s infinite alternate ease-in-out;
-}
-
-.blue-blob {
-  width: 600px;
-  height: 600px;
-  background: var(--secondary);
-}
-
-.cyan-blob {
-  width: 500px;
-  height: 500px;
-  background: var(--primary);
-  animation-delay: -5s;
-}
-
-@keyframes float-blob {
-  0% {
-    transform: translate(0, 0) scale(1);
-  }
-
-  50% {
-    transform: translate(50px, -50px) scale(1.1);
-  }
-
-  100% {
-    transform: translate(-30px, 30px) scale(0.9);
-  }
-}
-
-/* ========================
-   GRID & TABS
+   UTILITIES
    ======================== */
 .grid-2 {
   display: grid;
@@ -209,6 +288,10 @@ body {
 }
 
 @media (max-width: 768px) {
+  .sidebar {
+    display: none;
+  }
+
   .grid-2 {
     grid-template-columns: 1fr;
     gap: 1rem;
@@ -217,6 +300,10 @@ body {
   .glass-card {
     padding: 1.5rem;
     border-radius: 20px;
+  }
+
+  .top-header {
+    padding: 1rem;
   }
 }
 
@@ -259,7 +346,8 @@ body {
 /* ========================
    MISC
    ======================== */
-.avatar-premium {
+.avatar-premium,
+.avatar {
   border-radius: 20px;
   background: linear-gradient(135deg, #001a33, #003366);
   border: 2px solid var(--glass-border);
@@ -270,12 +358,6 @@ body {
   font-weight: 900;
   overflow: hidden;
   transition: var(--transition-smooth);
-}
-
-.avatar-premium:hover {
-  border-color: var(--primary);
-  transform: translateY(-3px);
-  box-shadow: 0 0 20px var(--primary-glow);
 }
 
 @keyframes spin {
@@ -292,11 +374,27 @@ body {
   animation: spin 1s linear infinite;
 }
 
-.pulse-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+[dir="rtl"] .sidebar {
+  border-right: none;
+  border-left: 1px solid var(--glass-border);
 }
 
-.pulse-hover:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 15px 50px rgba(0, 209, 255, 0.2);
+[dir="rtl"] .nav-item {
+  text-align: right;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.1) 50%, rgba(255, 255, 255, 0.05) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
 }
