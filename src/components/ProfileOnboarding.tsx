@@ -26,15 +26,30 @@ export const ProfileOnboarding: React.FC = () => {
 
     const handleFinish = async () => {
         if (loading) return;
+
+        // Basic validation
+        if (!displayName.trim()) {
+            alert(isRTL ? 'يرجى إدخال الاسم' : 'PLEASE ENTER A DISPLAY NAME');
+            return;
+        }
+
         console.log('HANDLING ONBOARDING FINISH...', { displayName, country, language });
         setLoading(true);
         try {
-            await completeOnboarding(displayName, avatarPreview, country, language);
-            console.log('ONBOARDING COMPLETED SUCCESSFULLY');
-            alert('ONBOARDING SUCCESSFUL! INITIALIZING DASHBOARD...');
+            // Compress avatar if it's too large? For now just send as is but with catch
+            const result = await completeOnboarding(displayName, avatarPreview, country, language);
+            console.log('ONBOARDING COMPLETED SUCCESSFULLY', result);
+
+            // Force a small delay to ensure store update propagates
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+
+            alert(isRTL ? 'تم إكمال التسجيل بنجاح! جاري تحويلك...' : 'ONBOARDING SUCCESSFUL! REDIRECTING...');
         } catch (err: any) {
             console.error('Failed to complete onboarding:', err);
-            alert(`FAILED TO COMPLETE ONBOARDING: ${err.message || 'UNKNOWN ERROR'}`);
+            const errorMsg = err.message || 'UNKNOWN SERVER ERROR';
+            alert(isRTL ? `فشل التسجيل: ${errorMsg}` : `FAILED TO COMPLETE ONBOARDING: ${errorMsg}`);
         } finally {
             setLoading(false);
         }
