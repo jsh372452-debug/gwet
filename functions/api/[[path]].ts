@@ -14,7 +14,7 @@ interface Env {
 export const onRequest: PagesFunction<Env> = async (context) => {
     const { request, env } = context;
     const url = new URL(request.url);
-    const path = url.pathname.replace('/api/', '');
+    const path = url.pathname.replace(/^\/api\//, '').replace(/\/$/, '');
     const method = request.method;
 
     console.log(`\n🌐 [${method}] REQUEST: ${path}`);
