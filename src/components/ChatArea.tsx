@@ -108,41 +108,48 @@ export const ChatArea: React.FC<Props> = ({ targetId, type, onBack }) => {
             </div>
 
             {/* Messages */}
-            <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', padding: '0 var(--space-sm)' }}>
+            <div ref={scrollRef} className="chat-bg" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.5rem' }}>
                 {loading && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)', padding: 'var(--space-xl)' }}>
-                        {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 40, borderRadius: 'var(--radius-md)' }} />)}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 60, borderRadius: '16px' }} />)}
                     </div>
                 )}
 
                 {!loading && messages.length === 0 && (
-                    <div className="empty-state">
-                        <Terminal size={32} className="icon" />
-                        <h3>No messages yet</h3>
-                        <p>Be the first to send a message!</p>
+                    <div className="glass-card" style={{ marginTop: '2rem', textAlign: 'center' }}>
+                        <Terminal size={32} color="var(--primary)" style={{ marginBottom: '1rem', opacity: 0.5 }} />
+                        <h3 style={{ fontWeight: 900 }}>NO DATA STREAMS DETECTED</h3>
+                        <p style={{ color: 'var(--text-dim)', fontSize: '13px' }}>Initialize communication to begin mission briefing.</p>
                     </div>
                 )}
 
                 {messages.map((msg) => {
                     const isMe = msg.user_id === user?.id;
                     return (
-                        <div key={msg.id} style={{ alignSelf: isMe ? 'flex-end' : 'flex-start', maxWidth: '70%' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '2px', padding: '0 4px', justifyContent: isMe ? 'flex-end' : 'flex-start' }}>
-                                <Flag code={msg.country || 'Global'} size={14} />
-                                {!isMe && <span style={{ fontSize: 'var(--font-xs)', fontWeight: 700, color: 'var(--accent)' }}>{msg.display_name || 'User'}</span>}
-                                <span style={{ fontSize: 'var(--font-xs)', color: 'var(--text-muted)' }}>{formatTime(msg.created_at)}</span>
+                        <div key={msg.id} style={{
+                            alignSelf: isMe ? 'flex-start' : 'flex-end', // Request: Sender on left, others on right
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '4px',
+                            maxWidth: '100%',
+                            width: 'fit-content'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '0 4px', flexDirection: isMe ? 'row' : 'row-reverse' }}>
+                                <Flag code={msg.country || 'Global'} size={12} />
+                                {!isMe && <span style={{ fontSize: '10px', fontWeight: 900, color: 'var(--accent)' }}>{msg.display_name?.toUpperCase()}</span>}
+                                <span style={{ fontSize: '10px', color: 'var(--text-dim)' }}>{formatTime(msg.created_at)}</span>
                             </div>
-                            <div style={{ display: 'flex', gap: 'var(--space-sm)', alignItems: 'flex-end', flexDirection: isMe ? 'row-reverse' : 'row' }}>
-                                <div className="avatar sm" style={{ backgroundImage: msg.avatar_url ? `url(${msg.avatar_url})` : 'none', border: isMe ? '1.5px solid var(--primary)' : '1.5px solid var(--border)' }}>
+
+                            <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', flexDirection: isMe ? 'row' : 'row-reverse' }}>
+                                <div className="avatar sm" style={{
+                                    width: 28, height: 28, borderRadius: '8px',
+                                    backgroundImage: msg.avatar_url ? `url(${msg.avatar_url})` : 'none',
+                                    border: `1.5px solid ${isMe ? 'var(--primary)' : 'var(--glass-border)'}`
+                                }}>
                                     {!msg.avatar_url && (msg.display_name?.[0] || 'A').toUpperCase()}
                                 </div>
-                                <div className="card compact" style={{
-                                    borderRadius: isMe ? 'var(--radius-lg) var(--radius-lg) var(--radius-xs) var(--radius-lg)' : 'var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-xs)',
-                                    background: isMe ? 'var(--primary-soft)' : 'var(--bg-card)',
-                                    border: isMe ? '1px solid var(--border-active)' : '1px solid var(--border)',
-                                    padding: 'var(--space-sm) var(--space-md)'
-                                }}>
-                                    <p style={{ fontSize: 'var(--font-base)', lineHeight: 1.5, margin: 0 }}>{msg.content}</p>
+                                <div className={`bubble ${isMe ? 'me' : 'them'}`}>
+                                    <p style={{ margin: 0 }}>{msg.content}</p>
                                 </div>
                             </div>
                         </div>
