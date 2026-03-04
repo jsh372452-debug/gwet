@@ -102,7 +102,7 @@ export const Feed: React.FC = () => {
             </div>
 
             {/* Compose */}
-            <div className="glass-card" style={{ marginBottom: '2.5rem', borderLeft: '4px solid var(--primary)' }}>
+            <div className="glass-card premium-pattern" style={{ marginBottom: '2.5rem', borderLeft: '4px solid var(--primary)' }}>
                 <form onSubmit={handleSubmit}>
                     <div style={{ display: 'flex', gap: '1.25rem', marginBottom: '1.25rem' }}>
                         <div className="avatar-premium" style={{ width: 44, height: 44 }}>
