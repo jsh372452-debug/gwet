@@ -50,7 +50,10 @@ const translations = {
         ai_active: 'Squad Intelligence Active',
         ai_placeholder: 'Ask me about tactics, squad status...',
         ai_processing: 'NEURAL PROCESSING...',
-        ai_input: 'Communicate with Squad Master...'
+        ai_input: 'Communicate with Squad Master...',
+        found_squad: 'FOUND SQUAD',
+        access_hub: 'ACCESS HUB',
+        join_squad: 'JOIN SQUAD'
     },
     ar: {
         welcome: 'أهلاً بك',
@@ -101,7 +104,10 @@ const translations = {
         ai_active: 'ذكاء الفرقة نشط',
         ai_placeholder: 'اسألني عن التكتيكات، حالة الفريق، أو لرفع الحماس!',
         ai_processing: 'جاري المعالجة العصبية...',
-        ai_input: 'تحدث مع قائد الفريق الآلي...'
+        ai_input: 'تحدث مع قائد الفريق الآلي...',
+        found_squad: 'تأسيس فرقة',
+        access_hub: 'دخول المركز',
+        join_squad: 'انضمام للفريق'
     }
 };
 

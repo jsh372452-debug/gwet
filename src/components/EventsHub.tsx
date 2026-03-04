@@ -23,21 +23,21 @@ const TournamentFrame: React.FC<{ type?: string; children: React.ReactNode }> = 
     const getFrameStyles = () => {
         switch (type) {
             case 'neon':
-                return { border: '2px solid var(--primary)', boxShadow: '0 0 15px var(--primary-glow)' };
+                return { border: '2px solid var(--primary)', boxShadow: '0 0 20px var(--primary-glow)' };
             case 'gold':
-                return { border: '2px solid var(--gold)', boxShadow: '0 0 15px rgba(251, 191, 36, 0.3)' };
+                return { border: '2px solid var(--gold)', boxShadow: '0 0 20px rgba(251, 191, 36, 0.4)' };
             case 'cyan':
-                return { border: '2px solid var(--accent)', boxShadow: '0 0 15px var(--accent-glow)' };
+                return { border: '2px solid var(--accent)', boxShadow: '0 0 20px var(--accent-glow)' };
             default:
                 return { border: '1px solid var(--glass-border)' };
         }
     };
 
     return (
-        <div style={{ position: 'relative', overflow: 'hidden', borderRadius: 'var(--stable-radius)', ...getFrameStyles() }}>
+        <div className="pulse-hover" style={{ position: 'relative', overflow: 'hidden', borderRadius: '20px', ...getFrameStyles() }}>
             {children}
             {type && type !== 'none' && (
-                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: type === 'gold' ? 'var(--gold)' : (type === 'neon' ? 'var(--primary)' : 'var(--accent)') }} />
+                <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: type === 'gold' ? 'var(--gold)' : (type === 'neon' ? 'var(--primary)' : 'var(--accent)'), zIndex: 10 }} />
             )}
         </div>
     );
@@ -95,21 +95,21 @@ export const EventsHub: React.FC = () => {
 
     return (
         <div className="page-container" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
-            <div className="section-header">
-                <div className="icon-wrap" style={{ background: 'var(--primary-glow)', color: 'var(--primary)' }}><Calendar size={22} /></div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '2.5rem' }}>
+                <div style={{ padding: '12px', background: 'var(--primary-glow)', borderRadius: '12px', color: 'var(--primary)' }}><Calendar size={32} /></div>
                 <div>
-                    <h2 style={{ textTransform: 'uppercase', letterSpacing: '2px' }}>{isRTL ? 'محرك الفعاليات' : 'EVENTS ENGINE'}</h2>
-                    <p className="subtitle">{isRTL ? 'نظام البطولات واللقاءات العالمي' : 'GLOBAL TOURNAMENTS & MEETUPS SYSTEM'}</p>
+                    <h2 style={{ fontSize: '1.8rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px' }}>{isRTL ? 'محرك الفعاليات' : 'EVENTS ENGINE'}</h2>
+                    <p style={{ color: 'var(--text-dim)', fontSize: '12px', fontWeight: 700 }}>{isRTL ? 'نظام البطولات واللقاءات العالمي' : 'GLOBAL TOURNAMENTS & MEETUPS SYSTEM'}</p>
                 </div>
-                <button className="btn primary sharp" onClick={() => setShowCreateModal(true)} style={{ marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0, fontWeight: 900 }}>
+                <button className="btn primary" onClick={() => setShowCreateModal(true)} style={{ marginLeft: isRTL ? 0 : 'auto', marginRight: isRTL ? 'auto' : 0 }}>
                     <Plus size={16} /> {isRTL ? 'إنشاء حدث' : 'CREATE EVENT'}
                 </button>
             </div>
 
-            <div style={{ display: 'flex', gap: 'var(--space-md)', marginBottom: 'var(--space-xl)' }}>
-                <button className={`btn sm sharp ${activeType === 'all' ? 'primary' : 'ghost'}`} onClick={() => setActiveType('all')}>{isRTL ? 'الكل' : 'ALL'}</button>
-                <button className={`btn sm sharp ${activeType === 'tournament' ? 'primary' : 'ghost'}`} onClick={() => setActiveType('tournament')}>{isRTL ? 'بطولات' : 'TOURNAMENTS'}</button>
-                <button className={`btn sm sharp ${activeType === 'meetup' ? 'primary' : 'ghost'}`} onClick={() => setActiveType('meetup')}>{isRTL ? 'لقاءات' : 'MEETUPS'}</button>
+            <div className="tabs">
+                <button className={`tab ${activeType === 'all' ? 'active' : ''}`} onClick={() => setActiveType('all')}>{isRTL ? 'الكل' : 'ALL'}</button>
+                <button className={`tab ${activeType === 'tournament' ? 'active' : ''}`} onClick={() => setActiveType('tournament')}>{isRTL ? 'بطولات' : 'TOURNAMENTS'}</button>
+                <button className={`tab ${activeType === 'meetup' ? 'active' : ''}`} onClick={() => setActiveType('meetup')}>{isRTL ? 'لقاءات' : 'MEETUPS'}</button>
             </div>
 
             {loading ? (
@@ -117,51 +117,51 @@ export const EventsHub: React.FC = () => {
                     <Loader2 className="spinner" size={32} color="var(--primary)" />
                 </div>
             ) : events.length === 0 ? (
-                <div className="glass-card sharp" style={{ textAlign: 'center', padding: '4rem' }}>
-                    <Calendar size={48} color="var(--text-muted)" style={{ marginBottom: '1rem', opacity: 0.3 }} />
-                    <p style={{ color: 'var(--text-muted)', fontWeight: 700 }}>{isRTL ? 'لا توجد فعاليات مجدولة حالياً' : 'NO EVENTS SCHEDULED YET'}</p>
+                <div className="glass-card" style={{ textAlign: 'center', padding: '4rem' }}>
+                    <Calendar size={48} color="var(--text-dim)" style={{ marginBottom: '1rem', opacity: 0.2 }} />
+                    <p style={{ color: 'var(--text-dim)', fontWeight: 800 }}>{isRTL ? 'لا توجد فعاليات مجدولة حالياً' : 'NO EVENTS SCHEDULED YET'}</p>
                 </div>
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 'var(--space-xl)' }}>
+                <div className="grid-2">
                     {events.map(event => (
                         <TournamentFrame key={event.id} type={event.frame_type}>
-                            <div className="glass-card sharp" style={{ padding: 0, border: 'none', height: '100%', display: 'flex', flexDirection: 'column' }}>
-                                <div style={{ height: '140px', background: event.event_type === 'tournament' ? 'linear-gradient(135deg, #1e1e2e, #2d2d3d)' : 'linear-gradient(135deg, #161e2e, #1e293b)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    {event.event_type === 'tournament' ? <Trophy size={56} color="var(--primary)" opacity={0.4} /> : <Users size={56} color="var(--accent)" opacity={0.4} />}
-                                    <div style={{ position: 'absolute', top: 12, right: 12, background: 'rgba(0,0,0,0.6)', padding: '4px 10px', fontSize: '10px', fontWeight: 900, color: 'white', letterSpacing: '1px' }}>
+                            <div className="glass-card" style={{ padding: 0, border: 'none', height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg-card)' }}>
+                                <div style={{ height: '160px', background: event.event_type === 'tournament' ? 'linear-gradient(135deg, #001a33, #000)' : 'linear-gradient(135deg, #000b1a, #000)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', borderBottom: '1px solid var(--glass-border)' }}>
+                                    {event.event_type === 'tournament' ? <Trophy size={60} color="var(--primary)" style={{ opacity: 0.3 }} /> : <Users size={60} color="var(--accent)" style={{ opacity: 0.3 }} />}
+                                    <div style={{ position: 'absolute', top: 12, right: 12, background: 'rgba(0,0,0,0.8)', padding: '4px 12px', fontSize: '9px', fontWeight: 900, color: 'white', letterSpacing: '1px', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.1)' }}>
                                         {event.event_type.toUpperCase()}
                                     </div>
                                     {event.prize_pool && event.prize_pool !== '0' && (
-                                        <div style={{ position: 'absolute', bottom: 12, left: 12, background: 'var(--gold)', color: 'black', padding: '4px 12px', fontSize: '12px', fontWeight: 900 }}>
+                                        <div style={{ position: 'absolute', bottom: 12, [isRTL ? 'right' : 'left']: 12, background: 'var(--gold)', color: 'black', padding: '4px 14px', fontSize: '11px', fontWeight: 900, borderRadius: '4px', boxShadow: '0 4px 10px rgba(0,0,0,0.3)' }}>
                                             {event.prize_pool} PRIZE
                                         </div>
                                     )}
                                 </div>
 
-                                <div style={{ padding: '1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
-                                    <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.25rem', fontWeight: 900 }}>{event.title}</h3>
-                                    <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '1.5rem', lineHeight: '1.5' }}>{event.description}</p>
+                                <div style={{ padding: '2rem 1.5rem 1.5rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                    <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.2rem', fontWeight: 900 }}>{event.title.toUpperCase()}</h3>
+                                    <p style={{ fontSize: '13px', color: 'var(--text-dim)', marginBottom: '1.5rem', lineHeight: '1.6', height: '40px', overflow: 'hidden' }}>{event.description}</p>
 
                                     {event.rules && (
-                                        <div style={{ marginBottom: '1.5rem', background: 'rgba(255,255,255,0.03)', padding: '1rem', border: '1px solid var(--glass-border)' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '10px', fontWeight: 900, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase' }}>
+                                        <div style={{ marginBottom: '1.5rem', background: 'rgba(255,255,255,0.02)', padding: '1rem', borderRadius: '8px', border: '1px solid var(--glass-border)' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '10px', fontWeight: 900, color: 'var(--text-dim)', marginBottom: '8px', textTransform: 'uppercase' }}>
                                                 <ScrollText size={12} /> {isRTL ? 'القواعد' : 'RULES'}
                                             </div>
-                                            <p style={{ fontSize: '11px', whiteSpace: 'pre-wrap', color: 'var(--text-main)' }}>{event.rules}</p>
+                                            <p style={{ fontSize: '11px', whiteSpace: 'pre-wrap', color: 'var(--text-main)', margin: 0 }}>{event.rules}</p>
                                         </div>
                                     )}
 
-                                    <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                                            <div style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)' }}>
+                                    <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', paddingTop: '1rem', borderTop: '1px solid var(--glass-border)' }}>
+                                            <div style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-dim)', fontWeight: 700 }}>
                                                 <Calendar size={14} /> {new Date(event.start_time).toLocaleDateString()}
                                             </div>
-                                            <div style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)' }}>
+                                            <div style={{ fontSize: '11px', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-dim)', fontWeight: 700, justifyContent: 'flex-end' }}>
                                                 <UserPlus size={14} /> {event.participant_count || 0} / {event.max_slots || '∞'}
                                             </div>
                                         </div>
 
-                                        <button className="btn primary sharp" disabled={(event.participant_count || 0) >= (event.max_slots || 99999)} onClick={() => handleJoin(event.id)} style={{ width: '100%', marginTop: '0.5rem', height: '40px', fontWeight: 900 }}>
+                                        <button className="btn primary" disabled={(event.participant_count || 0) >= (event.max_slots || 99999)} onClick={() => handleJoin(event.id)} style={{ width: '100%', height: '44px' }}>
                                             {isRTL ? 'التسجيل الآن' : 'REGISTER NOW'}
                                         </button>
                                     </div>
@@ -174,64 +174,64 @@ export const EventsHub: React.FC = () => {
 
             {/* Create Modal */}
             {showCreateModal && (
-                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(12px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-xl)' }} onClick={() => setShowCreateModal(false)}>
-                    <div className="glass-card sharp neon-border" style={{ width: '100%', maxWidth: '600px', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                            <h2 style={{ fontSize: '1.5rem', fontWeight: 900 }}>{isRTL ? 'بث بطولة جديدة' : 'BROADCAST NEW EVENT'}</h2>
-                            <button className="btn ghost icon-only" onClick={() => setShowCreateModal(false)}><X size={20} /></button>
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(15px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }} onClick={() => setShowCreateModal(false)}>
+                    <div className="glass-card" style={{ width: '100%', maxWidth: '640px', maxHeight: '90vh', overflowY: 'auto', padding: '3rem' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
+                            <h2 style={{ fontSize: '1.6rem', fontWeight: 900, textTransform: 'uppercase' }}>{isRTL ? 'بث بطولة جديدة' : 'BROADCAST NEW EVENT'}</h2>
+                            <button className="btn ghost sm" onClick={() => setShowCreateModal(false)}><X size={20} /></button>
                         </div>
 
-                        <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                        <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                             <div>
-                                <label className="label">{isRTL ? 'العنوان' : 'EVENT TITLE'}</label>
-                                <input className="gaming-input" style={{ marginBottom: 0 }} required value={newEvt.title} onChange={e => setNewEvt({ ...newEvt, title: e.target.value })} placeholder="e.g. Pro Valorant Scrims" />
+                                <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>{isRTL ? 'العنوان' : 'EVENT TITLE'}</label>
+                                <input className="gaming-input" required value={newEvt.title} onChange={e => setNewEvt({ ...newEvt, title: e.target.value })} placeholder="e.g. Pro Valorant Scrims" />
                             </div>
                             <div>
-                                <label className="label">{isRTL ? 'الوصف' : 'DESCRIPTION'}</label>
-                                <textarea className="gaming-input" style={{ marginBottom: 0, minHeight: '80px' }} value={newEvt.description} onChange={e => setNewEvt({ ...newEvt, description: e.target.value })} placeholder="Tell people what this is about..." />
+                                <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>{isRTL ? 'الوصف' : 'DESCRIPTION'}</label>
+                                <textarea className="gaming-input" style={{ minHeight: '80px' }} value={newEvt.description} onChange={e => setNewEvt({ ...newEvt, description: e.target.value })} placeholder="Tell people what this is about..." />
                             </div>
                             <div>
-                                <label className="label">{isRTL ? 'القواعد' : 'RULES & REGS'}</label>
-                                <textarea className="gaming-input" style={{ marginBottom: 0, minHeight: '80px', fontFamily: 'monospace', fontSize: '12px' }} value={newEvt.rules} onChange={e => setNewEvt({ ...newEvt, rules: e.target.value })} placeholder="1. Respect players\n2. No cheats..." />
+                                <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>{isRTL ? 'القواعد' : 'RULES & REGS'}</label>
+                                <textarea className="gaming-input" style={{ minHeight: '80px', fontFamily: 'monospace', fontSize: '12px' }} value={newEvt.rules} onChange={e => setNewEvt({ ...newEvt, rules: e.target.value })} placeholder="1. Respect players\n2. No cheats..." />
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                                 <div>
-                                    <label className="label">{isRTL ? 'الوقت' : 'START TIME'}</label>
-                                    <input type="datetime-local" className="gaming-input" style={{ marginBottom: 0 }} required value={newEvt.startTime} onChange={e => setNewEvt({ ...newEvt, startTime: e.target.value })} />
+                                    <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>{isRTL ? 'الوقت' : 'START TIME'}</label>
+                                    <input type="datetime-local" className="gaming-input" required value={newEvt.startTime} onChange={e => setNewEvt({ ...newEvt, startTime: e.target.value })} />
                                 </div>
                                 <div>
-                                    <label className="label">{isRTL ? 'النوع' : 'CATEGORY'}</label>
-                                    <select className="gaming-input" style={{ marginBottom: 0 }} value={newEvt.eventType} onChange={e => setNewEvt({ ...newEvt, eventType: e.target.value as any })}>
-                                        <option value="tournament">{isRTL ? 'بطولة' : 'Tournament'}</option>
-                                        <option value="meetup">{isRTL ? 'لقاء' : 'Meetup'}</option>
+                                    <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>{isRTL ? 'النوع' : 'CATEGORY'}</label>
+                                    <select className="gaming-input" value={newEvt.eventType} onChange={e => setNewEvt({ ...newEvt, eventType: e.target.value as any })}>
+                                        <option value="tournament" style={{ background: '#000' }}>{isRTL ? 'بطولة' : 'Tournament'}</option>
+                                        <option value="meetup" style={{ background: '#000' }}>{isRTL ? 'لقاء' : 'Meetup'}</option>
                                     </select>
                                 </div>
                             </div>
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                                 <div>
-                                    <label className="label">{isRTL ? 'الجائزة' : 'PRIZE POOL'}</label>
-                                    <input className="gaming-input" style={{ marginBottom: 0 }} value={newEvt.prizePool} onChange={e => setNewEvt({ ...newEvt, prizePool: e.target.value })} placeholder="e.g. 1000$" />
+                                    <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>{isRTL ? 'الجائزة' : 'PRIZE POOL'}</label>
+                                    <input className="gaming-input" value={newEvt.prizePool} onChange={e => setNewEvt({ ...newEvt, prizePool: e.target.value })} placeholder="e.g. 1000$" />
                                 </div>
                                 <div>
-                                    <label className="label">{isRTL ? 'عدد المقاعد' : 'MAX SLOTS'}</label>
-                                    <input type="number" className="gaming-input" style={{ marginBottom: 0 }} value={newEvt.maxSlots} onChange={e => setNewEvt({ ...newEvt, maxSlots: parseInt(e.target.value) })} />
+                                    <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>{isRTL ? 'عدد المقاعد' : 'MAX SLOTS'}</label>
+                                    <input type="number" className="gaming-input" value={newEvt.maxSlots} onChange={e => setNewEvt({ ...newEvt, maxSlots: parseInt(e.target.value) })} />
                                 </div>
                             </div>
 
                             <div>
-                                <label className="label">{isRTL ? 'إطار الإعلان' : 'PROMO FRAME'}</label>
-                                <select className="gaming-input" style={{ marginBottom: 0 }} value={newEvt.frameType} onChange={e => setNewEvt({ ...newEvt, frameType: e.target.value })}>
-                                    <option value="none">None</option>
-                                    <option value="neon">Neon Purple</option>
-                                    <option value="gold">Elite Gold</option>
-                                    <option value="cyan">Cyber Cyan</option>
+                                <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>{isRTL ? 'إطار الإعلان' : 'PROMO FRAME'}</label>
+                                <select className="gaming-input" value={newEvt.frameType} onChange={e => setNewEvt({ ...newEvt, frameType: e.target.value })}>
+                                    <option value="none" style={{ background: '#000' }}>None</option>
+                                    <option value="neon" style={{ background: '#000' }}>Neon Purple</option>
+                                    <option value="gold" style={{ background: '#000' }}>Elite Gold</option>
+                                    <option value="cyan" style={{ background: '#000' }}>Cyber Cyan</option>
                                 </select>
                             </div>
 
-                            <button className="btn primary sharp" disabled={submitting} style={{ marginTop: '1rem', padding: '1rem', fontSize: '1rem', fontWeight: 900 }}>
-                                {submitting ? <Loader2 className="spinner" size={20} /> : (isRTL ? 'نشر الفعالية' : 'BROADCAST EVENT')}
+                            <button className="btn primary" disabled={submitting} style={{ marginTop: '1rem', height: '54px', fontSize: '1.1rem' }}>
+                                {submitting ? <Loader2 className="spinner" size={24} /> : (isRTL ? 'نشر الفعالية' : 'BROADCAST EVENT')}
                             </button>
                         </form>
                     </div>

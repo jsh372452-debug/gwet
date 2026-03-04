@@ -32,89 +32,83 @@ export const Explore: React.FC = () => {
     };
 
     return (
-        <div className="page-container wide" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+        <div className="page-container" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div className="section-header">
-                    <div className="icon-wrap"><Compass size={22} /></div>
-                    <div>
-                        <h2>{t('explore')}</h2>
-                        <p className="subtitle">DISCOVER THE NETWORK</p>
-                    </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '2.5rem' }}>
+                <div style={{ padding: '12px', background: 'var(--primary-glow)', borderRadius: '12px', color: 'var(--primary)' }}><TrendingUp size={32} /></div>
+                <div>
+                    <h2 style={{ fontSize: '1.8rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px' }}>{isRTL ? 'استكشاف' : 'EXPLORE'}</h2>
+                    <p style={{ color: 'var(--text-dim)', fontSize: '12px', fontWeight: 700 }}>DISCOVER THE NETWORK</p>
                 </div>
             </div>
 
             {/* Tabs */}
             <div className="tabs">
                 <button className={`tab ${activeTab === 'latest' ? 'active' : ''}`} onClick={() => handleTabChange('latest')}>
-                    <Clock size={14} style={{ marginRight: '6px' }} /> {t('latest')}
+                    <Clock size={16} /> {t('latest')}
                 </button>
                 <button className={`tab ${activeTab === 'popular' ? 'active' : ''}`} onClick={() => handleTabChange('popular')}>
-                    <TrendingUp size={14} style={{ marginRight: '6px' }} /> {t('popular')}
+                    <TrendingUp size={16} /> {t('popular')}
                 </button>
                 <button className={`tab ${activeTab === 'game' ? 'active' : ''}`} onClick={() => handleTabChange('game')}>
-                    <Gamepad2 size={14} style={{ marginRight: '6px' }} /> {t('by_game')}
+                    <Gamepad2 size={16} /> {t('by_game')}
                 </button>
             </div>
 
             {/* Game Tag Filter */}
             {activeTab === 'game' && (
-                <div style={{ display: 'flex', gap: 'var(--space-sm)', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '2rem' }}>
                     {gameTags.map(tag => (
-                        <button key={tag} className={`btn ${selectedTag === tag ? 'primary' : ''}`}
-                            style={{ fontSize: 'var(--font-xs)' }}
+                        <button key={tag}
+                            className={`btn sm ${selectedTag === tag ? 'primary' : 'ghost'}`}
                             onClick={() => setSelectedTag(tag)}>
                             {tag}
                         </button>
                     ))}
                     {gameTags.length === 0 && !loading && (
-                        <p style={{ color: 'var(--text-muted)', fontSize: 'var(--font-sm)' }}>No game tags found yet</p>
+                        <p style={{ color: 'var(--text-dim)', fontSize: '11px', fontWeight: 700 }}>NO GAME TAGS DETECTED</p>
                     )}
                 </div>
             )}
 
-            {/* Loading */}
-            {loading && (
-                <div className="grid grid-2">
+            {/* Content */}
+            {loading ? (
+                <div className="grid-2">
                     {[1, 2, 3, 4, 5, 6].map(i => (
-                        <div key={i} className="card">
-                            <div className="skeleton" style={{ height: 16, width: '50%', marginBottom: 'var(--space-md)' }} />
-                            <div className="skeleton" style={{ height: 48 }} />
+                        <div key={i} className="glass-card" style={{ height: '140px' }}>
+                            <div className="skeleton" style={{ height: '16px', width: '40%', marginBottom: '1rem' }} />
+                            <div className="skeleton" style={{ height: '40px', width: '90%' }} />
                         </div>
                     ))}
                 </div>
-            )}
-
-            {/* Posts Grid */}
-            {!loading && (
-                <div className="grid grid-2">
+            ) : (
+                <div className="grid-2">
                     {posts.length === 0 && (
-                        <div className="empty-state" style={{ gridColumn: '1 / -1' }}>
-                            <Compass size={40} className="icon" />
-                            <h3>Nothing to explore yet</h3>
-                            <p>Posts will appear here as users share content</p>
+                        <div className="glass-card" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem' }}>
+                            <Compass size={48} color="var(--text-dim)" style={{ marginBottom: '1rem', opacity: 0.2 }} />
+                            <h3 style={{ opacity: 0.5 }}>NO TRANSMISSIONS DETECTED</h3>
                         </div>
                     )}
 
                     {posts.map(post => (
-                        <div key={post.id} className="card">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', marginBottom: 'var(--space-md)' }}>
-                                <div className="avatar sm">{post.username?.charAt(0).toUpperCase()}</div>
+                        <div key={post.id} className="glass-card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <div className="avatar-premium" style={{ width: 32, height: 32, fontSize: '0.8rem' }}>{post.username?.charAt(0).toUpperCase()}</div>
                                 <div style={{ flex: 1 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                         <Flag code={post.country || 'Global'} size={14} />
-                                        <span style={{ fontWeight: 700, fontSize: 'var(--font-sm)' }}>{post.username}</span>
+                                        <span style={{ fontWeight: 800, fontSize: '13px' }}>{post.username}</span>
                                     </div>
                                 </div>
                                 {post.game_tag && post.game_tag !== 'Global' && (
-                                    <span className="badge accent">{post.game_tag}</span>
+                                    <span style={{ fontSize: '9px', background: 'rgba(0, 209, 255, 0.1)', color: 'var(--primary)', padding: '2px 8px', fontWeight: 900, borderRadius: '4px' }}>{post.game_tag.toUpperCase()}</span>
                                 )}
                             </div>
-                            <p style={{ fontSize: 'var(--font-base)', lineHeight: 1.6, color: 'var(--text)', marginBottom: 'var(--space-md)', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' as any, overflow: 'hidden' }}>{post.content}</p>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-lg)', fontSize: 'var(--font-xs)', color: 'var(--text-muted)' }}>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Trophy size={12} color={(post.wow_count || 0) > 0 ? 'var(--primary)' : undefined} /> {post.wow_count || 0}</span>
-                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MessageSquare size={12} /> 0</span>
-                                <span style={{ marginLeft: 'auto' }}>{new Date(post.created_at).toLocaleDateString()}</span>
+                            <p style={{ fontSize: '14px', lineHeight: 1.6, color: 'var(--text-main)', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical' as any, overflow: 'hidden', margin: 0 }}>{post.content}</p>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', fontSize: '11px', color: 'var(--text-dim)', marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid var(--glass-border)' }}>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Trophy size={14} color={(post.wow_count || 0) > 0 ? 'var(--primary)' : undefined} /> {post.wow_count || 0}</span>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MessageSquare size={14} /> 0</span>
+                                <span style={{ marginLeft: isRTL ? '0' : 'auto', marginRight: isRTL ? 'auto' : '0' }}>{new Date(post.created_at).toLocaleDateString()}</span>
                             </div>
                         </div>
                     ))}

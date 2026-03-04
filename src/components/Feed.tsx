@@ -32,12 +32,11 @@ export const Feed: React.FC = () => {
         setPosting(true);
         try {
             const metadata = isSession ? { maxSlots, currentSlots: 1 } : {};
-            const result = await addPost(content, tag, isSession ? 'session' : 'normal', metadata);
-            if (result && result.xp_updated) {
-                // Update local user state if result says so
-            }
+            await addPost(content, tag, isSession ? 'session' : 'normal', metadata);
             setContent('');
             setIsSession(false);
+        } catch (err) {
+            console.error('Submission failed:', err);
         } finally {
             setPosting(false);
         }
@@ -67,44 +66,41 @@ export const Feed: React.FC = () => {
     return (
         <div className="page-container" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
             {/* Search */}
-            <div className="glass-card sharp compact" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', marginBottom: '1.5rem', border: '1px solid var(--glass-border)' }}>
+            <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '1.5rem', padding: '10px 15px' }}>
                 <Search size={16} color="var(--primary)" />
                 <input className="gaming-input" placeholder={t('search').toUpperCase()} value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                    style={{ border: 'none', background: 'none', boxShadow: 'none', padding: '0.3rem 0', margin: 0, height: 'auto', flex: 1 }} />
-                {searchQuery && <X size={16} style={{ cursor: 'pointer', color: 'var(--text-muted)' }} onClick={() => setSearchQuery('')} />}
+                    style={{ border: 'none', background: 'none', padding: 0, margin: 0, height: 'auto', flex: 1 }} />
+                {searchQuery && <X size={16} style={{ cursor: 'pointer', color: 'var(--text-dim)' }} onClick={() => setSearchQuery('')} />}
             </div>
 
             {/* Feed Sort Tabs */}
-            <div style={{ display: 'flex', gap: 'var(--space-md)', marginBottom: '2rem' }}>
-                <button className={`btn sharp ${sort === 'fire' ? 'primary' : 'ghost'} `} onClick={() => setSort('fire')} style={{ flex: 1, fontWeight: 900 }}>
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '2rem' }}>
+                <button className={`btn ${sort === 'fire' ? 'primary' : 'ghost'} `} onClick={() => setSort('fire')} style={{ flex: 1 }}>
                     <Flame size={14} style={{ marginRight: 8 }} /> {t('popular').toUpperCase()}
                 </button>
-                <button className={`btn sharp ${sort === 'latest' ? 'primary' : 'ghost'} `} onClick={() => setSort('latest')} style={{ flex: 1, fontWeight: 900 }}>
+                <button className={`btn ${sort === 'latest' ? 'primary' : 'ghost'} `} onClick={() => setSort('latest')} style={{ flex: 1 }}>
                     <Zap size={14} style={{ marginRight: 8 }} /> {t('latest').toUpperCase()}
                 </button>
             </div>
 
             {/* Compose */}
-            <div className="glass-card sharp neon-border" style={{ marginBottom: '2.5rem', position: 'relative' }}>
+            <div className="glass-card" style={{ marginBottom: '2.5rem', borderLeft: '4px solid var(--primary)' }}>
                 <form onSubmit={handleSubmit}>
                     <div style={{ display: 'flex', gap: '1.25rem', marginBottom: '1.25rem' }}>
-                        <div className="avatar-premium" style={{ width: 44, height: 44, fontSize: '1rem' }}>
+                        <div className="avatar-premium" style={{ width: 44, height: 44 }}>
                             {user?.avatarUrl ? <img src={user.avatarUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (user?.displayName?.[0] || 'G').toUpperCase()}
                         </div>
-                        <textarea className="gaming-input" placeholder={isRTL ? 'ماذا تفكر؟' : 'SHARE YOUR ELITE MOMENT...'} value={content} onChange={(e) => setContent(e.target.value)}
+                        <textarea className="gaming-input" placeholder={isRTL ? 'شارك لحظتك الأخيرة...' : 'SHARE YOUR ELITE MOMENT...'} value={content} onChange={(e) => setContent(e.target.value)}
                             style={{ minHeight: '80px', margin: 0 }} />
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div style={{ display: 'flex', gap: '8px' }}>
-                            <button type="button" className={`btn sm sharp ${isSession ? 'accent' : 'ghost'} `} style={{ fontSize: '10px', fontWeight: 900 }} onClick={() => setIsSession(!isSession)}>
-                                <Sword size={12} /> {isSession ? 'SESSION MODE' : 'NORMAL'}
-                            </button>
-                            <button type="button" className="btn sm sharp ghost" style={{ fontSize: '10px', fontWeight: 900 }}>
-                                <Tag size={12} /> {tag.toUpperCase()}
+                            <button type="button" className={`btn sm ${isSession ? 'primary' : 'ghost'} `} onClick={() => setIsSession(!isSession)}>
+                                <Sword size={12} /> {isSession ? 'SESSION' : 'NORMAL'}
                             </button>
                         </div>
-                        <button type="submit" className="btn primary sharp" disabled={!content.trim() || posting} style={{ fontWeight: 900, height: '36px', padding: '0 20px' }}>
-                            {posting ? <Loader size={14} className="spinner" /> : (isSession ? 'LAUNCH SESSION' : 'GWEET')}
+                        <button type="submit" className="btn primary" disabled={!content.trim() || posting}>
+                            {posting ? <Loader size={14} className="spinner" /> : t('gweet').toUpperCase()}
                         </button>
                     </div>
                     {isSession && (

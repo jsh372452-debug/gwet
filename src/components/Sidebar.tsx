@@ -5,6 +5,7 @@ import { countries } from '../data/countries';
 import Flag from './Flag';
 import { Layout, Shield, Terminal, Settings, LogOut, User, Users, Compass, Trophy } from 'lucide-react';
 import { TierBadge } from './TierBadge';
+import { Logo } from './Logo';
 
 interface SidebarProps {
     activeTab: string;
@@ -29,11 +30,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     return (
         <aside className="sidebar">
             {/* Logo */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)', marginBottom: 'var(--space-3xl)', padding: '0 var(--space-sm)' }}>
-                <div style={{ padding: '6px', background: 'var(--primary-soft)', borderRadius: 'var(--radius-md)', color: 'var(--primary)', display: 'flex' }}>
-                    <Shield size={22} />
-                </div>
-                <h1 style={{ fontSize: 'var(--font-xl)', fontWeight: 900, letterSpacing: '2px' }}>GWET</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '3rem', padding: '0 10px' }}>
+                <Logo size={40} />
+                <h1 style={{ fontSize: '24px', fontWeight: 900, letterSpacing: '2px', background: 'linear-gradient(135deg, #fff, #8b949e)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    GWET
+                </h1>
             </div>
 
             {/* Navigation */}

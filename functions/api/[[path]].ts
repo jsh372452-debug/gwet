@@ -282,15 +282,18 @@ async function handleCreatePost(env: Env, request: Request, jwt: JWTPayload) {
     const { content, gameTag, type, metadata } = await request.json() as any;
     if (!content?.trim()) return error('Content required');
 
-    const user = await env.DB.prepare('SELECT display_name, country, xp, level FROM users WHERE id = ?').bind(jwt.sub).first() as any;
-    const id = crypto.randomUUID();
+    const user = await env.DB.prepare('SELECT display_name, country, xp, level, rank FROM users WHERE id = ?').bind(jwt.sub).first() as any;
+    if (!user) return error('User context not found', 404);
 
+    const id = crypto.randomUUID();
     const postType = type || 'normal';
     const metadataStr = JSON.stringify(metadata || {});
+    const displayName = user.display_name || jwt.username || 'Anonymous';
+    const country = user.country || 'Global';
 
     await env.DB.prepare(
         'INSERT INTO posts (id, content, user_id, username, game_tag, country, post_type, metadata_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-    ).bind(id, content, jwt.sub, user.display_name || jwt.username, gameTag || 'Global', user.country || 'Global', postType, metadataStr).run();
+    ).bind(id, content, jwt.sub, displayName, gameTag || 'Global', country, postType, metadataStr).run();
 
     await env.DB.prepare('UPDATE users SET post_count = post_count + 1 WHERE id = ?').bind(jwt.sub).run();
 
