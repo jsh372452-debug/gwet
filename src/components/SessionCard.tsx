@@ -27,7 +27,7 @@ export const SessionCard: React.FC<Props> = ({ post }) => {
     };
 
     return (
-        <div className="glass-card sharp neon-border" style={{ border: '1px solid var(--primary)', background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.05) 0%, rgba(10, 10, 12, 0) 100%)', position: 'relative', overflow: 'hidden', padding: '1.5rem' }}>
+        <div className="glass-card sharp neon-border premium-pattern" style={{ border: '1px solid var(--primary)', background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.05) 0%, rgba(10, 10, 12, 0) 100%)', position: 'relative', overflow: 'hidden', padding: '1.5rem' }}>
             <div style={{ position: 'absolute', top: 0, right: 0, padding: '4px 12px', background: 'var(--primary)', color: 'white', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>
                 LIVE SESSION
             </div>
