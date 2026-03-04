@@ -28,15 +28,33 @@ export const Feed: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!content.trim() || !user || posting) return;
+        console.log('🚀 SUBMITTING POST...', { content, tag, isSession, user: user?.id });
+
+        if (!content.trim()) {
+            alert(isRTL ? 'المحتوى غير موجود!' : 'CONTENT IS EMPTY!');
+            return;
+        }
+        if (!user || posting) return;
+
         setPosting(true);
         try {
             const metadata = isSession ? { maxSlots, currentSlots: 1 } : {};
-            await addPost(content, tag, isSession ? 'session' : 'normal', metadata);
-            setContent('');
-            setIsSession(false);
-        } catch (err) {
-            console.error('Submission failed:', err);
+            console.log('📡 CALLING addPost API...', { content, tag, type: isSession ? 'session' : 'normal', metadata });
+
+            const result = await addPost(content, tag, isSession ? 'session' : 'normal', metadata);
+
+            if (result && result.post) {
+                console.log('✅ POST CREATED SUCCESSFULLY:', result.post);
+                setContent('');
+                setIsSession(false);
+                // Optional: alert(isRTL ? 'تم النشر بنجاح!' : 'POST PUBLISHED!');
+            } else {
+                console.warn('⚠️ POST CREATION RETURNED NO DATA');
+                alert(isRTL ? 'فشل النشر: لم يتم استلام بيانات من الخادم' : 'PUBLISH FAILED: NO DATA FROM SERVER');
+            }
+        } catch (err: any) {
+            console.error('❌ SUBMISSION ERROR:', err);
+            alert(isRTL ? `خطأ في النشر: ${err.message}` : `PUBLISH ERROR: ${err.message}`);
         } finally {
             setPosting(false);
         }

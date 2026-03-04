@@ -112,12 +112,21 @@ export const useGameStore = create<GameState>((set, get) => ({
     },
 
     addPost: async (content, gameTag, type = 'normal', metadata = {}) => {
+        console.log('📦 STORE: addPost CALLED', { content, gameTag, type });
         try {
             const result = await api.posts.create(content, gameTag, type, metadata);
-            set(state => ({ posts: [result.post, ...state.posts] }));
+            console.log('📦 STORE: API RESULT RECEIVED', result);
+
+            if (result && result.post) {
+                set(state => ({
+                    posts: [result.post, ...state.posts]
+                }));
+                console.log('📦 STORE: STATE UPDATED WITH NEW POST');
+            }
             return result;
         } catch (err) {
-            console.error('Add post failed:', err);
+            console.error('📦 STORE: Add post failed:', err);
+            throw err;
         }
     },
 

@@ -279,11 +279,19 @@ async function handleGetPosts(env: Env, url: URL) {
 }
 
 async function handleCreatePost(env: Env, request: Request, jwt: JWTPayload) {
+    console.log('🛠️ BACKEND: handleCreatePost START', { userId: jwt.sub });
     const { content, gameTag, type, metadata } = await request.json() as any;
-    if (!content?.trim()) return error('Content required');
+
+    if (!content?.trim()) {
+        console.warn('🛠️ BACKEND: Empty content received');
+        return error('Content required');
+    }
 
     const user = await env.DB.prepare('SELECT display_name, country, xp, level, rank FROM users WHERE id = ?').bind(jwt.sub).first() as any;
-    if (!user) return error('User context not found', 404);
+    if (!user) {
+        console.error('🛠️ BACKEND: User context not found in DB', jwt.sub);
+        return error('User context not found', 404);
+    }
 
     const id = crypto.randomUUID();
     const postType = type || 'normal';
@@ -291,6 +299,7 @@ async function handleCreatePost(env: Env, request: Request, jwt: JWTPayload) {
     const displayName = user.display_name || jwt.username || 'Anonymous';
     const country = user.country || 'Global';
 
+    console.log('🛠️ BACKEND: Inserting post into DB...', { id, displayName });
     await env.DB.prepare(
         'INSERT INTO posts (id, content, user_id, username, game_tag, country, post_type, metadata_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
     ).bind(id, content, jwt.sub, displayName, gameTag || 'Global', country, postType, metadataStr).run();
@@ -304,6 +313,10 @@ async function handleCreatePost(env: Env, request: Request, jwt: JWTPayload) {
         WHERE p.id = ?
     `).bind(id).first() as any;
 
+    if (!post) {
+        console.error('🛠️ BACKEND: Post was inserted but could not be retrieved immediately', id);
+    }
+
     // Reward XP
     const newXp = (user.xp || 0) + 10;
     let newLevel = user.level || 1;
@@ -311,9 +324,17 @@ async function handleCreatePost(env: Env, request: Request, jwt: JWTPayload) {
     while (xpRemaining >= 100) { xpRemaining -= 100; newLevel++; }
     const ranks = ['ROOKIE', 'SOLDIER', 'ELITE', 'COMMANDER', 'LEGEND'];
     const newRank = ranks[Math.min(Math.floor(newLevel / 5), ranks.length - 1)];
+
+    console.log('🛠️ BACKEND: Updating user XP/Level...', { newLevel, newRank });
     await env.DB.prepare('UPDATE users SET xp = ?, level = ?, rank = ? WHERE id = ?').bind(xpRemaining, newLevel, newRank, jwt.sub).run();
 
-    return json({ post: { ...post, username: post.user_display_name || post.username }, xp: xpRemaining, level: newLevel, rank: newRank }, 201);
+    console.log('🛠️ BACKEND: SUCCESS');
+    return json({
+        post: { ...post, username: post?.user_display_name || post?.username || displayName },
+        xp: xpRemaining,
+        level: newLevel,
+        rank: newRank
+    }, 201);
 }
 
 async function handleFirePost(env: Env, postId: string) {
