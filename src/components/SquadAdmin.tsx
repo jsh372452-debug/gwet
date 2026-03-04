@@ -37,29 +37,29 @@ export const SquadAdmin: React.FC<Props> = ({ squad, onClose }) => {
     return (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-xl)' }}
             onClick={onClose}>
-            <div className="card" style={{ width: '100%', maxWidth: '500px', borderRadius: 'var(--radius-2xl)' }} onClick={e => e.stopPropagation()}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-2xl)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
-                        <Settings size={20} />
-                        <h2 style={{ fontWeight: 800, fontSize: 'var(--font-lg)' }}>{t('admin')}</h2>
+            <div className="glass-card compact" style={{ width: '100%', maxWidth: '500px', borderTop: `4px solid ${themeColor}` }} onClick={e => e.stopPropagation()}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Settings size={20} color="var(--primary)" />
+                        <h2 style={{ fontWeight: 900, fontSize: '1.2rem', textTransform: 'uppercase' }}>{t('admin')}</h2>
                     </div>
                     <button className="btn ghost icon-only" onClick={onClose}><X size={18} /></button>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xl)' }}>
                     <div>
-                        <label className="label"><Palette size={12} style={{ marginRight: '4px' }} /> {t('theme')}</label>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+                        <label className="label-premium"><Palette size={12} /> {t('theme')}</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                             <input type="color" value={themeColor} onChange={e => setThemeColor(e.target.value)}
-                                style={{ width: 48, height: 40, border: 'none', cursor: 'pointer', borderRadius: 'var(--radius-sm)', background: 'none' }} />
-                            <span style={{ fontSize: 'var(--font-sm)', color: 'var(--text-muted)' }}>{themeColor}</span>
+                                style={{ width: 60, height: 40, border: 'none', cursor: 'pointer', borderRadius: '12px', background: 'rgba(255,255,255,0.05)' }} />
+                            <span style={{ fontSize: '12px', fontWeight: 900, color: 'var(--text-dim)' }}>{themeColor.toUpperCase()}</span>
                         </div>
                     </div>
 
                     <div>
-                        <label className="label"><Upload size={12} style={{ marginRight: '4px' }} /> {t('banner')}</label>
-                        <label className="btn" style={{ width: '100%', cursor: 'pointer' }}>
-                            Choose Banner Image
+                        <label className="label-premium"><Upload size={12} /> {t('banner')}</label>
+                        <label className="btn ghost" style={{ width: '100%', cursor: 'pointer' }}>
+                            {t('upload').toUpperCase()} BANNER
                             <input type="file" hidden accept="image/*" onChange={handleBanner} />
                         </label>
                         {bannerB64 && <img src={bannerB64} alt="Banner" style={{ width: '100%', height: 80, objectFit: 'cover', borderRadius: 'var(--radius-md)', marginTop: 'var(--space-md)' }} />}

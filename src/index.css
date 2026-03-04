@@ -174,7 +174,8 @@ body {
 /* ========================
    GLASSMORPHISM
    ======================== */
-.glass-card {
+.glass-card,
+.card {
   background: var(--bg-card);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
@@ -185,9 +186,21 @@ body {
   transition: var(--transition-smooth);
 }
 
-.glass-card:hover {
+.glass-card:hover,
+.card:hover {
   border-color: rgba(0, 209, 255, 0.25);
   box-shadow: 0 0 50px rgba(0, 209, 255, 0.1);
+}
+
+.glass-card.compact,
+.card.compact {
+  padding: 1.25rem;
+  border-radius: 18px;
+}
+
+.glass-card.sharp,
+.card.sharp {
+  border-radius: 0;
 }
 
 /* ========================
