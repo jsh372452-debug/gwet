@@ -1,23 +1,22 @@
 /// <reference types="@cloudflare/workers-types" />
-import { AccessToken } from 'livekit-server-sdk';
 import { signJWT, verifyJWT, hashPassword, generateSalt, json, error, getUserFromRequest, JWTPayload } from '../_lib/jwt';
+import { calculateFreshness, calculateEntityScore, calculateInfluenceFromEdges, getEdgeWeight, EDGE_WEIGHTS } from '../_lib/scoring';
+import { checkAndIncrementEdgeCount, isSpamEntity } from '../_lib/spam-guard';
 
 interface Env {
     DB: D1Database;
     JWT_SECRET: string;
-    AI: any;
-    LIVEKIT_API_KEY: string;
-    LIVEKIT_API_SECRET: string;
 }
 
-// ─── Router ────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// ROUTER
+// ═══════════════════════════════════════════════════════════════
+
 export const onRequest: PagesFunction<Env> = async (context) => {
     const { request, env } = context;
     const url = new URL(request.url);
     const path = url.pathname.replace(/^\/api\//, '').replace(/\/$/, '');
     const method = request.method;
-
-    console.log(`\n🌐 [${method}] REQUEST: ${path}`);
 
     // CORS
     if (method === 'OPTIONS') {
@@ -31,72 +30,83 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     }
 
     try {
-        // Public routes (no auth required)
+        // ─── Public Routes ────────────────────────────────────
         if (method === 'POST' && path === 'auth/register') return handleRegister(env, request);
         if (method === 'POST' && path === 'auth/login') return handleLogin(env, request);
 
-        // Protected routes
+        // ─── Protected Routes ─────────────────────────────────
         const user = await getUserFromRequest(request, env.JWT_SECRET);
         if (!user) return error('Unauthorized', 401);
 
+        // Auth
         if (method === 'GET' && path === 'auth/session') return handleSession(env, user);
         if (method === 'PUT' && path === 'auth/profile') return handleUpdateProfile(env, request, user);
+
+        // User profile
         const userProfileMatch = path.match(/^users\/([^/]+)$/);
         if (method === 'GET' && userProfileMatch) return handleGetUserProfile(env, userProfileMatch[1]);
 
-        if (method === 'GET' && path === 'posts') return handleGetPosts(env, url);
+        // Feed
+        if (method === 'GET' && path === 'feed') return handleSmartFeed(env, url, user);
+        if (method === 'GET' && path === 'feed/following') return handleFollowingFeed(env, url, user);
+        const communityFeedMatch = path.match(/^feed\/community\/([^/]+)$/);
+        if (method === 'GET' && communityFeedMatch) return handleCommunityFeed(env, url, communityFeedMatch[1]);
+
+        // Posts
         if (method === 'POST' && path === 'posts') return handleCreatePost(env, request, user);
-        if (method === 'GET' && path === 'explore') return handleExplore(env, url);
-
-        const postFire = path.match(/^posts\/([^/]+)\/fire$/);
-        if (method === 'POST' && postFire) return handleFirePost(env, postFire[1]);
-
-        const postJoin = path.match(/^posts\/([^/]+)\/join$/);
-        if (method === 'POST' && postJoin) return handleJoinSession(env, postJoin[1], user);
-
-        const postComments = path.match(/^posts\/([^/]+)\/comments$/);
-        if (postComments) {
-            if (method === 'GET') return handleGetComments(env, postComments[1]);
-            if (method === 'POST') return handleAddComment(env, request, user, postComments[1]);
+        const postIdMatch = path.match(/^posts\/([^/]+)$/);
+        if (postIdMatch) {
+            if (method === 'GET') return handleGetPost(env, postIdMatch[1]);
+            if (method === 'DELETE') return handleDeletePost(env, postIdMatch[1], user);
         }
+        const postCommentsMatch = path.match(/^posts\/([^/]+)\/comments$/);
+        if (method === 'GET' && postCommentsMatch) return handleGetComments(env, postCommentsMatch[1]);
 
-        if (method === 'GET' && path === 'squads') return handleGetSquads(env, user);
-        if (method === 'POST' && path === 'squads') return handleCreateSquad(env, request, user);
+        // Interactions
+        const likeMatch = path.match(/^interact\/like\/([^/]+)$/);
+        if (method === 'POST' && likeMatch) return handleLike(env, likeMatch[1], user);
+        const unlikeMatch = path.match(/^interact\/unlike\/([^/]+)$/);
+        if (method === 'POST' && unlikeMatch) return handleUnlike(env, unlikeMatch[1], user);
+        const replyMatch = path.match(/^interact\/reply\/([^/]+)$/);
+        if (method === 'POST' && replyMatch) return handleReply(env, request, replyMatch[1], user);
+        const shareMatch = path.match(/^interact\/share\/([^/]+)$/);
+        if (method === 'POST' && shareMatch) return handleShare(env, shareMatch[1], user);
+        const followMatch = path.match(/^interact\/follow\/([^/]+)$/);
+        if (method === 'POST' && followMatch) return handleFollow(env, followMatch[1], user);
+        const unfollowMatch = path.match(/^interact\/unfollow\/([^/]+)$/);
+        if (method === 'POST' && unfollowMatch) return handleUnfollow(env, unfollowMatch[1], user);
+        const reportMatch = path.match(/^interact\/report\/([^/]+)$/);
+        if (method === 'POST' && reportMatch) return handleReport(env, request, reportMatch[1], user);
 
-        const squadJoin = path.match(/^squads\/([^/]+)\/join$/);
-        if (method === 'POST' && squadJoin) return handleJoinSquad(env, user, squadJoin[1]);
+        // Communities
+        if (method === 'GET' && path === 'communities') return handleGetCommunities(env);
+        if (method === 'POST' && path === 'communities') return handleCreateCommunity(env, request, user);
+        const communityJoinMatch = path.match(/^communities\/([^/]+)\/join$/);
+        if (method === 'POST' && communityJoinMatch) return handleJoinCommunity(env, communityJoinMatch[1], user);
+        const communityLeaveMatch = path.match(/^communities\/([^/]+)\/leave$/);
+        if (method === 'POST' && communityLeaveMatch) return handleLeaveCommunity(env, communityLeaveMatch[1], user);
 
-        const squadKick = path.match(/^squads\/([^/]+)\/kick$/);
-        if (method === 'POST' && squadKick) return handleKickMember(env, request, user, squadKick[1]);
+        // Leaderboard
+        if (method === 'GET' && path === 'leaderboard') return handleLeaderboard(env, url);
+        const platformMatch = path.match(/^leaderboard\/platform\/([^/]+)$/);
+        if (method === 'GET' && platformMatch) return handleLeaderboardByPlatform(env, platformMatch[1]);
 
-        const squadUpdate = path.match(/^squads\/([^/]+)$/);
-        if (method === 'PUT' && squadUpdate) return handleUpdateSquad(env, request, user, squadUpdate[1]);
-
-        const squadAiChat = path.match(/^squads\/([^/]+)\/ai\/chat$/);
-        if (method === 'POST' && squadAiChat) return handleSquadAiChat(env, request, user, squadAiChat[1]);
-
-        const squadVoice = path.match(/^squads\/([^/]+)\/voice\/token$/);
-        if (method === 'POST' && squadVoice) return handleGetVoiceToken(env, user, squadVoice[1]);
-
-        if (method === 'GET' && path === 'groups') return handleGetGroups(env, user);
-        if (method === 'POST' && path === 'groups') return handleCreateGroup(env, request, user);
-
-        if (method === 'GET' && path === 'messages') return handleGetMessages(env, url);
-        if (method === 'POST' && path === 'messages') return handleSendMessage(env, request, user);
-
-        if (method === 'GET' && path === 'events') return handleGetEvents(env, url);
-        if (method === 'POST' && path === 'events') return handleCreateEvent(env, request, user);
-        if (method === 'GET' && path === 'leaderboard') return handleGetLeaderboard(env);
-        const eventJoin = path.match(/^events\/([^/]+)\/join$/);
-        if (method === 'POST' && eventJoin) return handleJoinEvent(env, eventJoin[1], user);
+        // Chat
+        if (method === 'POST' && path === 'chat/send') return handleChatSend(env, request, user);
+        if (method === 'GET' && path === 'chat/rooms') return handleChatRooms(env, user);
+        const chatRoomMatch = path.match(/^chat\/room\/([^/]+)$/);
+        if (method === 'GET' && chatRoomMatch) return handleChatRoom(env, chatRoomMatch[1], url);
 
         return error('Not found', 404);
     } catch (e: any) {
+        console.error('Server error:', e);
         return error(e.message || 'Server error', 500);
     }
 };
 
-// ─── Auth Handlers ─────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════
+// AUTH HANDLERS
+// ═══════════════════════════════════════════════════════════════
 
 async function handleRegister(env: Env, request: Request) {
     const { username, password } = await request.json() as any;
@@ -104,555 +114,875 @@ async function handleRegister(env: Env, request: Request) {
     if (username.length < 3) return error('Username must be at least 3 characters');
     if (password.length < 4) return error('Password must be at least 4 characters');
 
-    const existing = await env.DB.prepare('SELECT id FROM users WHERE username = ?').bind(username).first();
+    const existing = await env.DB.prepare('SELECT id FROM profiles WHERE username = ?').bind(username).first();
     if (existing) return error('Username already taken');
 
     const id = crypto.randomUUID();
     const salt = generateSalt();
     const passwordHash = await hashPassword(password, salt);
 
+    // Create profile
     await env.DB.prepare(
-        'INSERT INTO users (id, username, password_hash, salt, display_name, country, language) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    ).bind(id, username, passwordHash, salt, username, 'Global', 'en').run();
+        'INSERT INTO profiles (id, username, password_hash, salt, display_name) VALUES (?, ?, ?, ?, ?)'
+    ).bind(id, username, passwordHash, salt, username).run();
 
-    const token = await signJWT({ sub: id, username, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30 }, env.JWT_SECRET);
-    const user = { id, username, displayName: username, avatarUrl: '', isOnboarded: false, xp: 0, level: 1, rank: 'ROOKIE', country: 'Global', language: 'en' };
-    return json({ token, user });
+    // Create user_profile entity (used as follow target)
+    const entityId = crypto.randomUUID();
+    await env.DB.prepare(
+        'INSERT INTO entities (id, type, owner_id, metadata) VALUES (?, ?, ?, ?)'
+    ).bind(entityId, 'user_profile', id, JSON.stringify({ username })).run();
+
+    const token = await signJWT({
+        sub: id, username,
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30
+    }, env.JWT_SECRET);
+
+    return json({
+        token,
+        user: {
+            id, username, displayName: username, avatarUrl: '', bio: '',
+            gamingPlatform: '', influenceScore: 0, isOnboarded: false,
+            country: 'Global', language: 'en'
+        }
+    });
 }
 
 async function handleLogin(env: Env, request: Request) {
     const { username, password } = await request.json() as any;
     if (!username || !password) return error('Username and password required');
 
-    const record = await env.DB.prepare('SELECT * FROM users WHERE username = ?').bind(username).first() as any;
+    const record = await env.DB.prepare('SELECT * FROM profiles WHERE username = ?').bind(username).first() as any;
     if (!record) return error('User not found');
 
     const hash = await hashPassword(password, record.salt);
     if (hash !== record.password_hash) return error('Invalid password');
 
-    const token = await signJWT({ sub: record.id, username: record.username, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30 }, env.JWT_SECRET);
-    const user = {
-        id: record.id, username: record.username, displayName: record.display_name || record.username,
-        avatarUrl: record.avatar_url || '', isOnboarded: !!record.is_onboarded, xp: record.xp || 0,
-        level: record.level || 1, rank: record.rank || 'ROOKIE', country: record.country || 'Global', language: record.language || 'en'
-    };
-    return json({ token, user });
+    const token = await signJWT({
+        sub: record.id, username: record.username,
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 30
+    }, env.JWT_SECRET);
+
+    return json({
+        token,
+        user: mapProfileToUser(record)
+    });
 }
 
 async function handleSession(env: Env, jwt: JWTPayload) {
-    const record = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(jwt.sub).first() as any;
+    const record = await env.DB.prepare('SELECT * FROM profiles WHERE id = ?').bind(jwt.sub).first() as any;
     if (!record) return error('User not found', 404);
-    return json({
-        user: {
-            id: record.id, username: record.username, displayName: record.display_name || record.username,
-            avatarUrl: record.avatar_url || '', isOnboarded: !!record.is_onboarded, xp: record.xp || 0,
-            level: record.level || 1, rank: record.rank || 'ROOKIE', country: record.country || 'Global', language: record.language || 'en'
-        }
-    });
+
+    // Update influence inline
+    await updateInfluenceScore(env.DB, jwt.sub);
+    const updated = await env.DB.prepare('SELECT * FROM profiles WHERE id = ?').bind(jwt.sub).first() as any;
+
+    return json({ user: mapProfileToUser(updated) });
 }
 
 async function handleUpdateProfile(env: Env, request: Request, jwt: JWTPayload) {
-    const { displayName, avatarUrl, country, language, isOnboarded, bio, gameId, gameUsername, whatsapp, telegram } = await request.json() as any;
-    const sets: string[] = [];
-    const vals: any[] = [];
-
-    if (displayName !== undefined) { sets.push('display_name = ?'); vals.push(displayName); }
-    if (avatarUrl !== undefined) { sets.push('avatar_url = ?'); vals.push(avatarUrl); }
-    if (country !== undefined) { sets.push('country = ?'); vals.push(country); }
-    if (language !== undefined) { sets.push('language = ?'); vals.push(language); }
-    if (isOnboarded !== undefined) { sets.push('is_onboarded = ?'); vals.push(isOnboarded ? 1 : 0); }
-    if (bio !== undefined) { sets.push('bio = ?'); vals.push(bio); }
-    if (gameId !== undefined) { sets.push('game_id = ?'); vals.push(gameId); }
-    if (gameUsername !== undefined) { sets.push('game_username = ?'); vals.push(gameUsername); }
-    if (whatsapp !== undefined) { sets.push('whatsapp = ?'); vals.push(whatsapp); }
-    if (telegram !== undefined) { sets.push('telegram = ?'); vals.push(telegram); }
-
-    if (sets.length === 0) return error('No fields to update');
-
-    vals.push(jwt.sub);
-    await env.DB.prepare(`UPDATE users SET ${sets.join(', ')} WHERE id = ?`).bind(...vals).run();
-
-    // Fetch updated user
-    const record = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(jwt.sub).first() as any;
-    return json({
-        user: {
-            id: record.id, username: record.username, displayName: record.display_name,
-            avatarUrl: record.avatar_url || '', isOnboarded: !!record.is_onboarded, xp: record.xp,
-            level: record.level, rank: record.rank, country: record.country, language: record.language,
-            whatsapp: record.whatsapp || '', telegram: record.telegram || ''
-        }
-    });
-}
-
-async function handleGetUserProfile(env: Env, userId: string) {
-    const user = await env.DB.prepare('SELECT * FROM users WHERE id = ?').bind(userId).first() as any;
-    if (!user) return error('User not found');
-
-    // Enhanced Reputation Calculation
-    const fireData = await env.DB.prepare('SELECT SUM(fire_count) as total FROM posts WHERE user_id = ?').bind(userId).first() as any;
-    const totalFire = fireData?.total || 0;
-
-    // Rep Formula: (Fire * 5) + (XP / 10) + (PostCount * 2) + (MsgCount * 1) + (HelpfulAI * 50)
-    const reputation = (totalFire * 5) + ((user.xp || 0) / 10) + ((user.post_count || 0) * 2) + ((user.message_count || 0) * 1) + ((user.total_helpful_ai_flags || 0) * 50);
-
-    let tier = 'BRONZE';
-    if (reputation > 5000) tier = 'MYTHIC';
-    else if (reputation > 2500) tier = 'LEGEND';
-    else if (reputation > 1000) tier = 'DIAMOND';
-    else if (reputation > 500) tier = 'PLATINUM';
-    else if (reputation > 250) tier = 'GOLD';
-    else if (reputation > 100) tier = 'SILVER';
-
-    return json({
-        profile: {
-            ...user,
-            reputation,
-            tier
-        }
-    });
-}
-
-// ─── Posts Handlers ────────────────────────────────────────
-
-async function handleGetPosts(env: Env, url: URL) {
-    const limit = parseInt(url.searchParams.get('limit') || '50');
-    const offset = parseInt(url.searchParams.get('offset') || '0');
-    const gameTag = url.searchParams.get('gameTag');
-    const sort = url.searchParams.get('sort') || 'latest';
-    const params: any[] = [];
-
-    let query = '';
-    if (sort === 'fire') {
-        // Algorithm: Score = (fire_count + 1) / (hours_alive + 2)^1.5
-        query = `
-            SELECT p.*, u.display_name as user_display_name, u.avatar_url, u.xp as user_xp, u.post_count as user_post_count, u.message_count as user_message_count, u.total_helpful_ai_flags as user_total_helpful_ai_flags,
-            (SELECT SUM(fire_count) FROM posts WHERE user_id = u.id) as user_total_fire,
-            ( (p.fire_count + 1.0) / ( (julianday('now') - julianday(p.created_at)) * 24.0 + 2.0 ) ) as score 
-            FROM posts p
-            LEFT JOIN users u ON p.user_id = u.id
-            WHERE p.is_deleted = 0
-        `;
-    } else {
-        query = `
-            SELECT p.*, u.display_name as user_display_name, u.avatar_url, u.xp as user_xp, u.post_count as user_post_count, u.message_count as user_message_count, u.total_helpful_ai_flags as user_total_helpful_ai_flags,
-            (SELECT SUM(fire_count) FROM posts WHERE user_id = u.id) as user_total_fire
-            FROM posts p
-            LEFT JOIN users u ON p.user_id = u.id
-            WHERE p.is_deleted = 0
-        `;
-    }
-
-    if (gameTag && gameTag !== 'all') {
-        query += ' AND p.game_tag = ?';
-        params.push(gameTag);
-    }
-
-    if (sort === 'fire') {
-        query += ' ORDER BY score DESC, p.created_at DESC';
-    } else {
-        query += ' ORDER BY p.created_at DESC';
-    }
-
-    query += ' LIMIT ? OFFSET ?';
-    params.push(limit, offset);
-
-    const postsRes = await env.DB.prepare(query).bind(...params).all();
-    const results = postsRes.results || [];
-
-    // Enrich with reputation tiers
-    const enriched = results.map((p: any) => {
-        const reputation = (p.user_total_fire * 5) + ((p.user_xp || 0) / 10) + ((p.user_post_count || 0) * 2) + ((p.user_message_count || 0) * 1) + ((p.user_total_helpful_ai_flags || 0) * 50);
-        let tier = 'BRONZE';
-        if (reputation > 5000) tier = 'MYTHIC';
-        else if (reputation > 2500) tier = 'LEGEND';
-        else if (reputation > 1000) tier = 'DIAMOND';
-        else if (reputation > 500) tier = 'PLATINUM';
-        else if (reputation > 250) tier = 'GOLD';
-        else if (reputation > 100) tier = 'SILVER';
-
-        return {
-            ...p,
-            reputation_tier: tier,
-            username: p.user_display_name || p.username
-        };
-    });
-
-    return json({ posts: enriched });
-}
-
-async function handleCreatePost(env: Env, request: Request, jwt: JWTPayload) {
-    console.log('🛠️ BACKEND: handleCreatePost START', { userId: jwt.sub });
-    const { content, gameTag, type, metadata } = await request.json() as any;
-
-    if (!content?.trim()) {
-        console.warn('🛠️ BACKEND: Empty content received');
-        return error('Content required');
-    }
-
-    console.log('🛠️ BACKEND: Fetching user info from context sub:', jwt.sub);
-
-    const user = await env.DB.prepare('SELECT display_name, country, xp, level, rank FROM users WHERE id = ?').bind(jwt.sub).first() as any;
-    if (!user) {
-        console.error('🛠️ BACKEND: User context not found in DB', jwt.sub);
-        return error('User context not found', 404);
-    }
-
-    const id = crypto.randomUUID();
-    const postType = type || 'normal';
-    const metadataStr = JSON.stringify(metadata || {});
-    const displayName = user.display_name || jwt.username || 'Anonymous';
-    const country = user.country || 'Global';
-
-    console.log('🛠️ BACKEND: Inserting post into DB...', { id, displayName });
-    await env.DB.prepare(
-        'INSERT INTO posts (id, content, user_id, username, game_tag, country, post_type, metadata_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-    ).bind(id, content, jwt.sub, displayName, gameTag || 'Global', country, postType, metadataStr).run();
-
-    await env.DB.prepare('UPDATE users SET post_count = post_count + 1 WHERE id = ?').bind(jwt.sub).run();
-
-    const post = await env.DB.prepare(`
-        SELECT p.*, u.display_name as user_display_name, u.avatar_url, u.reputation_tier 
-        FROM posts p
-        JOIN users u ON p.user_id = u.id
-        WHERE p.id = ?
-    `).bind(id).first() as any;
-
-    if (!post) {
-        console.error('🛠️ BACKEND: Post was inserted but could not be retrieved immediately', id);
-    }
-
-    // Reward XP
-    const newXp = (user.xp || 0) + 10;
-    let newLevel = user.level || 1;
-    let xpRemaining = newXp;
-    while (xpRemaining >= 100) { xpRemaining -= 100; newLevel++; }
-    const ranks = ['ROOKIE', 'SOLDIER', 'ELITE', 'COMMANDER', 'LEGEND'];
-    const newRank = ranks[Math.min(Math.floor(newLevel / 5), ranks.length - 1)];
-
-    console.log('🛠️ BACKEND: Updating user XP/Level...', { newLevel, newRank });
-    await env.DB.prepare('UPDATE users SET xp = ?, level = ?, rank = ? WHERE id = ?').bind(xpRemaining, newLevel, newRank, jwt.sub).run();
-
-    console.log('🛠️ BACKEND: SUCCESS');
-    return json({
-        post: { ...post, username: post?.user_display_name || post?.username || displayName },
-        xp: xpRemaining,
-        level: newLevel,
-        rank: newRank
-    }, 201);
-}
-
-async function handleFirePost(env: Env, postId: string) {
-    await env.DB.prepare('UPDATE posts SET fire_count = fire_count + 1 WHERE id = ?').bind(postId).run();
-    const post = await env.DB.prepare('SELECT fire_count FROM posts WHERE id = ?').bind(postId).first() as any;
-    return json({ fireCount: post?.fire_count || 0 });
-}
-
-async function handleJoinSession(env: Env, postId: string, jwt: JWTPayload) {
-    const post = await env.DB.prepare('SELECT metadata_json, post_type FROM posts WHERE id = ?').bind(postId).first() as any;
-    if (!post || post.post_type !== 'session') return error('Not a session');
-
-    const meta = JSON.parse(post.metadata_json || '{}');
-    if (meta.currentSlots >= meta.maxSlots) return error('Session full');
-
-    meta.currentSlots = (meta.currentSlots || 0) + 1;
-    await env.DB.prepare('UPDATE posts SET metadata_json = ? WHERE id = ?').bind(JSON.stringify(meta), postId).run();
-
-    return json({ metadata: meta });
-}
-
-async function handleGetComments(env: Env, postId: string) {
-    const comments = await env.DB.prepare('SELECT * FROM comments WHERE post_id = ? ORDER BY created_at ASC').bind(postId).all();
-    return json({ comments: comments.results || [] });
-}
-
-async function handleAddComment(env: Env, request: Request, jwt: JWTPayload, postId: string) {
-    const { content } = await request.json() as any;
-    if (!content?.trim()) return error('Content required');
-
-    const user = await env.DB.prepare('SELECT display_name, country FROM users WHERE id = ?').bind(jwt.sub).first() as any;
-    const id = crypto.randomUUID();
-
-    await env.DB.prepare(
-        'INSERT INTO comments (id, post_id, user_id, username, content, country) VALUES (?, ?, ?, ?, ?, ?)'
-    ).bind(id, postId, jwt.sub, user.display_name || jwt.username, content, user.country || 'Global').run();
-
-    const comment = await env.DB.prepare('SELECT * FROM comments WHERE id = ?').bind(id).first();
-    return json({ comment }, 201);
-}
-
-// ─── Explore Handler ──────────────────────────────────────
-
-async function handleExplore(env: Env, url: URL) {
-    const tab = url.searchParams.get('tab') || 'latest';
-    const gameTag = url.searchParams.get('gameTag');
-    const limit = parseInt(url.searchParams.get('limit') || '30');
-
-    let query: string;
-    const params: any[] = [];
-
-    if (tab === 'popular') {
-        query = 'SELECT * FROM posts WHERE is_deleted = 0 ORDER BY fire_count DESC, created_at DESC LIMIT ?';
-        params.push(limit);
-    } else if (tab === 'game' && gameTag) {
-        query = 'SELECT * FROM posts WHERE is_deleted = 0 AND game_tag = ? ORDER BY created_at DESC LIMIT ?';
-        params.push(gameTag, limit);
-    } else {
-        query = 'SELECT * FROM posts WHERE is_deleted = 0 ORDER BY created_at DESC LIMIT ?';
-        params.push(limit);
-    }
-
-    const posts = await env.DB.prepare(query).bind(...params).all();
-
-    // Also get unique game tags for the filter
-    const tags = await env.DB.prepare('SELECT DISTINCT game_tag FROM posts WHERE is_deleted = 0 ORDER BY game_tag').all();
-
-    return json({ posts: posts.results || [], gameTags: (tags.results || []).map((t: any) => t.game_tag) });
-}
-
-// ─── Squads Handlers ─────────────────────────────────────
-
-async function handleGetSquads(env: Env, jwt: JWTPayload) {
-    const squads = await env.DB.prepare(`
-    SELECT s.*, 
-      (SELECT COUNT(*) FROM squad_members WHERE squad_id = s.id) as member_count,
-      EXISTS(SELECT 1 FROM squad_members WHERE squad_id = s.id AND user_id = ?) as is_member
-    FROM squads s ORDER BY s.created_at DESC
-  `).bind(jwt.sub).all();
-    return json({ squads: squads.results || [] });
-}
-
-async function handleCreateSquad(env: Env, request: Request, jwt: JWTPayload) {
-    const { name, description } = await request.json() as any;
-    if (!name?.trim()) return error('Name required');
-
-    const id = crypto.randomUUID();
-    await env.DB.prepare('INSERT INTO squads (id, name, description, owner_id) VALUES (?, ?, ?, ?)').bind(id, name, description || '', jwt.sub).run();
-    await env.DB.prepare('INSERT INTO squad_members (squad_id, user_id, role) VALUES (?, ?, ?)')
-        .bind(id, jwt.sub, 'owner').run();
-
-    return json({ squad: { id, name, description, ownerId: jwt.sub, themeColor: '#a855f7', bannerBase64: null, bgStyle: 'default', member_count: 1, is_member: 1 } }, 201);
-}
-
-async function handleJoinSquad(env: Env, jwt: JWTPayload, squadId: string) {
-    try {
-        await env.DB.prepare('INSERT INTO squad_members (squad_id, user_id) VALUES (?, ?)').bind(squadId, jwt.sub).run();
-        return json({ success: true });
-    } catch {
-        return json({ success: true }); // Already a member
-    }
-}
-
-async function handleKickMember(env: Env, request: Request, jwt: JWTPayload, squadId: string) {
-    const squad = await env.DB.prepare('SELECT owner_id FROM squads WHERE id = ?').bind(squadId).first() as any;
-    if (!squad || squad.owner_id !== jwt.sub) return error('Not authorized', 403);
-
-    const { userId } = await request.json() as any;
-    await env.DB.prepare('DELETE FROM squad_members WHERE squad_id = ? AND user_id = ?').bind(squadId, userId).run();
-    return json({ success: true });
-}
-
-async function handleUpdateSquad(env: Env, request: Request, jwt: JWTPayload, squadId: string) {
-    const squad = await env.DB.prepare('SELECT owner_id FROM squads WHERE id = ?').bind(squadId).first() as any;
-    if (!squad || squad.owner_id !== jwt.sub) return error('Not authorized', 403);
-
     const data = await request.json() as any;
     const sets: string[] = [];
     const vals: any[] = [];
 
-    if (data.themeColor !== undefined) { sets.push('theme_color = ?'); vals.push(data.themeColor); }
-    if (data.bannerBase64 !== undefined) { sets.push('banner_base64 = ?'); vals.push(data.bannerBase64); }
-    if (data.bgStyle !== undefined) { sets.push('bg_style = ?'); vals.push(data.bgStyle); }
-    if (data.name !== undefined) { sets.push('name = ?'); vals.push(data.name); }
-    if (data.description !== undefined) { sets.push('description = ?'); vals.push(data.description); }
+    const fields: Record<string, string> = {
+        displayName: 'display_name', avatarUrl: 'avatar_url', country: 'country',
+        language: 'language', bio: 'bio', gamingPlatform: 'gaming_platform'
+    };
 
-    if (sets.length > 0) {
-        vals.push(squadId);
-        await env.DB.prepare(`UPDATE squads SET ${sets.join(', ')} WHERE id = ?`).bind(...vals).run();
+    for (const [jsKey, dbKey] of Object.entries(fields)) {
+        if (data[jsKey] !== undefined) {
+            sets.push(`${dbKey} = ?`);
+            vals.push(data[jsKey]);
+        }
+    }
+
+    if (data.isOnboarded !== undefined) {
+        sets.push('is_onboarded = ?');
+        vals.push(data.isOnboarded ? 1 : 0);
+    }
+
+    if (sets.length === 0) return error('No fields to update');
+
+    vals.push(jwt.sub);
+    await env.DB.prepare(`UPDATE profiles SET ${sets.join(', ')} WHERE id = ?`).bind(...vals).run();
+
+    const record = await env.DB.prepare('SELECT * FROM profiles WHERE id = ?').bind(jwt.sub).first() as any;
+    return json({ user: mapProfileToUser(record) });
+}
+
+async function handleGetUserProfile(env: Env, userId: string) {
+    const record = await env.DB.prepare('SELECT * FROM profiles WHERE id = ?').bind(userId).first() as any;
+    if (!record) return error('User not found', 404);
+
+    // Update influence inline
+    await updateInfluenceScore(env.DB, userId);
+    const updated = await env.DB.prepare('SELECT * FROM profiles WHERE id = ?').bind(userId).first() as any;
+
+    // Get stats
+    const postCount = await env.DB.prepare(
+        "SELECT COUNT(*) as c FROM entities WHERE owner_id = ? AND type = 'post'"
+    ).bind(userId).first() as any;
+
+    const followerCount = await env.DB.prepare(
+        "SELECT COUNT(*) as c FROM edges WHERE to_entity IN (SELECT id FROM entities WHERE owner_id = ? AND type = 'user_profile') AND type = 'follow'"
+    ).bind(userId).first() as any;
+
+    const followingCount = await env.DB.prepare(
+        "SELECT COUNT(*) as c FROM edges WHERE from_user = ? AND type = 'follow'"
+    ).bind(userId).first() as any;
+
+    return json({
+        profile: {
+            ...mapProfileToUser(updated),
+            postCount: postCount?.c || 0,
+            followerCount: followerCount?.c || 0,
+            followingCount: followingCount?.c || 0,
+        }
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FEED HANDLERS
+// ═══════════════════════════════════════════════════════════════
+
+async function handleSmartFeed(env: Env, url: URL, jwt: JWTPayload) {
+    const limit = parseInt(url.searchParams.get('limit') || '20');
+    const offset = parseInt(url.searchParams.get('offset') || '0');
+
+    // Get all post entities with their owner info, ordered by recency as base
+    const posts = await env.DB.prepare(`
+        SELECT e.id, e.type, e.owner_id, e.metadata, e.created_at,
+               p.display_name, p.avatar_url, p.influence_score, p.username, p.gaming_platform
+        FROM entities e
+        JOIN profiles p ON e.owner_id = p.id
+        WHERE e.type = 'post'
+        ORDER BY e.created_at DESC
+        LIMIT ? OFFSET ?
+    `).bind(limit + 20, offset).all(); // Fetch extra for scoring reorder
+
+    const results = posts.results || [];
+
+    // Score each post
+    const scoredPosts = await Promise.all(results.map(async (post: any) => {
+        const edges = await env.DB.prepare(
+            'SELECT weight, created_at FROM edges WHERE to_entity = ?'
+        ).bind(post.id).all();
+
+        const edgeList = (edges.results || []) as Array<{ weight: number; created_at: string }>;
+        const score = calculateEntityScore(edgeList, post.influence_score);
+        const meta = safeParseJSON(post.metadata);
+
+        // Get interaction counts
+        const likeCount = edgeList.filter((e: any) => e.type === 'like' || true).length;
+        const likes = await env.DB.prepare(
+            "SELECT COUNT(*) as c FROM edges WHERE to_entity = ? AND type = 'like'"
+        ).bind(post.id).first() as any;
+        const replies = await env.DB.prepare(
+            "SELECT COUNT(*) as c FROM edges WHERE to_entity = ? AND type = 'reply'"
+        ).bind(post.id).first() as any;
+        const shares = await env.DB.prepare(
+            "SELECT COUNT(*) as c FROM edges WHERE to_entity = ? AND type = 'share'"
+        ).bind(post.id).first() as any;
+
+        // Check if current user has liked
+        const userLiked = await env.DB.prepare(
+            "SELECT id FROM edges WHERE from_user = ? AND to_entity = ? AND type = 'like'"
+        ).bind(jwt.sub, post.id).first();
+
+        return {
+            id: post.id,
+            type: post.type,
+            ownerId: post.owner_id,
+            content: meta.content || '',
+            mediaUrl: meta.media_url || '',
+            gameTag: meta.game_tag || 'Global',
+            createdAt: post.created_at,
+            ownerName: post.display_name || post.username,
+            ownerAvatar: post.avatar_url || '',
+            ownerInfluence: post.influence_score || 0,
+            ownerPlatform: post.gaming_platform || '',
+            score,
+            likeCount: likes?.c || 0,
+            replyCount: replies?.c || 0,
+            shareCount: shares?.c || 0,
+            userLiked: !!userLiked,
+        };
+    }));
+
+    // Sort by score descending then take limit
+    scoredPosts.sort((a, b) => b.score - a.score);
+    const feed = scoredPosts.slice(0, limit);
+
+    return json({ posts: feed });
+}
+
+async function handleFollowingFeed(env: Env, url: URL, jwt: JWTPayload) {
+    const limit = parseInt(url.searchParams.get('limit') || '20');
+    const offset = parseInt(url.searchParams.get('offset') || '0');
+
+    // Get IDs of users this user follows
+    const followEdges = await env.DB.prepare(`
+        SELECT ent.owner_id
+        FROM edges e
+        JOIN entities ent ON e.to_entity = ent.id
+        WHERE e.from_user = ? AND e.type = 'follow' AND ent.type = 'user_profile'
+    `).bind(jwt.sub).all();
+
+    const followedIds = (followEdges.results || []).map((r: any) => r.owner_id);
+
+    if (followedIds.length === 0) {
+        return json({ posts: [] });
+    }
+
+    // Get posts from followed users
+    const placeholders = followedIds.map(() => '?').join(',');
+    const posts = await env.DB.prepare(`
+        SELECT e.id, e.type, e.owner_id, e.metadata, e.created_at,
+               p.display_name, p.avatar_url, p.influence_score, p.username, p.gaming_platform
+        FROM entities e
+        JOIN profiles p ON e.owner_id = p.id
+        WHERE e.type = 'post' AND e.owner_id IN (${placeholders})
+        ORDER BY e.created_at DESC
+        LIMIT ? OFFSET ?
+    `).bind(...followedIds, limit, offset).all();
+
+    const results = posts.results || [];
+    const feed = await enrichPosts(env.DB, results, jwt.sub);
+
+    return json({ posts: feed });
+}
+
+async function handleCommunityFeed(env: Env, url: URL, communityId: string) {
+    const limit = parseInt(url.searchParams.get('limit') || '20');
+
+    // Get community game_tag
+    const community = await env.DB.prepare('SELECT game_tag FROM communities WHERE id = ?').bind(communityId).first() as any;
+    if (!community) return error('Community not found', 404);
+
+    // Get posts tagged with this community's game
+    const posts = await env.DB.prepare(`
+        SELECT e.id, e.type, e.owner_id, e.metadata, e.created_at,
+               p.display_name, p.avatar_url, p.influence_score, p.username, p.gaming_platform
+        FROM entities e
+        JOIN profiles p ON e.owner_id = p.id
+        WHERE e.type = 'post' AND json_extract(e.metadata, '$.game_tag') = ?
+        ORDER BY e.created_at DESC
+        LIMIT ?
+    `).bind(community.game_tag, limit).all();
+
+    const results = posts.results || [];
+    const feed = await enrichPosts(env.DB, results, '');
+
+    return json({ posts: feed, community });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// POST HANDLERS
+// ═══════════════════════════════════════════════════════════════
+
+async function handleCreatePost(env: Env, request: Request, jwt: JWTPayload) {
+    const { content, gameTag, mediaUrl } = await request.json() as any;
+    if (!content?.trim()) return error('Content required');
+
+    // Spam check
+    const spamCheck = await checkAndIncrementEdgeCount(env.DB, jwt.sub);
+    if (!spamCheck.allowed) return error('Daily interaction limit reached. Try again tomorrow.', 429);
+
+    const user = await env.DB.prepare('SELECT display_name, username FROM profiles WHERE id = ?').bind(jwt.sub).first() as any;
+    if (!user) return error('User not found', 404);
+
+    // Create entity
+    const entityId = crypto.randomUUID();
+    const metadata = JSON.stringify({
+        content,
+        media_url: mediaUrl || '',
+        game_tag: gameTag || 'Global'
+    });
+
+    await env.DB.prepare(
+        'INSERT INTO entities (id, type, owner_id, metadata) VALUES (?, ?, ?, ?)'
+    ).bind(entityId, 'post', jwt.sub, metadata).run();
+
+    // Create 'create' edge
+    const edgeId = crypto.randomUUID();
+    await env.DB.prepare(
+        'INSERT INTO edges (id, from_user, to_entity, type, weight) VALUES (?, ?, ?, ?, ?)'
+    ).bind(edgeId, jwt.sub, entityId, 'create', EDGE_WEIGHTS.create).run();
+
+    return json({
+        post: {
+            id: entityId,
+            type: 'post',
+            ownerId: jwt.sub,
+            content,
+            mediaUrl: mediaUrl || '',
+            gameTag: gameTag || 'Global',
+            createdAt: new Date().toISOString(),
+            ownerName: user.display_name || user.username,
+            ownerAvatar: '',
+            ownerInfluence: 0,
+            score: 0,
+            likeCount: 0,
+            replyCount: 0,
+            shareCount: 0,
+            userLiked: false,
+        }
+    }, 201);
+}
+
+async function handleGetPost(env: Env, postId: string) {
+    const entity = await env.DB.prepare(`
+        SELECT e.*, p.display_name, p.avatar_url, p.influence_score, p.username, p.gaming_platform
+        FROM entities e
+        JOIN profiles p ON e.owner_id = p.id
+        WHERE e.id = ? AND e.type = 'post'
+    `).bind(postId).first() as any;
+
+    if (!entity) return error('Post not found', 404);
+
+    const enriched = (await enrichPosts(env.DB, [entity], ''))[0];
+    return json({ post: enriched });
+}
+
+async function handleDeletePost(env: Env, postId: string, jwt: JWTPayload) {
+    const entity = await env.DB.prepare('SELECT owner_id FROM entities WHERE id = ?').bind(postId).first() as any;
+    if (!entity) return error('Post not found', 404);
+    if (entity.owner_id !== jwt.sub) return error('Not authorized', 403);
+
+    // Delete all edges pointing to this entity
+    await env.DB.prepare('DELETE FROM edges WHERE to_entity = ?').bind(postId).run();
+    // Delete the entity
+    await env.DB.prepare('DELETE FROM entities WHERE id = ?').bind(postId).run();
+
+    return json({ success: true });
+}
+
+async function handleGetComments(env: Env, postId: string) {
+    // Comments are entities with metadata.parent_entity_id = postId
+    // Connected via 'reply' edges
+    const comments = await env.DB.prepare(`
+        SELECT e.id, e.metadata, e.created_at, e.owner_id,
+               p.display_name, p.avatar_url, p.username, p.influence_score
+        FROM edges ed
+        JOIN entities e ON e.id = ed.to_entity OR (e.owner_id = ed.from_user AND e.type = 'comment')
+        JOIN profiles p ON e.owner_id = p.id
+        WHERE ed.to_entity = ? AND ed.type = 'reply'
+        ORDER BY e.created_at ASC
+    `).bind(postId).all();
+
+    // Alternative simpler query: get comment entities by parent
+    const commentEntities = await env.DB.prepare(`
+        SELECT e.id, e.metadata, e.created_at, e.owner_id,
+               p.display_name, p.avatar_url, p.username, p.influence_score
+        FROM entities e
+        JOIN profiles p ON e.owner_id = p.id
+        WHERE e.type = 'comment' AND json_extract(e.metadata, '$.parent_entity_id') = ?
+        ORDER BY e.created_at ASC
+    `).bind(postId).all();
+
+    const results = (commentEntities.results || []).map((c: any) => {
+        const meta = safeParseJSON(c.metadata);
+        return {
+            id: c.id,
+            content: meta.content || '',
+            createdAt: c.created_at,
+            ownerId: c.owner_id,
+            ownerName: c.display_name || c.username,
+            ownerAvatar: c.avatar_url || '',
+            ownerInfluence: c.influence_score || 0,
+        };
+    });
+
+    return json({ comments: results });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INTERACTION HANDLERS
+// ═══════════════════════════════════════════════════════════════
+
+async function handleLike(env: Env, entityId: string, jwt: JWTPayload) {
+    return createEdge(env, jwt.sub, entityId, 'like');
+}
+
+async function handleUnlike(env: Env, entityId: string, jwt: JWTPayload) {
+    await env.DB.prepare(
+        "DELETE FROM edges WHERE from_user = ? AND to_entity = ? AND type = 'like'"
+    ).bind(jwt.sub, entityId).run();
+    return json({ success: true });
+}
+
+async function handleReply(env: Env, request: Request, parentEntityId: string, jwt: JWTPayload) {
+    const { content } = await request.json() as any;
+    if (!content?.trim()) return error('Content required');
+
+    // Spam check
+    const spamCheck = await checkAndIncrementEdgeCount(env.DB, jwt.sub);
+    if (!spamCheck.allowed) return error('Daily interaction limit reached', 429);
+
+    // Create comment entity
+    const commentId = crypto.randomUUID();
+    const metadata = JSON.stringify({ content, parent_entity_id: parentEntityId });
+    await env.DB.prepare(
+        'INSERT INTO entities (id, type, owner_id, metadata) VALUES (?, ?, ?, ?)'
+    ).bind(commentId, 'comment', jwt.sub, metadata).run();
+
+    // Create reply edge to parent
+    const edgeId = crypto.randomUUID();
+    try {
+        await env.DB.prepare(
+            'INSERT INTO edges (id, from_user, to_entity, type, weight) VALUES (?, ?, ?, ?, ?)'
+        ).bind(edgeId, jwt.sub, parentEntityId, 'reply', EDGE_WEIGHTS.reply).run();
+    } catch (e) {
+        // Duplicate edge — user already replied, just add another comment entity
+    }
+
+    // Also create 'create' edge for the comment
+    const createEdgeId = crypto.randomUUID();
+    await env.DB.prepare(
+        'INSERT INTO edges (id, from_user, to_entity, type, weight) VALUES (?, ?, ?, ?, ?)'
+    ).bind(createEdgeId, jwt.sub, commentId, 'create', EDGE_WEIGHTS.create).run();
+
+    const user = await env.DB.prepare('SELECT display_name, avatar_url, username, influence_score FROM profiles WHERE id = ?').bind(jwt.sub).first() as any;
+
+    return json({
+        comment: {
+            id: commentId,
+            content,
+            createdAt: new Date().toISOString(),
+            ownerId: jwt.sub,
+            ownerName: user?.display_name || user?.username || '',
+            ownerAvatar: user?.avatar_url || '',
+            ownerInfluence: user?.influence_score || 0,
+        }
+    }, 201);
+}
+
+async function handleShare(env: Env, entityId: string, jwt: JWTPayload) {
+    return createEdge(env, jwt.sub, entityId, 'share');
+}
+
+async function handleFollow(env: Env, targetUserId: string, jwt: JWTPayload) {
+    if (targetUserId === jwt.sub) return error('Cannot follow yourself');
+
+    // Find or create target's user_profile entity
+    let targetEntity = await env.DB.prepare(
+        "SELECT id FROM entities WHERE owner_id = ? AND type = 'user_profile'"
+    ).bind(targetUserId).first() as any;
+
+    if (!targetEntity) {
+        const entityId = crypto.randomUUID();
+        await env.DB.prepare(
+            'INSERT INTO entities (id, type, owner_id, metadata) VALUES (?, ?, ?, ?)'
+        ).bind(entityId, 'user_profile', targetUserId, '{}').run();
+        targetEntity = { id: entityId };
+    }
+
+    return createEdge(env, jwt.sub, targetEntity.id, 'follow');
+}
+
+async function handleUnfollow(env: Env, targetUserId: string, jwt: JWTPayload) {
+    // Find target's user_profile entity
+    const targetEntity = await env.DB.prepare(
+        "SELECT id FROM entities WHERE owner_id = ? AND type = 'user_profile'"
+    ).bind(targetUserId).first() as any;
+
+    if (targetEntity) {
+        await env.DB.prepare(
+            "DELETE FROM edges WHERE from_user = ? AND to_entity = ? AND type = 'follow'"
+        ).bind(jwt.sub, targetEntity.id).run();
     }
 
     return json({ success: true });
 }
 
-// ─── Groups Handlers ───────────────────────────────────────
+async function handleReport(env: Env, request: Request, entityId: string, jwt: JWTPayload) {
+    const { reason } = await request.json() as any;
+    
+    const spamCheck = await checkAndIncrementEdgeCount(env.DB, jwt.sub);
+    if (!spamCheck.allowed) return error('Daily interaction limit reached', 429);
 
-async function handleGetGroups(env: Env, jwt: JWTPayload) {
-    const groups = await env.DB.prepare(`
-    SELECT g.*,
-      (SELECT COUNT(*) FROM group_members WHERE group_id = g.id) as member_count,
-      EXISTS(SELECT 1 FROM group_members WHERE group_id = g.id AND user_id = ?) as is_member
-    FROM groups g ORDER BY g.created_at DESC
-  `).bind(jwt.sub).all();
-    return json({ groups: groups.results || [] });
+    const edgeId = crypto.randomUUID();
+    try {
+        await env.DB.prepare(
+            'INSERT INTO edges (id, from_user, to_entity, type, weight, context) VALUES (?, ?, ?, ?, ?, ?)'
+        ).bind(edgeId, jwt.sub, entityId, 'report', EDGE_WEIGHTS.report, JSON.stringify({ reason: reason || '' })).run();
+    } catch (e) {
+        return error('Already reported');
+    }
+
+    return json({ success: true });
 }
 
-async function handleCreateGroup(env: Env, request: Request, jwt: JWTPayload) {
-    const { name, description, squadId, type } = await request.json() as any;
+// ═══════════════════════════════════════════════════════════════
+// COMMUNITY HANDLERS
+// ═══════════════════════════════════════════════════════════════
+
+async function handleGetCommunities(env: Env) {
+    const communities = await env.DB.prepare(`
+        SELECT c.*,
+            (SELECT COUNT(*) FROM edges WHERE to_entity IN 
+                (SELECT id FROM entities WHERE type = 'community' AND json_extract(metadata, '$.community_id') = c.id)
+                AND type = 'join') as member_count
+        FROM communities c
+        ORDER BY c.created_at DESC
+    `).all();
+
+    // Simpler approach: count join edges for community entities
+    const results = communities.results || [];
+    const enriched = await Promise.all(results.map(async (c: any) => {
+        const communityEntity = await env.DB.prepare(
+            "SELECT id FROM entities WHERE type = 'community' AND owner_id = ? AND json_extract(metadata, '$.community_id') = ?"
+        ).bind(c.creator_id, c.id).first() as any;
+
+        let memberCount = 0;
+        if (communityEntity) {
+            const count = await env.DB.prepare(
+                "SELECT COUNT(*) as c FROM edges WHERE to_entity = ? AND type = 'join'"
+            ).bind(communityEntity.id).first() as any;
+            memberCount = count?.c || 0;
+        }
+
+        return {
+            id: c.id,
+            name: c.name,
+            description: c.description,
+            gameTag: c.game_tag,
+            creatorId: c.creator_id,
+            createdAt: c.created_at,
+            memberCount: memberCount + 1, // +1 for creator
+        };
+    }));
+
+    return json({ communities: enriched });
+}
+
+async function handleCreateCommunity(env: Env, request: Request, jwt: JWTPayload) {
+    const { name, description, gameTag } = await request.json() as any;
     if (!name?.trim()) return error('Name required');
 
     const id = crypto.randomUUID();
-    const groupType = type || 'standalone';
-    await env.DB.prepare('INSERT INTO groups (id, squad_id, name, description, owner_id, type) VALUES (?, ?, ?, ?, ?, ?)').bind(id, squadId || null, name, description || '', jwt.sub, groupType).run();
-    await env.DB.prepare('INSERT INTO group_members (group_id, user_id) VALUES (?, ?)').bind(id, jwt.sub).run();
+    try {
+        await env.DB.prepare(
+            'INSERT INTO communities (id, name, description, game_tag, creator_id) VALUES (?, ?, ?, ?, ?)'
+        ).bind(id, name, description || '', gameTag || '', jwt.sub).run();
+    } catch (e) {
+        return error('Community name already taken');
+    }
 
-    return json({ group: { id, name, description, ownerId: jwt.sub, squadId: squadId || null, type: groupType, member_count: 1, is_member: 1 } }, 201);
+    // Create community entity (for edges)
+    const entityId = crypto.randomUUID();
+    await env.DB.prepare(
+        'INSERT INTO entities (id, type, owner_id, metadata) VALUES (?, ?, ?, ?)'
+    ).bind(entityId, 'community', jwt.sub, JSON.stringify({ community_id: id, name, game_tag: gameTag || '' })).run();
+
+    return json({
+        community: { id, name, description: description || '', gameTag: gameTag || '', creatorId: jwt.sub, memberCount: 1 }
+    }, 201);
 }
 
-// ─── Messages Handlers ────────────────────────────────────
+async function handleJoinCommunity(env: Env, communityId: string, jwt: JWTPayload) {
+    // Find community entity
+    const communityEntity = await env.DB.prepare(
+        "SELECT id FROM entities WHERE type = 'community' AND json_extract(metadata, '$.community_id') = ?"
+    ).bind(communityId).first() as any;
 
-async function handleGetMessages(env: Env, url: URL) {
-    const targetId = url.searchParams.get('targetId') || 'global';
-    const type = url.searchParams.get('type') || 'global';
+    if (!communityEntity) return error('Community not found', 404);
+
+    return createEdge(env, jwt.sub, communityEntity.id, 'join');
+}
+
+async function handleLeaveCommunity(env: Env, communityId: string, jwt: JWTPayload) {
+    const communityEntity = await env.DB.prepare(
+        "SELECT id FROM entities WHERE type = 'community' AND json_extract(metadata, '$.community_id') = ?"
+    ).bind(communityId).first() as any;
+
+    if (communityEntity) {
+        await env.DB.prepare(
+            "DELETE FROM edges WHERE from_user = ? AND to_entity = ? AND type = 'join'"
+        ).bind(jwt.sub, communityEntity.id).run();
+    }
+
+    return json({ success: true });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LEADERBOARD HANDLERS
+// ═══════════════════════════════════════════════════════════════
+
+async function handleLeaderboard(env: Env, url: URL) {
+    const limit = parseInt(url.searchParams.get('limit') || '20');
+
+    const users = await env.DB.prepare(`
+        SELECT id, username, display_name, avatar_url, gaming_platform, influence_score, created_at
+        FROM profiles
+        ORDER BY influence_score DESC
+        LIMIT ?
+    `).bind(limit).all();
+
+    return json({
+        leaderboard: (users.results || []).map((u: any, i: number) => ({
+            rank: i + 1,
+            id: u.id,
+            username: u.username,
+            displayName: u.display_name,
+            avatarUrl: u.avatar_url,
+            gamingPlatform: u.gaming_platform,
+            influenceScore: u.influence_score,
+            createdAt: u.created_at,
+        }))
+    });
+}
+
+async function handleLeaderboardByPlatform(env: Env, platform: string) {
+    const users = await env.DB.prepare(`
+        SELECT id, username, display_name, avatar_url, gaming_platform, influence_score
+        FROM profiles
+        WHERE gaming_platform = ?
+        ORDER BY influence_score DESC
+        LIMIT 20
+    `).bind(platform).all();
+
+    return json({
+        leaderboard: (users.results || []).map((u: any, i: number) => ({
+            rank: i + 1,
+            id: u.id,
+            username: u.username,
+            displayName: u.display_name,
+            avatarUrl: u.avatar_url,
+            gamingPlatform: u.gaming_platform,
+            influenceScore: u.influence_score,
+        }))
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CHAT HANDLERS
+// ═══════════════════════════════════════════════════════════════
+
+async function handleChatSend(env: Env, request: Request, jwt: JWTPayload) {
+    const { content, roomId } = await request.json() as any;
+    if (!content?.trim()) return error('Content required');
+    if (!roomId) return error('Room ID required');
+
+    // Spam check
+    const spamCheck = await checkAndIncrementEdgeCount(env.DB, jwt.sub);
+    if (!spamCheck.allowed) return error('Daily interaction limit reached', 429);
+
+    const user = await env.DB.prepare('SELECT display_name, avatar_url, username FROM profiles WHERE id = ?').bind(jwt.sub).first() as any;
+
+    // Create message entity
+    const entityId = crypto.randomUUID();
+    const metadata = JSON.stringify({ content, room_id: roomId });
+    await env.DB.prepare(
+        'INSERT INTO entities (id, type, owner_id, metadata) VALUES (?, ?, ?, ?)'
+    ).bind(entityId, 'message', jwt.sub, metadata).run();
+
+    // Create 'send' edge
+    const edgeId = crypto.randomUUID();
+    await env.DB.prepare(
+        'INSERT INTO edges (id, from_user, to_entity, type, weight) VALUES (?, ?, ?, ?, ?)'
+    ).bind(edgeId, jwt.sub, entityId, 'send', EDGE_WEIGHTS.send).run();
+
+    return json({
+        message: {
+            id: entityId,
+            content,
+            roomId,
+            createdAt: new Date().toISOString(),
+            ownerId: jwt.sub,
+            ownerName: user?.display_name || user?.username || '',
+            ownerAvatar: user?.avatar_url || '',
+        }
+    }, 201);
+}
+
+async function handleChatRoom(env: Env, roomId: string, url: URL) {
     const limit = parseInt(url.searchParams.get('limit') || '100');
-    const after = url.searchParams.get('after'); // For polling: get messages after this timestamp
+    const after = url.searchParams.get('after');
 
-    let query = 'SELECT * FROM messages WHERE target_id = ? AND type = ?';
-    const params: any[] = [targetId, type];
+    let query = `
+        SELECT e.id, e.metadata, e.created_at, e.owner_id,
+               p.display_name, p.avatar_url, p.username
+        FROM entities e
+        JOIN profiles p ON e.owner_id = p.id
+        WHERE e.type = 'message' AND json_extract(e.metadata, '$.room_id') = ?
+    `;
+    const params: any[] = [roomId];
 
     if (after) {
-        query += ' AND created_at > ?';
+        query += ' AND e.created_at > ?';
         params.push(after);
     }
 
-    query += ' ORDER BY created_at ASC LIMIT ?';
+    query += ' ORDER BY e.created_at ASC LIMIT ?';
     params.push(limit);
 
     const messages = await env.DB.prepare(query).bind(...params).all();
-    return json({ messages: messages.results || [] });
+
+    const results = (messages.results || []).map((m: any) => {
+        const meta = safeParseJSON(m.metadata);
+        return {
+            id: m.id,
+            content: meta.content || '',
+            roomId: meta.room_id || roomId,
+            createdAt: m.created_at,
+            ownerId: m.owner_id,
+            ownerName: m.display_name || m.username,
+            ownerAvatar: m.avatar_url || '',
+        };
+    });
+
+    return json({ messages: results });
 }
 
-async function handleSendMessage(env: Env, request: Request, jwt: JWTPayload) {
-    const { content, targetId, type } = await request.json() as any;
-    if (!content?.trim()) return error('Content required');
+async function handleChatRooms(env: Env, jwt: JWTPayload) {
+    // Get distinct room_ids from messages sent by or involving this user
+    const rooms = await env.DB.prepare(`
+        SELECT DISTINCT json_extract(e.metadata, '$.room_id') as room_id,
+               MAX(e.created_at) as last_message_at
+        FROM entities e
+        WHERE e.type = 'message' AND (
+            e.owner_id = ? OR 
+            json_extract(e.metadata, '$.room_id') IN (
+                SELECT DISTINCT json_extract(e2.metadata, '$.room_id')
+                FROM entities e2 WHERE e2.type = 'message' AND e2.owner_id = ?
+            )
+        )
+        GROUP BY room_id
+        ORDER BY last_message_at DESC
+    `).bind(jwt.sub, jwt.sub).all();
 
-    const user = await env.DB.prepare('SELECT display_name, avatar_url, country FROM users WHERE id = ?').bind(jwt.sub).first() as any;
-    const id = crypto.randomUUID();
-
-    // AI Helpfulness Analysis (Background-ish but inline for MVP)
-    let isHelpful = 0;
-    try {
-        if (content.length > 20 && env.AI) {
-            const aiRes = await env.AI.run('@cf/meta/llama-3-8b-instruct', {
-                messages: [
-                    { role: 'system', content: 'You are a gaming community moderator. Analyze the message and reply with ONLY "HELPFUL" if the user is providing tips, helping others, or being positive. Otherwise reply "NORMAL".' },
-                    { role: 'user', content }
-                ]
-            }) as any;
-            if (aiRes.response.includes('HELPFUL')) {
-                isHelpful = 1;
-                await env.DB.prepare('UPDATE users SET total_helpful_ai_flags = total_helpful_ai_flags + 1 WHERE id = ?').bind(jwt.sub).run();
-            }
-        }
-    } catch (e) {
-        console.error('AI Reputation Check Failed:', e);
-    }
-
-    await env.DB.prepare(
-        'INSERT INTO messages (id, content, user_id, display_name, avatar_url, country, target_id, type, is_helpful) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
-    ).bind(id, content, jwt.sub, user.display_name || jwt.username, user.avatar_url || '', user.country || 'Global', targetId || 'global', type || 'global', isHelpful).run();
-
-    await env.DB.prepare('UPDATE users SET message_count = message_count + 1 WHERE id = ?').bind(jwt.sub).run();
-
-    const msg = await env.DB.prepare('SELECT * FROM messages WHERE id = ?').bind(id).first();
-    return json({ message: msg }, 201);
+    return json({ rooms: (rooms.results || []).map((r: any) => ({ roomId: r.room_id, lastMessageAt: r.last_message_at })) });
 }
 
-async function handleGetLeaderboard(env: Env) {
-    const users = await env.DB.prepare(`
-        SELECT *, 
-        ( (CAST(xp AS FLOAT)/10.0) + (post_count * 2) + (message_count * 1) + (total_helpful_ai_flags * 50) ) as reputation_score 
-        FROM users 
-        ORDER BY reputation_score DESC 
-        LIMIT 10
-    `).all();
-    return json({ leaderboard: users.results || [] });
-}
+// ═══════════════════════════════════════════════════════════════
+// HELPER FUNCTIONS
+// ═══════════════════════════════════════════════════════════════
 
-async function handleSquadAiChat(env: Env, request: Request, jwt: JWTPayload, squadId: string) {
-    const { message } = await request.json() as any;
-    if (!message) return error('Message required');
+/** Create an edge with spam check and duplicate prevention */
+async function createEdge(env: Env, fromUser: string, toEntity: string, type: string) {
+    // Verify entity exists
+    const entity = await env.DB.prepare('SELECT id FROM entities WHERE id = ?').bind(toEntity).first();
+    if (!entity) return error('Entity not found', 404);
 
-    // Fetch Squad Info and AI Config
-    const squad = await env.DB.prepare('SELECT name, description FROM squads WHERE id = ?').bind(squadId).first() as any;
-    const config = await env.DB.prepare('SELECT personality, rules FROM squad_ai_configs WHERE squad_id = ?').bind(squadId).first() as any;
+    // Spam check
+    const spamCheck = await checkAndIncrementEdgeCount(env.DB, fromUser);
+    if (!spamCheck.allowed) return error('Daily interaction limit reached', 429);
 
-    if (!squad) return error('Squad not found', 404);
-
-    const systemPrompt = `You are the AI Assistant for the squad "${squad.name}". 
-    Squad Description: ${squad.description || 'A group of elite gamers.'}
-    Persona: ${config?.personality || 'Helpful, competitive, and gaming-focused.'}
-    Rules: ${config?.rules || 'Be respectful but maintain a high-energy gaming vibe.'}
-    Keep your responses concise and impactful.`;
+    const edgeId = crypto.randomUUID();
+    const weight = getEdgeWeight(type);
 
     try {
-        const response = await env.AI.run('@cf/meta/llama-3-8b-instruct', {
-            messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: message }
-            ]
-        });
-
-        return json({ response: (response as any).response });
+        await env.DB.prepare(
+            'INSERT INTO edges (id, from_user, to_entity, type, weight) VALUES (?, ?, ?, ?, ?)'
+        ).bind(edgeId, fromUser, toEntity, type, weight).run();
     } catch (e: any) {
-        return error('AI Service Error: ' + e.message, 500);
-    }
-}
-
-async function handleGetVoiceToken(env: Env, jwt: JWTPayload, squadId: string) {
-    if (!env.LIVEKIT_API_KEY || !env.LIVEKIT_API_SECRET) {
-        return error('LiveKit configuration missing', 500);
+        // UNIQUE constraint violation — duplicate edge
+        if (e.message?.includes('UNIQUE')) {
+            return error(`Already ${type}d`, 409);
+        }
+        throw e;
     }
 
-    const at = new AccessToken(env.LIVEKIT_API_KEY, env.LIVEKIT_API_SECRET, {
-        identity: jwt.sub,
-        name: jwt.username,
-    });
-
-    at.addGrant({
-        roomJoin: true,
-        room: `squad_${squadId}`,
-        canPublish: true,
-        canSubscribe: true,
-    });
-
-    return json({ token: await at.toJwt() });
-}
-
-// ─── Events Handlers ──────────────────────────────────────
-
-async function handleGetEvents(env: Env, url: URL) {
-    const type = url.searchParams.get('type') || 'all';
-    let query = 'SELECT * FROM events WHERE status != ?';
-    const params: any[] = ['cancelled'];
-
-    if (type !== 'all') {
-        query += ' AND event_type = ?';
-        params.push(type);
+    // Update owner's influence score inline
+    const entityRecord = await env.DB.prepare('SELECT owner_id FROM entities WHERE id = ?').bind(toEntity).first() as any;
+    if (entityRecord) {
+        await updateInfluenceScore(env.DB, entityRecord.owner_id);
     }
 
-    query += ' ORDER BY start_time ASC';
-    const events = await env.DB.prepare(query).bind(...params).all();
-    return json({ events: events.results || [] });
+    return json({ success: true, remaining: spamCheck.remaining });
 }
 
-async function handleCreateEvent(env: Env, request: Request, jwt: JWTPayload) {
-    const { title, description, startTime, eventType, prizePool, registrationFee, squadId, rules, frameType, maxSlots } = await request.json() as any;
-    if (!title || !startTime) return error('Title and Start Time required');
+/** Update a user's influence score based on incoming edges */
+async function updateInfluenceScore(db: D1Database, userId: string) {
+    const edges = await db.prepare(`
+        SELECT ed.weight, ed.created_at
+        FROM edges ed
+        JOIN entities e ON ed.to_entity = e.id
+        WHERE e.owner_id = ? AND ed.from_user != ?
+    `).bind(userId, userId).all();
 
-    const id = crypto.randomUUID();
-    await env.DB.prepare(
-        'INSERT INTO events (id, title, description, start_time, event_type, prize_pool, registration_fee, squad_id, creator_id, rules, frame_type, max_slots) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-    ).bind(id, title, description || '', startTime, eventType || 'tournament', prizePool || '0', registrationFee || 'free', squadId || null, jwt.sub, rules || '', frameType || 'none', maxSlots || 0).run();
+    const edgeList = (edges.results || []) as Array<{ weight: number; created_at: string }>;
+    const influence = calculateInfluenceFromEdges(edgeList);
 
-    const event = await env.DB.prepare('SELECT * FROM events WHERE id = ?').bind(id).first();
-    return json({ event }, 201);
+    await db.prepare('UPDATE profiles SET influence_score = ? WHERE id = ?').bind(influence, userId).run();
 }
 
-async function handleJoinEvent(env: Env, eventId: string, jwt: JWTPayload) {
-    // In a full implementation, we'd have an event_participants table.
-    // For now, let's at least check if the event exists.
-    const event = await env.DB.prepare('SELECT id FROM events WHERE id = ?').bind(eventId).first();
-    if (!event) return error('Event not found', 404);
+/** Enrich post entities with score and interaction counts */
+async function enrichPosts(db: D1Database, posts: any[], currentUserId: string) {
+    return Promise.all(posts.map(async (post: any) => {
+        const meta = safeParseJSON(post.metadata);
 
-    // Mocking join success
-    return json({ success: true, message: 'Joined successfully' });
+        const likes = await db.prepare(
+            "SELECT COUNT(*) as c FROM edges WHERE to_entity = ? AND type = 'like'"
+        ).bind(post.id).first() as any;
+        const replies = await db.prepare(
+            "SELECT COUNT(*) as c FROM edges WHERE to_entity = ? AND type = 'reply'"
+        ).bind(post.id).first() as any;
+        const shares = await db.prepare(
+            "SELECT COUNT(*) as c FROM edges WHERE to_entity = ? AND type = 'share'"
+        ).bind(post.id).first() as any;
+
+        let userLiked = false;
+        if (currentUserId) {
+            const liked = await db.prepare(
+                "SELECT id FROM edges WHERE from_user = ? AND to_entity = ? AND type = 'like'"
+            ).bind(currentUserId, post.id).first();
+            userLiked = !!liked;
+        }
+
+        const edgesData = await db.prepare(
+            'SELECT weight, created_at FROM edges WHERE to_entity = ?'
+        ).bind(post.id).all();
+        const score = calculateEntityScore(
+            (edgesData.results || []) as Array<{ weight: number; created_at: string }>,
+            post.influence_score || 0
+        );
+
+        return {
+            id: post.id,
+            type: post.type || 'post',
+            ownerId: post.owner_id,
+            content: meta.content || '',
+            mediaUrl: meta.media_url || '',
+            gameTag: meta.game_tag || 'Global',
+            createdAt: post.created_at,
+            ownerName: post.display_name || post.username,
+            ownerAvatar: post.avatar_url || '',
+            ownerInfluence: post.influence_score || 0,
+            ownerPlatform: post.gaming_platform || '',
+            score,
+            likeCount: likes?.c || 0,
+            replyCount: replies?.c || 0,
+            shareCount: shares?.c || 0,
+            userLiked,
+        };
+    }));
+}
+
+/** Map a DB profile record to a frontend User object */
+function mapProfileToUser(record: any) {
+    return {
+        id: record.id,
+        username: record.username,
+        displayName: record.display_name || record.username,
+        avatarUrl: record.avatar_url || '',
+        bio: record.bio || '',
+        gamingPlatform: record.gaming_platform || '',
+        influenceScore: record.influence_score || 0,
+        isOnboarded: !!record.is_onboarded,
+        country: record.country || 'Global',
+        language: record.language || 'en',
+    };
+}
+
+/** Safely parse JSON, returning empty object on failure */
+function safeParseJSON(str: string | null | undefined): any {
+    try {
+        return JSON.parse(str || '{}');
+    } catch {
+        return {};
+    }
 }

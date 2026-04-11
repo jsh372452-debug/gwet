@@ -1,145 +1,99 @@
 import { create } from 'zustand';
-import { api } from '../lib/api';
+import { api, AAGPost, AAGComment, AAGCommunity } from '../lib/api';
 
-export interface Post {
-    id: string;
-    content: string;
-    image_url?: string;
-    created_at: string;
-    user_id: string;
-    username: string;
-    reputation_tier?: string;
-    game_tag: string;
-    fire_count: number;
-    post_count?: number;
-    message_count?: number;
-    post_type: 'normal' | 'session';
-    metadata_json: string;
-    is_deleted: number;
-    visibility: string;
-    country: string;
-}
-
-export interface Comment {
-    id: string;
-    post_id: string;
-    user_id: string;
-    username: string;
-    reputation_tier?: string;
-    content: string;
-    created_at: string;
-    country: string;
-}
-
-export interface Squad {
-    id: string;
-    name: string;
-    description: string;
-    game_category?: string;
-    owner_id: string;
-    theme_color: string;
-    banner_base64: string | null;
-    bg_style: string;
-    member_count: number;
-    is_member: number;
-}
-
-export interface Group {
-    id: string;
-    squad_id: string | null;
-    name: string;
-    description: string;
-    owner_id: string;
-    type: string;
-    member_count: number;
-    is_member: number;
-}
+// ─── State Interface ───────────────────────────────────────
 
 interface GameState {
-    posts: Post[];
-    squads: Squad[];
-    groups: Group[];
-    comments: Record<string, Comment[]>;
+    // Data
+    posts: AAGPost[];
+    communities: AAGCommunity[];
+    comments: Record<string, AAGComment[]>;
+    feedType: 'smart' | 'following';
+
+    // Loading states
     loading: boolean;
-    loadPosts: (gameTag?: string, sort?: 'latest' | 'fire') => Promise<void>;
-    loadSquads: () => Promise<void>;
-    loadGroups: () => Promise<void>;
-    addPost: (content: string, game_tag: string, type?: 'normal' | 'session', metadata?: any) => Promise<any>;
-    firePost: (postId: string) => Promise<void>;
-    addComment: (postId: string, content: string) => Promise<void>;
+    interacting: boolean;
+
+    // Feed
+    loadFeed: (type?: 'smart' | 'following') => Promise<void>;
+    setFeedType: (type: 'smart' | 'following') => void;
+
+    // Posts
+    addPost: (content: string, gameTag?: string, mediaUrl?: string) => Promise<any>;
+    deletePost: (postId: string) => Promise<void>;
+
+    // Comments
     loadComments: (postId: string) => Promise<void>;
-    createSquad: (name: string, description: string) => Promise<void>;
-    joinSquad: (squadId: string) => Promise<void>;
-    createGroup: (name: string, desc: string, squadId: string | null, type: string) => Promise<void>;
-    updateSquad: (id: string, data: Partial<Squad>) => Promise<void>;
-    kickMember: (squadId: string, userId: string) => Promise<void>;
+    addComment: (postId: string, content: string) => Promise<void>;
+
+    // Interactions
+    likePost: (postId: string) => Promise<void>;
+    unlikePost: (postId: string) => Promise<void>;
+    sharePost: (postId: string) => Promise<void>;
+    followUser: (userId: string) => Promise<void>;
+    unfollowUser: (userId: string) => Promise<void>;
+    reportEntity: (entityId: string, reason?: string) => Promise<void>;
+
+    // Communities
+    loadCommunities: () => Promise<void>;
+    createCommunity: (name: string, description: string, gameTag?: string) => Promise<void>;
+    joinCommunity: (communityId: string) => Promise<void>;
+    leaveCommunity: (communityId: string) => Promise<void>;
 }
+
+// ─── Store ─────────────────────────────────────────────────
 
 export const useGameStore = create<GameState>((set, get) => ({
     posts: [],
-    squads: [],
-    groups: [],
+    communities: [],
     comments: {},
+    feedType: 'smart',
     loading: false,
+    interacting: false,
 
-    loadPosts: async (gameTag, sort) => {
-        set({ loading: true });
+    // ─── Feed ──────────────────────────────────────────────
+
+    setFeedType: (type) => set({ feedType: type }),
+
+    loadFeed: async (type) => {
+        const feedType = type || get().feedType;
+        set({ loading: true, feedType });
         try {
-            const { posts } = await api.posts.list({ limit: 50, gameTag, sort });
+            const { posts } = feedType === 'following'
+                ? await api.feed.following({ limit: 30 })
+                : await api.feed.smart({ limit: 30 });
             set({ posts, loading: false });
         } catch (err) {
-            console.error('Load posts failed:', err);
+            console.error('Load feed failed:', err);
             set({ loading: false });
         }
     },
 
-    loadSquads: async () => {
-        try {
-            const { squads } = await api.squads.list();
-            set({ squads });
-        } catch (err) {
-            console.error('Load squads failed:', err);
-        }
-    },
+    // ─── Posts ──────────────────────────────────────────────
 
-    loadGroups: async () => {
+    addPost: async (content, gameTag, mediaUrl) => {
         try {
-            const { groups } = await api.groups.list();
-            set({ groups });
-        } catch (err) {
-            console.error('Load groups failed:', err);
-        }
-    },
-
-    addPost: async (content, gameTag, type = 'normal', metadata = {}) => {
-        console.log('📦 STORE: addPost CALLED', { content, gameTag, type });
-        try {
-            const result = await api.posts.create(content, gameTag, type, metadata);
-            console.log('📦 STORE: API RESULT RECEIVED', result);
-
-            if (result && result.post) {
-                set(state => ({
-                    posts: [result.post, ...state.posts]
-                }));
-                console.log('📦 STORE: STATE UPDATED WITH NEW POST');
+            const result = await api.posts.create(content, gameTag, mediaUrl);
+            if (result?.post) {
+                set(state => ({ posts: [result.post, ...state.posts] }));
             }
             return result;
         } catch (err) {
-            console.error('📦 STORE: Add post failed:', err);
+            console.error('Add post failed:', err);
             throw err;
         }
     },
 
-    firePost: async (postId) => {
+    deletePost: async (postId) => {
         try {
-            const { fireCount } = await api.posts.fire(postId);
-            set(state => ({
-                posts: state.posts.map(p => p.id === postId ? { ...p, fire_count: fireCount } : p)
-            }));
+            await api.posts.delete(postId);
+            set(state => ({ posts: state.posts.filter(p => p.id !== postId) }));
         } catch (err) {
-            console.error('Fire failed:', err);
+            console.error('Delete post failed:', err);
         }
     },
+
+    // ─── Comments ──────────────────────────────────────────
 
     loadComments: async (postId) => {
         try {
@@ -152,65 +106,136 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     addComment: async (postId, content) => {
         try {
-            const { comment } = await api.posts.addComment(postId, content);
+            const { comment } = await api.interact.reply(postId, content);
             set(state => ({
                 comments: {
                     ...state.comments,
                     [postId]: [...(state.comments[postId] || []), comment]
-                }
+                },
+                // Increment reply count on the post
+                posts: state.posts.map(p =>
+                    p.id === postId ? { ...p, replyCount: p.replyCount + 1 } : p
+                )
             }));
         } catch (err) {
             console.error('Add comment failed:', err);
         }
     },
 
-    createSquad: async (name, description) => {
+    // ─── Interactions ──────────────────────────────────────
+
+    likePost: async (postId) => {
+        set({ interacting: true });
         try {
-            const { squad } = await api.squads.create(name, description);
-            set(state => ({ squads: [squad, ...state.squads] }));
+            await api.interact.like(postId);
+            set(state => ({
+                posts: state.posts.map(p =>
+                    p.id === postId ? { ...p, userLiked: true, likeCount: p.likeCount + 1 } : p
+                ),
+                interacting: false,
+            }));
         } catch (err) {
-            console.error('Create squad failed:', err);
+            console.error('Like failed:', err);
+            set({ interacting: false });
         }
     },
 
-    joinSquad: async (squadId) => {
+    unlikePost: async (postId) => {
+        set({ interacting: true });
         try {
-            await api.squads.join(squadId);
+            await api.interact.unlike(postId);
             set(state => ({
-                squads: state.squads.map(s =>
-                    s.id === squadId ? { ...s, is_member: 1, member_count: s.member_count + 1 } : s
+                posts: state.posts.map(p =>
+                    p.id === postId ? { ...p, userLiked: false, likeCount: Math.max(0, p.likeCount - 1) } : p
+                ),
+                interacting: false,
+            }));
+        } catch (err) {
+            console.error('Unlike failed:', err);
+            set({ interacting: false });
+        }
+    },
+
+    sharePost: async (postId) => {
+        try {
+            await api.interact.share(postId);
+            set(state => ({
+                posts: state.posts.map(p =>
+                    p.id === postId ? { ...p, shareCount: p.shareCount + 1 } : p
                 )
             }));
         } catch (err) {
-            console.error('Join squad failed:', err);
+            console.error('Share failed:', err);
         }
     },
 
-    createGroup: async (name, description, squadId, type) => {
+    followUser: async (userId) => {
         try {
-            const { group } = await api.groups.create(name, description, squadId || undefined, type);
-            set(state => ({ groups: [group, ...state.groups] }));
+            await api.interact.follow(userId);
         } catch (err) {
-            console.error('Create group failed:', err);
+            console.error('Follow failed:', err);
         }
     },
 
-    updateSquad: async (id, data) => {
+    unfollowUser: async (userId) => {
         try {
-            await api.squads.update(id, data);
+            await api.interact.unfollow(userId);
+        } catch (err) {
+            console.error('Unfollow failed:', err);
+        }
+    },
+
+    reportEntity: async (entityId, reason) => {
+        try {
+            await api.interact.report(entityId, reason);
+        } catch (err) {
+            console.error('Report failed:', err);
+        }
+    },
+
+    // ─── Communities ───────────────────────────────────────
+
+    loadCommunities: async () => {
+        try {
+            const { communities } = await api.communities.list();
+            set({ communities });
+        } catch (err) {
+            console.error('Load communities failed:', err);
+        }
+    },
+
+    createCommunity: async (name, description, gameTag) => {
+        try {
+            const { community } = await api.communities.create(name, description, gameTag);
+            set(state => ({ communities: [community, ...state.communities] }));
+        } catch (err) {
+            console.error('Create community failed:', err);
+        }
+    },
+
+    joinCommunity: async (communityId) => {
+        try {
+            await api.communities.join(communityId);
             set(state => ({
-                squads: state.squads.map(s => s.id === id ? { ...s, ...data } : s)
+                communities: state.communities.map(c =>
+                    c.id === communityId ? { ...c, memberCount: c.memberCount + 1 } : c
+                )
             }));
         } catch (err) {
-            console.error('Update squad failed:', err);
+            console.error('Join community failed:', err);
         }
     },
 
-    kickMember: async (squadId, userId) => {
+    leaveCommunity: async (communityId) => {
         try {
-            await api.squads.kick(squadId, userId);
+            await api.communities.leave(communityId);
+            set(state => ({
+                communities: state.communities.map(c =>
+                    c.id === communityId ? { ...c, memberCount: Math.max(0, c.memberCount - 1) } : c
+                )
+            }));
         } catch (err) {
-            console.error('Kick member failed:', err);
+            console.error('Leave community failed:', err);
         }
-    }
+    },
 }));

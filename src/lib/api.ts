@@ -1,3 +1,7 @@
+// ═══════════════════════════════════════════════════════════════
+// GWET AAG — Frontend API Client
+// ═══════════════════════════════════════════════════════════════
+
 const API_BASE = '/api';
 
 function getToken(): string | null {
@@ -22,7 +26,6 @@ async function request<T = any>(path: string, options: RequestInit = {}): Promis
 
     const res = await fetch(`${API_BASE}/${path}`, { ...options, headers });
 
-    // Safety check for Content-Type
     const contentType = res.headers.get('Content-Type') || '';
     let data: any;
 
@@ -39,132 +42,228 @@ async function request<T = any>(path: string, options: RequestInit = {}): Promis
 
     if (!res.ok) {
         const errMsg = data?.error || `Request failed with status ${res.status}`;
-        console.error(`📡 API ERROR [${res.status}]:`, errMsg, data);
         throw new Error(errMsg);
     }
 
     return data as T;
 }
 
-// ─── Auth ──────────────────────────────────────────────────
+// ─── Types ─────────────────────────────────────────────────
+
+export interface AAGPost {
+    id: string;
+    type: string;
+    ownerId: string;
+    content: string;
+    mediaUrl: string;
+    gameTag: string;
+    createdAt: string;
+    ownerName: string;
+    ownerAvatar: string;
+    ownerInfluence: number;
+    ownerPlatform: string;
+    score: number;
+    likeCount: number;
+    replyCount: number;
+    shareCount: number;
+    userLiked: boolean;
+}
+
+export interface AAGComment {
+    id: string;
+    content: string;
+    createdAt: string;
+    ownerId: string;
+    ownerName: string;
+    ownerAvatar: string;
+    ownerInfluence: number;
+}
+
+export interface AAGUser {
+    id: string;
+    username: string;
+    displayName: string;
+    avatarUrl: string;
+    bio: string;
+    gamingPlatform: string;
+    influenceScore: number;
+    isOnboarded: boolean;
+    country: string;
+    language: string;
+}
+
+export interface AAGCommunity {
+    id: string;
+    name: string;
+    description: string;
+    gameTag: string;
+    creatorId: string;
+    createdAt?: string;
+    memberCount: number;
+}
+
+export interface AAGMessage {
+    id: string;
+    content: string;
+    roomId: string;
+    createdAt: string;
+    ownerId: string;
+    ownerName: string;
+    ownerAvatar: string;
+}
+
+export interface LeaderboardEntry {
+    rank: number;
+    id: string;
+    username: string;
+    displayName: string;
+    avatarUrl: string;
+    gamingPlatform: string;
+    influenceScore: number;
+}
+
+// ─── API ───────────────────────────────────────────────────
 
 export const api = {
+    // ─── Auth ──────────────────────────────────────────────
     auth: {
         register: (username: string, password: string) =>
-            request<{ token: string; user: any }>('auth/register', { method: 'POST', body: JSON.stringify({ username, password }) }),
+            request<{ token: string; user: AAGUser }>('auth/register', {
+                method: 'POST', body: JSON.stringify({ username, password })
+            }),
 
         login: (username: string, password: string) =>
-            request<{ token: string; user: any }>('auth/login', { method: 'POST', body: JSON.stringify({ username, password }) }),
+            request<{ token: string; user: AAGUser }>('auth/login', {
+                method: 'POST', body: JSON.stringify({ username, password })
+            }),
 
-        session: () => request<{ user: any }>('auth/session'),
+        session: () =>
+            request<{ user: AAGUser }>('auth/session'),
 
-        updateProfile: (data: { displayName?: string; avatarUrl?: string; country?: string; language?: string; isOnboarded?: boolean; whatsapp?: string; telegram?: string; bio?: string; gameId?: string; gameUsername?: string }) =>
-            request<{ user: any }>('auth/profile', { method: 'PUT', body: JSON.stringify(data) }),
+        updateProfile: (data: Partial<{
+            displayName: string; avatarUrl: string; country: string;
+            language: string; isOnboarded: boolean; bio: string;
+            gamingPlatform: string;
+        }>) =>
+            request<{ user: AAGUser }>('auth/profile', {
+                method: 'PUT', body: JSON.stringify(data)
+            }),
 
         getUserProfile: (userId: string) =>
-            request<{ profile: any }>(`users/${userId}`),
+            request<{ profile: AAGUser & { postCount: number; followerCount: number; followingCount: number } }>(`users/${userId}`),
     },
 
-    // ─── Posts ────────────────────────────────────────────────
-
-    posts: {
-        list: (params?: { limit?: number; offset?: number; gameTag?: string; sort?: 'latest' | 'fire' }) => {
+    // ─── Feed ──────────────────────────────────────────────
+    feed: {
+        smart: (params?: { limit?: number; offset?: number }) => {
             const q = new URLSearchParams();
             if (params?.limit) q.set('limit', String(params.limit));
             if (params?.offset) q.set('offset', String(params.offset));
-            if (params?.gameTag) q.set('gameTag', params.gameTag);
-            if (params?.sort) q.set('sort', params.sort);
-            return request<{ posts: any[] }>(`posts?${q.toString()}`);
+            return request<{ posts: AAGPost[] }>(`feed?${q}`);
         },
 
-        create: (content: string, gameTag?: string, type: string = 'normal', metadata: any = {}) =>
-            request<{ post: any; xp: number; level: number; rank: string }>('posts', { method: 'POST', body: JSON.stringify({ content, gameTag, type, metadata }) }),
+        following: (params?: { limit?: number; offset?: number }) => {
+            const q = new URLSearchParams();
+            if (params?.limit) q.set('limit', String(params.limit));
+            if (params?.offset) q.set('offset', String(params.offset));
+            return request<{ posts: AAGPost[] }>(`feed/following?${q}`);
+        },
 
-        fire: (postId: string) =>
-            request<{ fireCount: number }>(`posts/${postId}/fire`, { method: 'POST' }),
+        community: (communityId: string, limit?: number) => {
+            const q = new URLSearchParams();
+            if (limit) q.set('limit', String(limit));
+            return request<{ posts: AAGPost[]; community: any }>(`feed/community/${communityId}?${q}`);
+        },
+    },
 
-        joinSession: (postId: string) =>
-            request<{ metadata: any }>(`posts/${postId}/join`, { method: 'POST' }),
+    // ─── Posts ─────────────────────────────────────────────
+    posts: {
+        create: (content: string, gameTag?: string, mediaUrl?: string) =>
+            request<{ post: AAGPost }>('posts', {
+                method: 'POST', body: JSON.stringify({ content, gameTag, mediaUrl })
+            }),
+
+        get: (postId: string) =>
+            request<{ post: AAGPost }>(`posts/${postId}`),
+
+        delete: (postId: string) =>
+            request<{ success: boolean }>(`posts/${postId}`, { method: 'DELETE' }),
 
         getComments: (postId: string) =>
-            request<{ comments: any[] }>(`posts/${postId}/comments`),
-
-        addComment: (postId: string, content: string) =>
-            request<{ comment: any }>(`posts/${postId}/comments`, { method: 'POST', body: JSON.stringify({ content }) }),
+            request<{ comments: AAGComment[] }>(`posts/${postId}/comments`),
     },
 
-    // ─── Explore ──────────────────────────────────────────────
+    // ─── Interactions ──────────────────────────────────────
+    interact: {
+        like: (entityId: string) =>
+            request<{ success: boolean; remaining: number }>(`interact/like/${entityId}`, { method: 'POST' }),
 
-    explore: {
-        get: (tab: 'latest' | 'popular' | 'game' = 'latest', gameTag?: string) => {
-            const q = new URLSearchParams({ tab });
-            if (gameTag) q.set('gameTag', gameTag);
-            return request<{ posts: any[]; gameTags: string[] }>(`explore?${q}`);
-        },
+        unlike: (entityId: string) =>
+            request<{ success: boolean }>(`interact/unlike/${entityId}`, { method: 'POST' }),
+
+        reply: (entityId: string, content: string) =>
+            request<{ comment: AAGComment }>(`interact/reply/${entityId}`, {
+                method: 'POST', body: JSON.stringify({ content })
+            }),
+
+        share: (entityId: string) =>
+            request<{ success: boolean; remaining: number }>(`interact/share/${entityId}`, { method: 'POST' }),
+
+        follow: (userId: string) =>
+            request<{ success: boolean; remaining: number }>(`interact/follow/${userId}`, { method: 'POST' }),
+
+        unfollow: (userId: string) =>
+            request<{ success: boolean }>(`interact/unfollow/${userId}`, { method: 'POST' }),
+
+        report: (entityId: string, reason?: string) =>
+            request<{ success: boolean }>(`interact/report/${entityId}`, {
+                method: 'POST', body: JSON.stringify({ reason })
+            }),
     },
 
-    // ─── Squads ──────────────────────────────────────────────
+    // ─── Communities ───────────────────────────────────────
+    communities: {
+        list: () =>
+            request<{ communities: AAGCommunity[] }>('communities'),
 
-    squads: {
-        list: (category?: string) => request<{ squads: any[] }>(`squads${category ? `?category=${category}` : ''}`),
+        create: (name: string, description: string, gameTag?: string) =>
+            request<{ community: AAGCommunity }>('communities', {
+                method: 'POST', body: JSON.stringify({ name, description, gameTag })
+            }),
 
-        create: (name: string, description: string, gameCategory?: string) =>
-            request<{ squad: any }>('squads', { method: 'POST', body: JSON.stringify({ name, description, game_category: gameCategory }) }),
+        join: (communityId: string) =>
+            request<{ success: boolean }>(`communities/${communityId}/join`, { method: 'POST' }),
 
-        join: (squadId: string) =>
-            request('squads/' + squadId + '/join', { method: 'POST' }),
-
-        kick: (squadId: string, userId: string) =>
-            request('squads/' + squadId + '/kick', { method: 'POST', body: JSON.stringify({ userId }) }),
-
-        update: (squadId: string, data: any) =>
-            request('squads/' + squadId, { method: 'PUT', body: JSON.stringify(data) }),
-
-        aiChat: (squadId: string, message: string) =>
-            request<{ response: string }>(`squads/${squadId}/ai/chat`, { method: 'POST', body: JSON.stringify({ message }) }),
-
-        getVoiceToken: (squadId: string) =>
-            request<{ token: string }>(`squads/${squadId}/voice/token`, { method: 'POST' }),
+        leave: (communityId: string) =>
+            request<{ success: boolean }>(`communities/${communityId}/leave`, { method: 'POST' }),
     },
 
-    // ─── Groups ───────────────────────────────────────────────
-
-    groups: {
-        list: () => request<{ groups: any[] }>('groups'),
-
-        create: (name: string, description: string, squadId?: string, type?: string) =>
-            request<{ group: any }>('groups', { method: 'POST', body: JSON.stringify({ name, description, squadId, type: type || 'standalone' }) }),
-    },
-
-    // ─── Messages ─────────────────────────────────────────────
-
-    messages: {
-        list: (targetId: string, type: string, after?: string) => {
-            const q = new URLSearchParams({ targetId, type });
-            if (after) q.set('after', after);
-            return request<{ messages: any[] }>(`messages?${q}`);
-        },
-
-        send: (content: string, targetId: string, type: string) =>
-            request<{ message: any }>('messages', { method: 'POST', body: JSON.stringify({ content, targetId, type }) }),
-    },
-
-    // ─── Events ──────────────────────────────────────────────
-
-    events: {
-        list: (type: string = 'all') => {
-            const q = new URLSearchParams();
-            if (type !== 'all') q.set('type', type);
-            return request<{ events: any[] }>(`events?${q}`);
-        },
-
-        create: (data: { title: string; description: string; startTime: string; eventType: string; rules?: string; frameType?: string; maxSlots?: number; prizePool?: string; registrationFee?: string; squadId?: string }) =>
-            request<{ event: any }>('events', { method: 'POST', body: JSON.stringify(data) }),
-
-        join: (eventId: string) =>
-            request<{ success: true; message: string }>(`events/${eventId}/join`, { method: 'POST' }),
-    },
+    // ─── Leaderboard ───────────────────────────────────────
     leaderboard: {
-        get: () => request<{ leaderboard: any[] }>('leaderboard')
+        get: (limit?: number) => {
+            const q = new URLSearchParams();
+            if (limit) q.set('limit', String(limit));
+            return request<{ leaderboard: LeaderboardEntry[] }>(`leaderboard?${q}`);
+        },
+
+        byPlatform: (platform: string) =>
+            request<{ leaderboard: LeaderboardEntry[] }>(`leaderboard/platform/${platform}`),
+    },
+
+    // ─── Chat ──────────────────────────────────────────────
+    chat: {
+        send: (content: string, roomId: string) =>
+            request<{ message: AAGMessage }>('chat/send', {
+                method: 'POST', body: JSON.stringify({ content, roomId })
+            }),
+
+        room: (roomId: string, after?: string) => {
+            const q = new URLSearchParams();
+            if (after) q.set('after', after);
+            return request<{ messages: AAGMessage[] }>(`chat/room/${roomId}?${q}`);
+        },
+
+        rooms: () =>
+            request<{ rooms: Array<{ roomId: string; lastMessageAt: string }> }>('chat/rooms'),
     },
 };

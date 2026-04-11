@@ -1,80 +1,36 @@
 import { create } from 'zustand';
-import { api, setToken, clearToken } from '../lib/api';
-
-export interface User {
-    id: string;
-    username: string;
-    displayName: string;
-    avatarUrl: string;
-    isOnboarded: boolean;
-    xp: number;
-    level: number;
-    rank: string;
-    reputation_tier?: string;
-    post_count?: number;
-    message_count?: number;
-    total_helpful_ai_flags?: number;
-    bio?: string;
-    game_id?: string;
-    game_username?: string;
-    whatsapp?: string;
-    telegram?: string;
-    country?: string;
-    language?: 'ar' | 'en';
-}
+import { api, AAGUser } from '../lib/api';
+import { setToken, clearToken } from '../lib/api';
 
 interface AuthState {
-    user: User | null;
+    user: AAGUser | null;
     loading: boolean;
     error: string | null;
     login: (u: string, p: string) => Promise<void>;
     register: (u: string, p: string) => Promise<void>;
     signOut: () => void;
     checkSession: () => Promise<void>;
-    updateProfile: (displayName: string, avatarUrl: string, whatsapp?: string, telegram?: string, bio?: string, gameId?: string, gameUsername?: string) => Promise<void>;
-    updateIdentity: (country: string, language: 'ar' | 'en') => Promise<void>;
-    completeOnboarding: (displayName: string, avatarUrl: string, country: string, language: 'ar' | 'en') => Promise<void>;
-    setUser: (user: User) => void;
+    updateProfile: (data: Partial<{
+        displayName: string; avatarUrl: string; bio: string;
+        gamingPlatform: string; country: string; language: string;
+        isOnboarded: boolean;
+    }>) => Promise<void>;
+    setUser: (user: AAGUser) => void;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
+export const useAuthStore = create<AuthState>((set) => ({
     user: null,
     loading: true,
     error: null,
 
     setUser: (user) => set({ user }),
 
-    updateProfile: async (displayName, avatarUrl, whatsapp, telegram, bio, gameId, gameUsername) => {
+    updateProfile: async (data) => {
         try {
-            const { user } = await api.auth.updateProfile({ displayName, avatarUrl, whatsapp, telegram, bio, gameId, gameUsername });
+            const { user } = await api.auth.updateProfile(data);
             set({ user });
         } catch (err) {
             console.error('Update profile failed:', err);
-        }
-    },
-
-    updateIdentity: async (country, language) => {
-        try {
-            const { user } = await api.auth.updateProfile({ country, language });
-            set({ user });
-        } catch (err: any) {
-            console.error('Update identity failed:', err);
-        }
-    },
-
-    completeOnboarding: async (displayName, avatarUrl, country, language) => {
-        try {
-            const { user } = await api.auth.updateProfile({
-                displayName,
-                avatarUrl,
-                country,
-                language,
-                isOnboarded: true
-            });
-            set({ user });
-        } catch (err: any) {
-            console.error('Complete onboarding failed:', err);
-            throw err;
         }
     },
 
@@ -120,3 +76,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ user: null });
     },
 }));
+
+// Re-export User type for components
+export type { AAGUser as User };

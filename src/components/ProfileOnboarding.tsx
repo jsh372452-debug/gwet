@@ -1,116 +1,170 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { useTranslation } from '../i18n';
+import { Target, Globe, Gamepad2, ArrowRight } from 'lucide-react';
+import Flag from './Flag';
 import { countries } from '../data/countries';
-import { User, Globe, Languages, ChevronRight, Camera } from 'lucide-react';
+import { Logo } from './Logo';
 
 export const ProfileOnboarding: React.FC = () => {
-    const { user, completeOnboarding } = useAuthStore();
-    const { t, isRTL } = useTranslation();
-    const [step, setStep] = useState(0);
-    const [displayName, setDisplayName] = useState(user?.displayName || user?.username || '');
-    const [avatarPreview, setAvatarPreview] = useState('');
+    const { user, updateProfile } = useAuthStore();
+    const [step, setStep] = useState(1);
+    
+    // Form state
+    const [displayName, setDisplayName] = useState(user?.username || '');
+    const [gamingPlatform, setGamingPlatform] = useState('PC');
     const [country, setCountry] = useState('Global');
-    const [language, setLanguage] = useState<'en' | 'ar'>('en');
+    const [language, setLanguage] = useState('en');
+    const [saving, setSaving] = useState(false);
 
-    const [loading, setLoading] = useState(false);
-
-    const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => setAvatarPreview(reader.result as string);
-            reader.readAsDataURL(file);
-        }
-    };
-
-    const handleFinish = async () => {
-        if (loading) return;
-
-        // Basic validation
-        if (!displayName.trim()) {
-            alert(isRTL ? 'يرجى إدخال الاسم' : 'PLEASE ENTER A DISPLAY NAME');
-            return;
-        }
-
-        console.log('HANDLING ONBOARDING FINISH...', { displayName, country, language });
-        setLoading(true);
+    const handleComplete = async () => {
+        setSaving(true);
         try {
-            // Compress avatar if it's too large? For now just send as is but with catch
-            const result = await completeOnboarding(displayName, avatarPreview, country, language);
-            console.log('ONBOARDING COMPLETED SUCCESSFULLY', result);
-
-            // Force a small delay to ensure store update propagates
-            setTimeout(() => {
-                window.location.reload();
-            }, 1000);
-
-            alert(isRTL ? 'تم إكمال التسجيل بنجاح! جاري تحويلك...' : 'ONBOARDING SUCCESSFUL! REDIRECTING...');
-        } catch (err: any) {
-            console.error('Failed to complete onboarding:', err);
-            const errorMsg = err.message || 'UNKNOWN SERVER ERROR';
-            alert(isRTL ? `فشل التسجيل: ${errorMsg}` : `FAILED TO COMPLETE ONBOARDING: ${errorMsg}`);
-        } finally {
-            setLoading(false);
+            await updateProfile({
+                displayName,
+                gamingPlatform,
+                country,
+                language,
+                isOnboarded: true
+            });
+            // App state will automatically update and reroute to dashboard
+        } catch (error) {
+            console.error('Failed to complete onboarding:', error);
+            setSaving(false);
         }
     };
 
     return (
-        <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-xl)', direction: isRTL ? 'rtl' : 'ltr' }}>
-            <div className="glass-card" style={{ width: '100%', maxWidth: '480px', padding: '3rem', borderRadius: '24px' }}>
-                <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
-                    <h1 style={{ fontSize: '1.8rem', fontWeight: 900, marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '1px' }}>{t('onboarding')}</h1>
-                    <p style={{ fontSize: '11px', color: 'var(--text-dim)', fontWeight: 800 }}>STEP {step + 1} / 2</p>
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '1rem' }}>
-                        <div style={{ width: 40, height: 4, borderRadius: 2, background: step >= 0 ? 'var(--primary)' : 'rgba(255,255,255,0.1)', boxShadow: step >= 0 ? '0 0 10px var(--primary-glow)' : 'none' }} />
-                        <div style={{ width: 40, height: 4, borderRadius: 2, background: step >= 1 ? 'var(--primary)' : 'rgba(255,255,255,0.1)', boxShadow: step >= 1 ? '0 0 10px var(--primary-glow)' : 'none' }} />
-                    </div>
-                </div>
+        <div style={{ 
+            minHeight: '100vh', 
+            background: 'var(--bg-dark)',
+            color: 'var(--text-main)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '2rem',
+            position: 'relative',
+            overflow: 'hidden'
+        }}>
+            <div className="bg-glow purple" />
+            <div className="bg-glow cyan" />
 
-                {step === 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                        <div style={{ textAlign: 'center' }}>
-                            <div style={{ position: 'relative', display: 'inline-block' }}>
-                                <div className="avatar-premium xl" style={{ margin: '0 auto', width: 100, height: 100, backgroundImage: avatarPreview ? `url(${avatarPreview})` : 'none', backgroundSize: 'cover', fontSize: '2rem' }}>
-                                    {!avatarPreview && <User size={48} />}
-                                </div>
-                                <label style={{ position: 'absolute', bottom: 0, right: 0, background: 'var(--primary)', padding: '8px', borderRadius: '50%', cursor: 'pointer', display: 'flex', boxShadow: '0 4px 15px rgba(0,0,0,0.5)', border: '2px solid var(--bg-dark)' }}>
-                                    <Camera size={16} color="white" />
-                                    <input type="file" hidden accept="image/*" onChange={handleAvatarUpload} />
-                                </label>
+            <div style={{ textAlign: 'center', marginBottom: '3rem', zIndex: 10 }}>
+                <Logo size={64} style={{ margin: '0 auto 1.5rem' }} />
+                <h1 style={{ fontSize: '2.5rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', margin: 0 }}>
+                    WELCOME TO GWET
+                </h1>
+                <p style={{ color: 'var(--primary)', letterSpacing: '4px', fontWeight: 700, marginTop: '8px' }}>
+                    OPERATOR REGISTRATION
+                </p>
+            </div>
+
+            <div className="glass-card premium-pattern" style={{ width: '100%', maxWidth: '500px', padding: '3rem', zIndex: 10 }}>
+                {step === 1 && (
+                    <div className="animate-fade-in">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '2rem' }}>
+                            <div style={{ background: 'var(--primary-glow)', padding: '10px', borderRadius: '12px' }}>
+                                <Target size={24} color="var(--primary)" />
+                            </div>
+                            <h2 style={{ fontSize: '1.2rem', fontWeight: 900, margin: 0 }}>BASIC IDENTITY</h2>
+                        </div>
+                        
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>OPERATOR ALIAS (DISPLAY NAME)</label>
+                            <input 
+                                className="gaming-input" 
+                                value={displayName} 
+                                onChange={e => setDisplayName(e.target.value)} 
+                                style={{ height: '48px' }}
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: '2.5rem' }}>
+                            <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>PRIMARY PLATFORM</label>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                                {['PC', 'PlayStation', 'Xbox', 'Mobile'].map(platform => (
+                                    <div 
+                                        key={platform}
+                                        onClick={() => setGamingPlatform(platform)}
+                                        style={{
+                                            border: gamingPlatform === platform ? '2px solid var(--primary)' : '1px solid var(--glass-border)',
+                                            background: gamingPlatform === platform ? 'var(--primary-soft)' : 'rgba(255,255,255,0.02)',
+                                            padding: '12px',
+                                            borderRadius: '8px',
+                                            cursor: 'pointer',
+                                            textAlign: 'center',
+                                            fontWeight: 800,
+                                            fontSize: '14px',
+                                            color: gamingPlatform === platform ? '#fff' : 'var(--text-muted)'
+                                        }}
+                                    >
+                                        {platform}
+                                    </div>
+                                ))}
                             </div>
                         </div>
-                        <div>
-                            <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>{t('display_name')}</label>
-                            <input className="gaming-input" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="ENTER CALLSIGN..." />
-                        </div>
-                        <button className="btn primary" style={{ width: '100%', padding: '1rem' }} onClick={() => setStep(1)} disabled={!displayName.trim()}>
-                            INITIALIZE NEXT PHASE <ChevronRight size={18} />
+
+                        <button className="btn primary block" onClick={() => setStep(2)} disabled={!displayName.trim()}>
+                            PROCEED <ArrowRight size={16} />
                         </button>
                     </div>
                 )}
 
-                {step === 1 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                        <div>
-                            <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}><Globe size={12} /> {t('country')}</label>
-                            <select className="gaming-input" value={country} onChange={e => setCountry(e.target.value)}>
-                                {countries.map(c => <option key={c.code} value={c.code} style={{ background: '#0a0a0a' }}>{c.flag} {c.name.toUpperCase()}</option>)}
+                {step === 2 && (
+                    <div className="animate-fade-in">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '2rem' }}>
+                            <div style={{ background: 'var(--primary-glow)', padding: '10px', borderRadius: '12px' }}>
+                                <Globe size={24} color="var(--primary)" />
+                            </div>
+                            <h2 style={{ fontSize: '1.2rem', fontWeight: 900, margin: 0 }}>LOCALIZATION</h2>
+                        </div>
+                        
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>OPERATING REGION</label>
+                            <div style={{ position: 'relative' }}>
+                                <div style={{ position: 'absolute', left: '15px', top: '50%', transform: 'translateY(-50%)' }}>
+                                    <Flag code={country} size={24} />
+                                </div>
+                                <select 
+                                    className="gaming-input" 
+                                    value={country} 
+                                    onChange={e => setCountry(e.target.value)}
+                                    style={{ height: '48px', paddingLeft: '50px' }}
+                                >
+                                    <option value="Global">Universal</option>
+                                    {countries.map(c => (
+                                        <option key={c.code} value={c.code}>{c.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style={{ marginBottom: '2.5rem' }}>
+                            <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>INTERFACE LANGUAGE</label>
+                            <select 
+                                className="gaming-input" 
+                                value={language} 
+                                onChange={e => setLanguage(e.target.value)}
+                                style={{ height: '48px' }}
+                            >
+                                <option value="en">ENGLISH</option>
+                                <option value="ar">ARABIC</option>
                             </select>
                         </div>
-                        <div>
-                            <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}><Languages size={12} /> {t('language')}</label>
-                            <div style={{ display: 'flex', gap: '1rem' }}>
-                                <button className={`btn ${language === 'en' ? 'primary' : 'ghost'}`} style={{ flex: 1 }} onClick={() => setLanguage('en')}>ENGLISH</button>
-                                <button className={`btn ${language === 'ar' ? 'primary' : 'ghost'}`} style={{ flex: 1 }} onClick={() => setLanguage('ar')}>العربية</button>
-                            </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '10px' }}>
+                            <button className="btn ghost" onClick={() => setStep(1)}>BACK</button>
+                            <button className="btn primary" onClick={handleComplete} disabled={saving}>
+                                {saving ? "INITIALIZING..." : "FINALIZE REGISTRATION"}
+                            </button>
                         </div>
-                        <button className="btn primary" style={{ width: '100%', padding: '1rem' }} onClick={handleFinish} disabled={loading}>
-                            {loading ? (isRTL ? 'جاري التحميل...' : 'INITIALIZING...') : (isRTL ? 'إكمال التسجيل' : 'COMPLETE ONBOARDING')}
-                            {!loading && <ChevronRight size={18} />}
-                        </button>
                     </div>
                 )}
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', marginTop: '2rem', zIndex: 10 }}>
+                <div style={{ width: '40px', height: '4px', background: step === 1 ? 'var(--primary)' : 'var(--glass-border)', borderRadius: '2px' }} />
+                <div style={{ width: '40px', height: '4px', background: step === 2 ? 'var(--primary)' : 'var(--glass-border)', borderRadius: '2px' }} />
             </div>
         </div>
     );

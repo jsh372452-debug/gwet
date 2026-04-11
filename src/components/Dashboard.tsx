@@ -1,80 +1,48 @@
 import React, { useState, useEffect } from 'react';
-import { useGameStore, Squad } from '../store/gameStore';
+import { useGameStore, AAGCommunity } from '../store/gameStore';
 import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../i18n';
 import { Sidebar } from './Sidebar';
 import { Feed } from './Feed';
 import { ChatArea } from './ChatArea';
-import { Squads } from './Squads';
+import { Squads } from './Squads'; // Will act as Communities view
 import { SettingsHub } from './SettingsHub';
-import { JoinedHub } from './JoinedHub';
-import { Explore } from './Explore';
-import { EventsHub } from './EventsHub';
 import { ReputationHub } from './ReputationHub';
+import { Explore } from './Explore';
 import { Logo } from './Logo';
-import { Search, Bell, Command, Calendar, Shield, Trophy } from 'lucide-react';
+import { Search, Bell } from 'lucide-react';
 
-type Tab = 'feed' | 'explore' | 'squads' | 'events' | 'reputation' | 'chat' | 'settings' | 'joined';
+type Tab = 'feed' | 'communities' | 'reputation' | 'chat' | 'settings' | 'explore';
 
 export const Dashboard: React.FC = () => {
     const { t, isRTL } = useTranslation();
-    const { loadPosts, loadSquads, loadGroups, squads } = useGameStore(); // Added useGameStore hook
+    const { loadFeed, loadCommunities, communities } = useGameStore();
     const [activeTab, setActiveTab] = useState<Tab>('feed');
-    const [chatTarget, setChatTarget] = useState<{ id: string, type: 'global' | 'squad' | 'group' | 'private' }>({ id: 'global', type: 'global' });
-    const [selectedSquad, setSelectedSquad] = useState<any | null>(null); // Added state for selectedSquad
+    const [chatTarget, setChatTarget] = useState<{ id: string, type: 'global' | 'community' | 'private' }>({ id: 'global', type: 'global' });
+    const [selectedCommunity, setSelectedCommunity] = useState<AAGCommunity | null>(null);
 
     useEffect(() => {
-        loadPosts();
-        loadSquads();
-        loadGroups();
-
-        // Handle Deep-linking: ?join=SQUAD_ID
-        const params = new URLSearchParams(window.location.search);
-        const joinId = params.get('join');
-        if (joinId) {
-            setActiveTab('squads');
-            // We set the current squad if it exists in store
-            const s = squads.find(x => x.id === joinId);
-            if (s) setSelectedSquad(s);
-            // Clean URL
-            window.history.replaceState({}, '', window.location.pathname);
-        }
-    }, [loadPosts, loadSquads, loadGroups]);
-
-    // Re-check squads for deep-link if they weren't loaded yet
-    useEffect(() => {
-        const params = new URLSearchParams(window.location.search);
-        const joinId = params.get('join');
-        if (joinId && squads.length > 0 && !selectedSquad) {
-            const s = squads.find(x => x.id === joinId);
-            if (s) setSelectedSquad(s);
-        }
-    }, [squads, selectedSquad]);
+        loadFeed();
+        loadCommunities();
+    }, [loadFeed, loadCommunities]);
 
     const switchTab = (tab: Tab) => {
         if (tab === 'chat') setChatTarget({ id: 'global', type: 'global' });
         setActiveTab(tab);
     };
 
-    const handleSelectChat = (id: string, type: 'squad' | 'group' | 'private') => {
-        setChatTarget({ id, type });
-        setActiveTab('chat');
-    };
-
     const tabTitles: Record<Tab, string> = {
-        feed: 'FEED', explore: 'EXPLORE', squads: 'SQUADS', events: 'EVENTS', reputation: 'REPUTATION', chat: 'CHAT', settings: 'SETTINGS', joined: 'HUB'
+        feed: 'FEED', explore: 'DISCOVERY', communities: 'COMMUNITIES', reputation: 'LEADERBOARD', chat: 'CHAT', settings: 'SETTINGS'
     };
 
     const renderContent = () => {
         switch (activeTab) {
             case 'feed': return <Feed />;
-            case 'explore': return <Explore />;
-            case 'squads': return <Squads />;
-            case 'events': return <EventsHub />;
+            case 'communities': return <Squads />;
             case 'reputation': return <ReputationHub />;
-            case 'chat': return <ChatArea targetId={chatTarget.id} type={chatTarget.id === 'global' ? 'global' : chatTarget.type} onBack={() => setActiveTab('joined')} />;
+            case 'chat': return <ChatArea targetId={chatTarget.id} type={chatTarget.id === 'global' ? 'global' : chatTarget.type} onBack={() => setActiveTab('communities')} />;
             case 'settings': return <SettingsHub />;
-            case 'joined': return <JoinedHub onSelect={handleSelectChat} />;
+            case 'explore': return <Explore />;
             default: return <Feed />;
         }
     };

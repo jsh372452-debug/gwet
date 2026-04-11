@@ -1,9 +1,8 @@
 import React from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../i18n';
-import { countries } from '../data/countries';
 import Flag from './Flag';
-import { Layout, Shield, Terminal, Settings, LogOut, User, Users, Compass, Trophy } from 'lucide-react';
+import { Layout, Shield, Terminal, Settings, LogOut, Users, Compass } from 'lucide-react';
 import { TierBadge } from './TierBadge';
 import { Logo } from './Logo';
 
@@ -18,14 +17,22 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
 
     const menuItems = [
         { id: 'feed', icon: Layout, label: t('network') || 'NETWORK' },
-        { id: 'explore', icon: Compass, label: t('explore') || 'EXPLORE' },
-        { id: 'joined', icon: Users, label: t('joined') || 'HUBS' },
-        { id: 'squads', icon: Users, label: t('squads') || 'SQUADS' },
-        { id: 'events', icon: Trophy, label: t('events') || 'EVENTS' },
-        { id: 'reputation', icon: Shield, label: t('reputation') || 'RANKINGS' },
-        { id: 'chat', icon: Terminal, label: t('comms') || 'COMMS' },
+        { id: 'explore', icon: Compass, label: t('explore') || 'DISCOVERY' },
+        { id: 'communities', icon: Users, label: t('squads') || 'COMMUNITIES' },
+        { id: 'reputation', icon: Shield, label: t('reputation') || 'LEADERBOARD' },
+        { id: 'chat', icon: Terminal, label: t('comms') || 'CHAT' },
         { id: 'settings', icon: Settings, label: t('settings') || 'SETTINGS' },
     ];
+
+    const getTier = (influence: number) => {
+        if (influence > 5000) return 'MYTHIC';
+        if (influence > 2500) return 'LEGEND';
+        if (influence > 1000) return 'DIAMOND';
+        if (influence > 500) return 'PLATINUM';
+        if (influence > 250) return 'GOLD';
+        if (influence > 100) return 'SILVER';
+        return 'BRONZE';
+    };
 
     return (
         <aside className="sidebar">
@@ -64,9 +71,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 800 }}>
-                                    LVL {user?.level} · {user?.rank}
+                                    SCORE: {Math.round(user?.influenceScore || 0)}
                                 </div>
-                                {user?.reputation_tier && <TierBadge tier={user.reputation_tier} size={14} />}
+                                <TierBadge tier={getTier(user?.influenceScore || 0)} size={14} />
                             </div>
                         </div>
                     </div>
