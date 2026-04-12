@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "dev:full": "npx wrangler pages dev --proxy 5173 -- npm run dev",
+    "dev:full": "npx wrangler pages dev --proxy 5173 -- npm dev",
     "build": "tsc && vite build",
     "db:create": "npx wrangler d1 create gwet-db",
     "db:migrate": "npx wrangler d1 execute gwet-db --file=./schema.sql",

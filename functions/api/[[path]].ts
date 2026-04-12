@@ -18,6 +18,13 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     const path = url.pathname.replace(/^\/api\//, '').replace(/\/$/, '');
     const method = request.method;
 
+    console.log(`[API Request] ${method} ${path}`);
+
+    // Health check
+    if (path === 'health') {
+        return json({ status: 'active', timestamp: new Date().toISOString() });
+    }
+
     // CORS
     if (method === 'OPTIONS') {
         return new Response(null, {
