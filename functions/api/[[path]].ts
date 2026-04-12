@@ -20,6 +20,17 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     console.log(`[API Request] ${method} ${path}`);
 
+    // Debug endpoint
+    if (path === 'debug') {
+        return json({
+            hasDB: !!env.DB,
+            hasSecret: !!env.JWT_SECRET,
+            envKeys: Object.keys(env),
+            url: request.url,
+            path: path
+        });
+    }
+
     // Health check
     if (path === 'health') {
         return json({ status: 'active', timestamp: new Date().toISOString() });
