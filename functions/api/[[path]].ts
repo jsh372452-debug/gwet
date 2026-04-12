@@ -20,6 +20,17 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
     console.log(`[API Request] ${method} ${path}`);
 
+    // Database check endpoint
+    if (path === 'db-check') {
+        try {
+            const tables = await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
+            const profilesCount = await env.DB.prepare("SELECT COUNT(*) as c FROM profiles").first('c');
+            return json({ success: true, tables: tables.results, profilesCount });
+        } catch (e: any) {
+            return json({ success: false, error: e.message, stack: e.stack });
+        }
+    }
+
     // Debug endpoint
     if (path === 'debug') {
         return json({
