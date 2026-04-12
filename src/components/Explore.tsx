@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { useGameStore, AAGCommunity } from '../store/gameStore';
+import { useGameStore } from '../store/gameStore';
+import { AAGCommunity } from '../lib/api';
 import { Search, Compass, Users } from 'lucide-react';
 import { useTranslation } from '../i18n';
 

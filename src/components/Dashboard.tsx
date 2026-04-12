@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useGameStore, AAGCommunity } from '../store/gameStore';
+import { useGameStore } from '../store/gameStore';
+import { AAGCommunity } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../i18n';
 import { Sidebar } from './Sidebar';

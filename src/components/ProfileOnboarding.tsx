@@ -50,7 +50,7 @@ export const ProfileOnboarding: React.FC = () => {
             <div className="bg-glow cyan" />
 
             <div style={{ textAlign: 'center', marginBottom: '3rem', zIndex: 10 }}>
-                <Logo size={64} style={{ margin: '0 auto 1.5rem' }} />
+                <div style={{ margin: '0 auto 1.5rem', display: 'flex', justifyContent: 'center' }}><Logo size={64} /></div>
                 <h1 style={{ fontSize: '2.5rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', margin: 0 }}>
                     WELCOME TO GWET
                 </h1>

@@ -118,7 +118,7 @@ export const useTranslation = () => {
     const lang = user?.language || 'en';
 
     const t = (key: keyof typeof translations['en']) => {
-        return translations[lang][key] || translations['en'][key];
+        return (translations as any)[lang]?.[key] || (translations as any)['en'][key] || key;
     };
 
     const isRTL = lang === 'ar';
