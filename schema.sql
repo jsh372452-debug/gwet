@@ -2,6 +2,8 @@
 -- GWET AAG (Adaptive Activity Graph) Schema — Cloudflare D1
 -- ═══════════════════════════════════════════════════════════════
 
+PRAGMA foreign_keys = OFF;
+
 -- Drop old tables (NetGuard / legacy gwet)
 DROP TABLE IF EXISTS messages;
 DROP TABLE IF EXISTS group_members;
@@ -110,3 +112,5 @@ CREATE INDEX IF NOT EXISTS idx_entities_owner ON entities(owner_id);
 CREATE INDEX IF NOT EXISTS idx_profiles_influence ON profiles(influence_score DESC);
 -- Communities: filter by game
 CREATE INDEX IF NOT EXISTS idx_communities_game ON communities(game_tag);
+
+PRAGMA foreign_keys = ON;

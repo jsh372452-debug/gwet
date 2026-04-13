@@ -18,35 +18,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     const path = url.pathname.replace(/^\/api\//, '').replace(/\/$/, '');
     const method = request.method;
 
-    console.log(`[API Request] ${method} ${path}`);
-
-    // Database check endpoint
-    if (path === 'db-check') {
-        try {
-            const tables = await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
-            const profilesCount = await env.DB.prepare("SELECT COUNT(*) as c FROM profiles").first('c');
-            return json({ success: true, tables: tables.results, profilesCount });
-        } catch (e: any) {
-            return json({ success: false, error: e.message, stack: e.stack });
-        }
-    }
-
-    // Debug endpoint
-    if (path === 'debug') {
-        return json({
-            hasDB: !!env.DB,
-            hasSecret: !!env.JWT_SECRET,
-            envKeys: Object.keys(env),
-            url: request.url,
-            path: path
-        });
-    }
-
-    // Health check
-    if (path === 'health') {
-        return json({ status: 'active', timestamp: new Date().toISOString() });
-    }
-
     // CORS
     if (method === 'OPTIONS') {
         return new Response(null, {
