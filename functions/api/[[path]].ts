@@ -14,6 +14,9 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     const path = url.pathname.replace(/^\/api\//, '').replace(/\/$/, '');
     const method = request.method;
 
+    // Admin client for core logic
+    const sb = getSupabaseAdmin(env);
+
     // CORS
     if (method === 'OPTIONS') {
         return new Response(null, {
@@ -36,7 +39,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         // ─── Route Mapping ───────────────────────────────────
 
         // Auth syncing/profile
-        if (method === 'POST' && path === 'auth/register') return handleRegister(env, request, user);
+        if (method === 'POST' && path === 'auth/register') return handleRegister(env, sb, user);
         if (method === 'GET' && path === 'auth/session') return handleSession(env, user);
         if (method === 'PUT' && path === 'auth/profile') return handleUpdateProfile(env, request, user);
 
@@ -98,9 +101,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 // HANDLERS
 // ═══════════════════════════════════════════════════════════════
 
-async function handleRegister(env: Env, request: Request, user: { id: string, username: string }) {
+async function handleRegister(env: Env, sb: any, user: { id: string, username: string }) {
     // In Supabase, Auth creates the user. This endpoint just ensures the public.profiles record exists.
-    const sb = getSupabaseAdmin(env);
     
     // Get email from request metadata or session if passed from frontend
     // For simplicity, we upsert based on the verified session user
@@ -121,7 +123,7 @@ async function handleSession(env: Env, user: { id: string }) {
     if (err || !profile) {
         // Fallback: If session user exists but profile doesn't, create it
         // This can happen if register sync failed
-        return handleRegister(env, {} as any, { id: user.id, username: 'player_' + user.id.slice(0, 5) });
+        return handleRegister(env, sb, { id: user.id, username: 'player_' + user.id.slice(0, 5) });
     }
     return json({ user: profile });
 }
@@ -160,12 +162,10 @@ async function handleSmartFeed(env: Env, url: URL, user: { id: string }) {
     if (!entities) return json([]);
 
     const scoredEntities = await Promise.all(entities.map(async (entity) => {
-        const { data: edges } = await sb.from('edges').select('*').eq('to_entity', entity.id);
+        const { data: edges } = await sb.from('edges').select('weight, created_at').eq('to_entity', entity.id);
         const { data: owner } = await sb.from('profiles').select('influence_score').eq('id', entity.owner_id).single();
 
-        const freshness = calculateFreshness(entity.created_at);
-        const engagementScore = (edges || []).reduce((acc, edge) => acc + (edge.weight || 1), 0);
-        const finalScore = calculateEntityScore(engagementScore, freshness, owner?.influence_score || 0);
+        const finalScore = calculateEntityScore(edges || [], owner?.influence_score || 0);
 
         return { ...entity, score: finalScore };
     }));
@@ -180,8 +180,6 @@ async function handleSmartFeed(env: Env, url: URL, user: { id: string }) {
 async function handleCreatePost(env: Env, request: Request, user: { id: string }) {
     const { content, mediaUrl, gameTag, communityId } = await request.json() as any;
     const sb = getSupabaseAdmin(env);
-
-    if (isSpamEntity(content)) return error('Post rejected by SpamGuard', 400);
 
     const id = crypto.randomUUID();
     const metadata = JSON.stringify({ content, mediaUrl, gameTag, communityId });

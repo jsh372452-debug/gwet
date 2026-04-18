@@ -6,6 +6,7 @@ import { Logo } from './Logo';
 
 export const AuthUI: React.FC = () => {
     const [isLogin, setIsLogin] = useState(true);
+    const [email, setEmail] = useState('');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const { login, register, loading, error } = useAuthStore();
@@ -13,8 +14,8 @@ export const AuthUI: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (isLogin) await login(username, password);
-        else await register(username, password);
+        if (isLogin) await login(email, password);
+        else await register(email, password, username);
     };
 
     return (
@@ -36,14 +37,25 @@ export const AuthUI: React.FC = () => {
                 </div>
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                    <div>
-                        <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>{t('identity')}</label>
+                    <div style={{ marginBottom: '1.5rem' }}>
+                        <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>EMAIL ADDRESS</label>
                         <div style={{ position: 'relative' }}>
-                            <UserIcon size={18} style={{ position: 'absolute', [isRTL ? 'right' : 'left']: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
-                            <input className="gaming-input" placeholder="USERNAME" value={username} onChange={(e) => setUsername(e.target.value)}
+                            <Lock size={18} style={{ position: 'absolute', [isRTL ? 'right' : 'left']: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
+                            <input className="gaming-input" placeholder="EMAIL@EXAMPLE.COM" type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                                 style={{ [isRTL ? 'paddingRight' : 'paddingLeft']: '46px', margin: 0 }} />
                         </div>
                     </div>
+
+                    {!isLogin && (
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>{t('identity')}</label>
+                            <div style={{ position: 'relative' }}>
+                                <UserIcon size={18} style={{ position: 'absolute', [isRTL ? 'right' : 'left']: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-dim)' }} />
+                                <input className="gaming-input" placeholder="USERNAME" value={username} onChange={(e) => setUsername(e.target.value)}
+                                    style={{ [isRTL ? 'paddingRight' : 'paddingLeft']: '46px', margin: 0 }} />
+                            </div>
+                        </div>
+                    )}
 
                     <div>
                         <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>{t('security')}</label>
