@@ -37,14 +37,25 @@ export const Dashboard: React.FC = () => {
     };
 
     const renderContent = () => {
-        switch (activeTab) {
-            case 'feed': return <Feed />;
-            case 'communities': return <Squads />;
-            case 'reputation': return <ReputationHub />;
-            case 'chat': return <ChatArea targetId={chatTarget.id} type={chatTarget.id === 'global' ? 'global' : chatTarget.type} onBack={() => setActiveTab('communities')} />;
-            case 'settings': return <SettingsHub />;
-            case 'explore': return <Explore />;
-            default: return <Feed />;
+        try {
+            switch (activeTab) {
+                case 'feed': return <Feed />;
+                case 'communities': return <Squads />;
+                case 'reputation': return <ReputationHub />;
+                case 'chat': return <ChatArea targetId={chatTarget.id} type={chatTarget.id === 'global' ? 'global' : chatTarget.type} onBack={() => setActiveTab('communities')} />;
+                case 'settings': return <SettingsHub />;
+                case 'explore': return <Explore />;
+                default: return <Feed />;
+            }
+        } catch (err) {
+            console.error('Render error in Dashboard:', err);
+            return (
+                <div style={{ padding: '2rem', textAlign: 'center', background: 'rgba(255,0,0,0.05)', borderRadius: '12px', border: '1px solid rgba(255,0,0,0.1)' }}>
+                    <h3 style={{ color: '#ff4d4d' }}>INTERFACE SYSTEM FAILURE</h3>
+                    <p style={{ fontSize: '12px', color: 'var(--text-dim)' }}>A critical error occurred while rendering this module. Please ensure your database schema is up to date.</p>
+                    <button className="btn ghost sm" onClick={() => window.location.reload()}>REBOOT SYSTEM</button>
+                </div>
+            );
         }
     };
 

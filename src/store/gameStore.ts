@@ -57,12 +57,13 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     loadFeed: async (type) => {
         const feedType = type || get().feedType;
-        set({ loading: true, feedType });
+        set({ loading: true, feedType, posts: get().posts || [] });
         try {
-            const { posts } = feedType === 'following'
+            const response = feedType === 'following'
                 ? await api.feed.following({ limit: 30 })
                 : await api.feed.smart({ limit: 30 });
-            set({ posts, loading: false });
+            
+            set({ posts: response?.posts || [], loading: false });
         } catch (err) {
             console.error('Load feed failed:', err);
             set({ loading: false });
