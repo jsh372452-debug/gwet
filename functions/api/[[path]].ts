@@ -161,10 +161,10 @@ async function mapPost(sb: any, entity: any, userContextId?: string) {
         ownerInfluence: profile?.influence_score || 0,
         ownerPlatform: profile?.gaming_platform || '',
         score: finalScore,
-        likeCount: (edges || []).filter(e => e.type === 'like').length,
-        replyCount: (edges || []).filter(e => e.type === 'reply').length,
-        shareCount: (edges || []).filter(e => e.type === 'share').length,
-        userLiked: userContextId ? (edges || []).some(e => e.from_user === userContextId && e.type === 'like') : false
+        likeCount: (edges || []).filter((e: any) => e.type === 'like').length,
+        replyCount: (edges || []).filter((e: any) => e.type === 'reply').length,
+        shareCount: (edges || []).filter((e: any) => e.type === 'share').length,
+        userLiked: userContextId ? (edges || []).some((e: any) => e.from_user === userContextId && e.type === 'like') : false
     };
 }
 
