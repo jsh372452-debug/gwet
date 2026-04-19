@@ -141,6 +141,48 @@ async function handleRegister(env: Env, sb: any, user: { id: string, username: s
     return json({ user: mapUser(profile) });
 }
 
+async function mapPost(sb: any, entity: any, userContextId?: string) {
+    const { data: edges } = await sb.from('edges').select('from_user, type, weight, created_at').eq('to_entity', entity.id);
+    const { data: profile } = await sb.from('profiles').select('*').eq('id', entity.owner_id).single();
+
+    const metadata = JSON.parse(entity.metadata || '{}');
+    const finalScore = calculateEntityScore(edges || [], profile?.influence_score || 0);
+
+    return {
+        id: entity.id,
+        type: entity.type,
+        ownerId: entity.owner_id,
+        content: metadata.content || '',
+        mediaUrl: metadata.mediaUrl || '',
+        gameTag: metadata.gameTag || 'Global',
+        createdAt: entity.created_at,
+        ownerName: profile?.username || 'Unknown',
+        ownerAvatar: profile?.avatar_url || '',
+        ownerInfluence: profile?.influence_score || 0,
+        ownerPlatform: profile?.gaming_platform || '',
+        score: finalScore,
+        likeCount: (edges || []).filter(e => e.type === 'like').length,
+        replyCount: (edges || []).filter(e => e.type === 'reply').length,
+        shareCount: (edges || []).filter(e => e.type === 'share').length,
+        userLiked: userContextId ? (edges || []).some(e => e.from_user === userContextId && e.type === 'like') : false
+    };
+}
+
+async function mapComment(sb: any, entity: any) {
+    const { data: profile } = await sb.from('profiles').select('*').eq('id', entity.owner_id).single();
+    const metadata = JSON.parse(entity.metadata || '{}');
+
+    return {
+        id: entity.id,
+        content: metadata.content || '',
+        createdAt: entity.created_at,
+        ownerId: entity.owner_id,
+        ownerName: profile?.username || 'Unknown',
+        ownerAvatar: profile?.avatar_url || '',
+        ownerInfluence: profile?.influence_score || 0
+    };
+}
+
 async function handleSession(env: Env, user: { id: string }) {
     const sb = getSupabaseAdmin(env);
     const { data: profile, error: err } = await sb.from('profiles').select('*').eq('id', user.id).single();
@@ -186,22 +228,15 @@ async function handleSmartFeed(env: Env, url: URL, user: { id: string }) {
         .order('created_at', { ascending: false })
         .limit(100);
 
-    if (!entities) return json([]);
+    if (!entities) return json({ posts: [] });
 
-    const scoredEntities = await Promise.all(entities.map(async (entity) => {
-        const { data: edges } = await sb.from('edges').select('weight, created_at').eq('to_entity', entity.id);
-        const { data: owner } = await sb.from('profiles').select('influence_score').eq('id', entity.owner_id).single();
-
-        const finalScore = calculateEntityScore(edges || [], owner?.influence_score || 0);
-
-        return { ...entity, score: finalScore };
-    }));
+    const scoredEntities = await Promise.all(entities.map(entity => mapPost(sb, entity, user.id)));
 
     const finalFeed = scoredEntities
         .sort((a, b) => b.score - a.score)
         .slice(0, limit);
 
-    return json(finalFeed);
+    return json({ posts: finalFeed });
 }
 
 async function handleCreatePost(env: Env, request: Request, user: { id: string }) {
@@ -228,7 +263,7 @@ async function handleCreatePost(env: Env, request: Request, user: { id: string }
         weight: EDGE_WEIGHTS.create
     });
 
-    return json(entity);
+    return json({ post: await mapPost(sb, entity, user.id) });
 }
 
 async function handleLike(env: Env, entityId: string, user: { id: string }) {
@@ -275,7 +310,7 @@ async function handleGetPost(env: Env, postId: string) {
     const sb = getSupabaseAdmin(env);
     const { data: post, error: err } = await sb.from('entities').select('*').eq('id', postId).single();
     if (err || !post) return error('Post not found', 404);
-    return json(post);
+    return json({ post: await mapPost(sb, post) });
 }
 
 async function handleDeletePost(env: Env, postId: string, user: { id: string }) {
@@ -293,7 +328,10 @@ async function handleGetComments(env: Env, entityId: string) {
         .eq('type', 'comment')
         .filter('metadata', 'ilike', `%${entityId}%`); // Filter by parent ID in JSON string
     
-    return json(comments || []);
+    if (!comments) return json({ comments: [] });
+    const mappedComments = await Promise.all(comments.map(c => mapComment(sb, c)));
+
+    return json({ comments: mappedComments });
 }
 
 async function handleFollow(env: Env, targetUserId: string, user: { id: string }) {
@@ -343,12 +381,14 @@ async function handleLeaderboard(env: Env, url: URL) {
 async function handleFollowingFeed(env: Env, url: URL, user: { id: string }) {
     const sb = getSupabaseAdmin(env);
     const { data: followings } = await sb.from('edges').select('to_entity').eq('from_user', user.id).eq('type', 'follow');
-    if (!followings || followings.length === 0) return json([]);
+    if (!followings || followings.length === 0) return json({ posts: [] });
 
     const followingIds = followings.map(f => f.to_entity);
     const { data: entities } = await sb.from('entities').select('*').in('owner_id', followingIds).order('created_at', { ascending: false }).limit(20);
+    if (!entities) return json({ posts: [] });
 
-    return json(entities || []);
+    const posts = await Promise.all(entities.map(entity => mapPost(sb, entity, user.id)));
+    return json({ posts });
 }
 
 async function handleCommunityFeed(env: Env, url: URL, communityId: string) {
@@ -356,8 +396,11 @@ async function handleCommunityFeed(env: Env, url: URL, communityId: string) {
     const { data: entities } = await sb.from('entities')
         .select('*')
         .filter('metadata', 'ilike', `%${communityId}%`);
+    
+    if (!entities) return json({ posts: [] });
+    const posts = await Promise.all(entities.map(entity => mapPost(sb, entity)));
 
-    return json(entities || []);
+    return json({ posts });
 }
 
 async function handleReply(env: Env, request: Request, entityId: string, user: { id: string }) {
@@ -380,7 +423,7 @@ async function handleReply(env: Env, request: Request, entityId: string, user: {
         weight: EDGE_WEIGHTS.reply
     });
 
-    return json(comment);
+    return json({ comment: await mapComment(sb, comment) });
 }
 
 async function handleShare(env: Env, entityId: string, user: { id: string }) {
