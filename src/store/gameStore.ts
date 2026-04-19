@@ -98,8 +98,8 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     loadComments: async (postId) => {
         try {
-            const { comments } = await api.posts.getComments(postId);
-            set(state => ({ comments: { ...state.comments, [postId]: comments } }));
+            const response = await api.posts.getComments(postId);
+            set(state => ({ comments: { ...state.comments, [postId]: response?.comments || [] } }));
         } catch (err) {
             console.error('Load comments failed:', err);
         }
@@ -198,8 +198,8 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     loadCommunities: async () => {
         try {
-            const { communities } = await api.communities.list();
-            set({ communities });
+            const response = await api.communities.list();
+            set({ communities: response?.communities || [] });
         } catch (err) {
             console.error('Load communities failed:', err);
         }

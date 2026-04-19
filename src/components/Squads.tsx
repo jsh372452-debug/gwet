@@ -101,7 +101,7 @@ export const Squads: React.FC = () => {
                     </div>
                 )}
 
-                {communities.map(c => {
+                {(communities || []).map(c => {
                     return (
                         <div key={c.id} className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
                             <div style={{

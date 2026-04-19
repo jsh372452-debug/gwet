@@ -14,7 +14,7 @@ export const Explore: React.FC = () => {
         loadCommunities();
     }, [loadCommunities]);
 
-    const filteredCommunities = communities.filter(c => 
+    const filteredCommunities = (communities || []).filter(c => 
         (c.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
         (c.gameTag || '').toLowerCase().includes(searchQuery.toLowerCase())
     );
