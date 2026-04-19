@@ -1,3 +1,7 @@
+import React, { useState } from 'react';
+import { useAuthStore } from '../store/authStore';
+import { useTranslation } from '../i18n';
+import { Logo } from './Logo';
 import { Shield, Lock, User as UserIcon, ChevronRight, Mail } from 'lucide-react';
 
 export const AuthUI: React.FC = () => {

@@ -34,7 +34,11 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         if (!sbUser) return error('Unauthorized', 401);
 
         // Normalize User for our logic
-        const user = { id: sbUser.id, username: sbUser.user_metadata?.username || sbUser.email?.split('@')[0] || 'anon' };
+        const user = { 
+            id: sbUser.id, 
+            username: sbUser.user_metadata?.username || sbUser.email?.split('@')[0] || 'anon',
+            email: sbUser.email
+        };
 
         // ─── Route Mapping ───────────────────────────────────
 
@@ -118,11 +122,73 @@ function mapUser(dbUser: any) {
     };
 }
 
+async function sendVerificationEmail(env: Env, to: string, username: string, code: string) {
+    if (!env.RESEND_API_KEY || !to) {
+        console.warn('Email skipped: No API Key or recipient. Code:', code);
+        return;
+    }
+
+    const html = `
+    <!DOCTYPE html>
+    <html dir="rtl" lang="ar">
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body { background-color: #010409; color: #ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 40px; }
+            .container { max-width: 600px; margin: 0 auto; background: #0d1117; border: 1px solid #30363d; border-radius: 20px; padding: 40px; text-align: center; }
+            .logo { color: #00d1ff; font-size: 32px; font-weight: 900; letter-spacing: 4px; margin-bottom: 20px; }
+            .header { font-size: 20px; font-weight: 700; color: #8b949e; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 2px; }
+            .content { font-size: 16px; line-height: 1.6; color: #c9d1d9; margin-bottom: 40px; }
+            .code-box { background: rgba(0, 209, 255, 0.1); border: 1px dashed #00d1ff; border-radius: 12px; padding: 20px; font-size: 36px; font-weight: 900; color: #00d1ff; letter-spacing: 10px; margin: 30px 0; }
+            .footer { font-size: 11px; color: #484f58; border-top: 1px solid #30363d; padding-top: 20px; margin-top: 40px; }
+            .primary-text { color: #58a6ff; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="logo">GWET</div>
+            <div class="header">بروتوكول التحقق من الهوية</div>
+            <div class="content">
+                مرحباً أيها العميل <span class="primary-text">${username}</span>،<br>
+                لقد تلقينا طلباً للوصول إلى شبكة GWET. لضمان أمان حسابك واتمام عملية الربط العصبي، يرجى استخدام رمز التفويض التالي:
+            </div>
+            <div class="code-box">${code}</div>
+            <div class="content">
+                هذا الرمز صالح للاستخدام مرة واحدة فقط. إذا لم تكن أنت من قام بهذا الطلب، يرجى تجاهل هذه الرسالة فوراً.
+            </div>
+            <div class="footer">
+                نظام GWET الأساسي © 2026<br>
+                قسم العمليات الأمنية - تقنيات الجيل القادم
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+
+    try {
+        await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                from: 'GWET CORE <onboarding@resend.dev>',
+                to: [to],
+                subject: 'GWET IDENTITY VERIFICATION CODE',
+                html: html
+            })
+        });
+    } catch (e) {
+        console.error('Email send failed:', e);
+    }
+}
+
 // ═══════════════════════════════════════════════════════════════
 // HANDLERS
 // ═══════════════════════════════════════════════════════════════
 
-async function handleRegister(env: Env, sb: any, user: { id: string, username: string }, request?: Request) {
+async function handleRegister(env: Env, sb: any, user: { id: string, username: string, email?: string }, request?: Request) {
     // Collect data from body if available (frontend register call)
     let finalUsername = user.username;
     if (request) {
@@ -147,6 +213,11 @@ async function handleRegister(env: Env, sb: any, user: { id: string, username: s
 
     // LOG THE CODE TO CONSOLE FOR TESTING
     console.log(`[GWET CORE] Verification code for ${finalUsername} (${user.id}): ${verificationCode}`);
+
+    // SEND REAL EMAIL VIA RESEND
+    if (user.email) {
+        await sendVerificationEmail(env, user.email, finalUsername, verificationCode);
+    }
 
     return json({ user: mapUser(profile) });
 }
@@ -176,7 +247,7 @@ async function handleVerify(env: Env, sb: any, user: { id: string }, request: Re
     return json({ user: mapUser(updated) });
 }
 
-async function handleResendCode(env: Env, sb: any, user: { id: string }) {
+async function handleResendCode(env: Env, sb: any, user: { id: string, username: string, email?: string }) {
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
     
     const { data: profile, error: err } = await sb.from('profiles')
@@ -190,6 +261,11 @@ async function handleResendCode(env: Env, sb: any, user: { id: string }) {
     // LOG THE CODE TO CONSOLE FOR TESTING
     console.log(`[GWET CORE] Resent verification code for ${profile?.username} (${user.id}): ${verificationCode}`);
     
+    // SEND REAL EMAIL VIA RESEND
+    if (user.email) {
+        await sendVerificationEmail(env, user.email, profile?.username || 'Operator', verificationCode);
+    }
+
     return json({ success: true });
 }
 
