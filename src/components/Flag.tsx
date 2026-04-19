@@ -109,7 +109,7 @@ export const Flag: React.FC<FlagProps> = ({ code, size = 24 }) => {
                 <text
                     x="20" y="18"
                     textAnchor="middle"
-                    fontSize={flagData.symbol.length > 1 ? '8' : '14'}
+                    fontSize={(flagData.symbol?.length || 0) > 1 ? '8' : '14'}
                     fontWeight="900"
                     fill={flagData.symbolColor || '#FFF'}
                     style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))' }}
