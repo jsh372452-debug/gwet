@@ -2,7 +2,7 @@
 // GWET AAG — Frontend API Client
 // ═══════════════════════════════════════════════════════════════
 
-const API_BASE = '/api/';
+const API_BASE = '/api';
 
 function getToken(): string | null {
     return localStorage.getItem('gwet_token');
