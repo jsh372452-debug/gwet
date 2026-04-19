@@ -1,5 +1,7 @@
 import React, { useEffect } from 'react';
 import { useAuthStore } from './store/authStore';
+import { supabase } from './lib/supabase';
+import { setToken, clearToken } from './lib/api';
 import { AuthUI } from './components/Auth';
 import { Dashboard } from './components/Dashboard';
 import { ProfileOnboarding } from './components/ProfileOnboarding';
@@ -10,7 +12,26 @@ function App() {
   const { user, checkSession, loading } = useAuthStore();
   const { isRTL, lang } = useTranslation();
 
-  useEffect(() => { checkSession(); }, [checkSession]);
+  useEffect(() => {
+    checkSession();
+
+    // Set up a listener for auth changes (like email confirmation or token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth event:', event);
+      if (session) {
+        setToken(session.access_token);
+        // We only fetch the profile if the user isn't already loaded or on sign-in
+        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+          checkSession();
+        }
+      } else if (event === 'SIGNED_OUT') {
+        clearToken();
+        // Since we are using zustand, the store state should be cleared
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [checkSession]);
 
   useEffect(() => {
     document.documentElement.lang = lang;

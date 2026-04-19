@@ -47,11 +47,17 @@ export const useAuthStore = create<AuthState>((set) => ({
             setToken(session.access_token);
 
             // Fetch full profile from backend
-            const { user } = await api.auth.session();
-            set({ user, loading: false });
+            try {
+                const { user } = await api.auth.session();
+                set({ user, loading: false });
+            } catch (syncErr) {
+                console.warn('Backend sync failed, but Supabase session is active:', syncErr);
+                // We keep the loading false so at least they see the login, 
+                // but we don't clear the token yet.
+                set({ loading: false });
+            }
         } catch (err) {
             console.error('Session check failed:', err);
-            clearToken();
             set({ user: null, loading: false });
         }
     },
@@ -68,12 +74,26 @@ export const useAuthStore = create<AuthState>((set) => ({
             });
 
             if (error) throw error;
-            if (!data.session) {
-                set({ loading: false, error: 'Check your email for confirmation link' });
+
+            let session = data.session;
+
+            // If no session but user was created, try to log in immediately
+            // This handles cases where Supabase doesn't return session on signup
+            if (!session && data.user) {
+                const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+                    email,
+                    password
+                });
+                if (loginError) throw loginError;
+                session = loginData.session;
+            }
+
+            if (!session) {
+                set({ loading: false, error: 'Account created, please try logging in manually.' });
                 return;
             }
 
-            setToken(data.session.access_token);
+            setToken(session.access_token);
             const { user } = await api.auth.session();
             set({ user, loading: false });
         } catch (err: any) {
