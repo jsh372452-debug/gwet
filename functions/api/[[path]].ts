@@ -123,7 +123,7 @@ function mapUser(dbUser: any) {
 }
 
 async function sendVerificationEmail(env: Env, to: string, username: string, code: string) {
-    if (!env.RESEND_API_KEY) {
+    if (!env.GWET_MAIL_KEY) {
         throw new Error('SECURITY CONFIG ERROR: RESEND_API_KEY is missing in environment variables.');
     }
     if (!to) {
@@ -171,7 +171,7 @@ async function sendVerificationEmail(env: Env, to: string, username: string, cod
         const res = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+                'Authorization': `Bearer ${env.GWET_MAIL_KEY}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
