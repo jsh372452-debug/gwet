@@ -6,6 +6,7 @@ import { AuthUI } from './components/Auth';
 import { Dashboard } from './components/Dashboard';
 import { ProfileOnboarding } from './components/ProfileOnboarding';
 import { useTranslation } from './i18n';
+import { VerificationUI } from './components/VerificationUI';
 import { Loader2 } from 'lucide-react';
 
 function App() {
@@ -58,6 +59,12 @@ function App() {
       <div className="energy-blob blue-blob" style={{ top: '-10%', right: '-10%' }} />
       <div className="energy-blob cyan-blob" style={{ bottom: '-10%', left: '-10%' }} />
       <AuthUI />
+    </div>
+  );
+
+  if (user && !user.isVerified) return (
+    <div style={{ minHeight: '100vh', background: '#010410' }}>
+      <VerificationUI />
     </div>
   );
 

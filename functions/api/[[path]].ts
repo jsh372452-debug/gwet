@@ -40,6 +40,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 
         // Auth syncing/profile
         if (method === 'POST' && path === 'auth/register') return handleRegister(env, sb, user, request);
+        if (method === 'POST' && path === 'auth/verify') return handleVerify(env, sb, user, request);
+        if (method === 'POST' && path === 'auth/resend-code') return handleResendCode(env, sb, user);
         if (method === 'GET' && path === 'auth/session') return handleSession(env, user);
         if (method === 'PUT' && path === 'auth/profile') return handleUpdateProfile(env, request, user);
 
@@ -111,9 +113,8 @@ function mapUser(dbUser: any) {
         bio: dbUser.bio,
         gamingPlatform: dbUser.gaming_platform,
         influenceScore: dbUser.influence_score || 0,
-        isOnboarded: !!dbUser.is_onboarded,
-        country: dbUser.country,
-        language: dbUser.language
+        language: dbUser.language,
+        isVerified: !!dbUser.is_verified
     };
 }
 
@@ -131,14 +132,65 @@ async function handleRegister(env: Env, sb: any, user: { id: string, username: s
         } catch (e) { /* ignore parse error */ }
     }
 
+    // Generate secure 6-digit verification code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
     const { data: profile, error: err } = await sb.from('profiles').upsert({
         id: user.id,
         username: finalUsername,
         display_name: finalUsername,
+        verification_code: verificationCode,
+        is_verified: false // New accounts always start unverified
     }).select().single();
 
     if (err) return error(err.message, 400);
+
+    // LOG THE CODE TO CONSOLE FOR TESTING
+    console.log(`[GWET CORE] Verification code for ${finalUsername} (${user.id}): ${verificationCode}`);
+
     return json({ user: mapUser(profile) });
+}
+
+async function handleVerify(env: Env, sb: any, user: { id: string }, request: Request) {
+    const { code } = await request.json() as any;
+    
+    const { data: profile, error: err } = await sb.from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+    
+    if (err || !profile) return error('Profile not found', 404);
+    
+    if (profile.verification_code !== code) {
+        return error('INVALID_CODE', 400); 
+    }
+    
+    const { data: updated, error: verifyErr } = await sb.from('profiles')
+        .update({ is_verified: true, verification_code: null })
+        .eq('id', user.id)
+        .select()
+        .single();
+        
+    if (verifyErr) return error(verifyErr.message, 400);
+    
+    return json({ user: mapUser(updated) });
+}
+
+async function handleResendCode(env: Env, sb: any, user: { id: string }) {
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    const { data: profile, error: err } = await sb.from('profiles')
+        .update({ verification_code: verificationCode })
+        .eq('id', user.id)
+        .select()
+        .single();
+        
+    if (err) return error(err.message, 400);
+    
+    // LOG THE CODE TO CONSOLE FOR TESTING
+    console.log(`[GWET CORE] Resent verification code for ${profile?.username} (${user.id}): ${verificationCode}`);
+    
+    return json({ success: true });
 }
 
 async function mapPost(sb: any, entity: any, userContextId?: string) {

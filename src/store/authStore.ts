@@ -14,8 +14,10 @@ interface AuthState {
     updateProfile: (data: Partial<{
         displayName: string; avatarUrl: string; bio: string;
         gamingPlatform: string; country: string; language: string;
-        isOnboarded: boolean;
+        isOnboarded: boolean; isVerified: boolean;
     }>) => Promise<void>;
+    verifyCode: (code: string) => Promise<void>;
+    resendCode: () => Promise<void>;
     setUser: (user: AAGUser) => void;
 }
 
@@ -37,12 +39,33 @@ export const useAuthStore = create<AuthState>((set) => ({
             if (data.country !== undefined) mappedData.country = data.country;
             if (data.language !== undefined) mappedData.language = data.language;
             if (data.isOnboarded !== undefined) mappedData.is_onboarded = data.isOnboarded;
+            if (data.isVerified !== undefined) mappedData.is_verified = data.isVerified;
 
             const { user: updatedUser } = await api.auth.updateProfile(mappedData);
             set({ user: updatedUser });
         } catch (err) {
             console.error('Update profile failed:', err);
-            throw err; // Re-throw to be caught by component UI
+            throw err;
+        }
+    },
+
+    verifyCode: async (code) => {
+        set({ loading: true, error: null });
+        try {
+            const { user } = await api.auth.verify(code);
+            set({ user, loading: false });
+        } catch (err: any) {
+            set({ error: err.message || 'Verification failed', loading: false });
+            throw err;
+        }
+    },
+
+    resendCode: async () => {
+        try {
+            await api.auth.resendCode();
+        } catch (err) {
+            console.error('Resend failed:', err);
+            throw err;
         }
     },
 

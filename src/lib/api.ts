@@ -89,6 +89,7 @@ export interface AAGUser {
     gamingPlatform: string;
     influenceScore: number;
     isOnboarded: boolean;
+    isVerified: boolean;
     country: string;
     language: string;
 }
@@ -140,6 +141,16 @@ export const api = {
 
         session: () =>
             request<{ user: AAGUser }>('auth/session'),
+
+        verify: (code: string) =>
+            request<{ user: AAGUser }>('auth/verify', {
+                method: 'POST', body: JSON.stringify({ code })
+            }),
+
+        resendCode: () =>
+            request<{ success: boolean }>('auth/resend-code', {
+                method: 'POST'
+            }),
 
         updateProfile: (data: Partial<{
             displayName: string; avatarUrl: string; country: string;
