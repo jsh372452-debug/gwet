@@ -1,57 +1,29 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { ShieldCheck, ArrowRight, RefreshCw, LogOut, Lock } from 'lucide-react';
+import { ShieldCheck, RefreshCw, LogOut, Mail, CheckCircle } from 'lucide-react';
 import { Logo } from './Logo';
 
 export const VerificationUI: React.FC = () => {
     const { user, verifyCode, resendCode, signOut, loading, error } = useAuthStore();
-    const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [resending, setResending] = useState(false);
     const [resendTimer, setResendTimer] = useState(0);
-    const inputRefs = [
-        useRef<HTMLInputElement>(null),
-        useRef<HTMLInputElement>(null),
-        useRef<HTMLInputElement>(null),
-        useRef<HTMLInputElement>(null),
-        useRef<HTMLInputElement>(null),
-        useRef<HTMLInputElement>(null),
-    ];
+    const [checking, setChecking] = useState(false);
 
-    useEffect(() => {
+    React.useEffect(() => {
         if (resendTimer > 0) {
             const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
             return () => clearTimeout(timer);
         }
     }, [resendTimer]);
 
-    const handleChange = (index: number, value: string) => {
-        if (!/^\d*$/.test(value)) return;
-        
-        const newOtp = [...otp];
-        newOtp[index] = value.slice(-1);
-        setOtp(newOtp);
-
-        // Auto-focus next
-        if (value && index < 5) {
-            inputRefs[index + 1].current?.focus();
-        }
-    };
-
-    const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-        if (e.key === 'Backspace' && !otp[index] && index > 0) {
-            inputRefs[index - 1].current?.focus();
-        }
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        const code = otp.join('');
-        if (code.length !== 6) return;
-        
+    const handleCheckVerification = async () => {
+        setChecking(true);
         try {
-            await verifyCode(code);
+            await verifyCode('supabase-confirm');
         } catch (err) {
-            // Error is handled in store
+            // Error handled in store
+        } finally {
+            setChecking(false);
         }
     };
 
@@ -75,80 +47,64 @@ export const VerificationUI: React.FC = () => {
 
             <div className="glass-card" style={{ width: '100%', maxWidth: '480px', padding: '4rem 3rem', borderRadius: '32px', position: 'relative', zIndex: 10, textAlign: 'center' }}>
                 <div style={{ marginBottom: '2.5rem' }}>
-                    <div style={{ display: 'inline-block', marginBottom: '1rem', padding: '15px', background: 'rgba(0, 209, 255, 0.1)', borderRadius: '24px', border: '1px solid rgba(0, 209, 255, 0.2)' }}>
-                        <ShieldCheck size={48} color="var(--primary)" />
+                    <div style={{ display: 'inline-block', marginBottom: '1rem', padding: '18px', background: 'rgba(0, 209, 255, 0.1)', borderRadius: '24px', border: '1px solid rgba(0, 209, 255, 0.2)' }}>
+                        <Mail size={48} color="var(--primary)" />
                     </div>
-                    <h2 style={{ fontSize: '1.8rem', fontWeight: 900, letterSpacing: '1px', textTransform: 'uppercase' }}>Identity Verification</h2>
-                    <p style={{ color: 'var(--text-dim)', fontSize: '13px', fontWeight: 700, marginTop: '10px' }}>
-                        OPERATIONAL DIRECTIVE: A verification code has been dispatched to <span style={{ color: 'var(--primary)' }}>{user?.username}</span> via encrypted channel.
+                    <h2 style={{ fontSize: '1.6rem', fontWeight: 900, letterSpacing: '1px', textTransform: 'uppercase' }}>تحقق من بريدك الإلكتروني</h2>
+                    <p style={{ color: 'var(--text-dim)', fontSize: '13px', fontWeight: 700, marginTop: '12px', lineHeight: 1.8, direction: 'rtl' }}>
+                        قمنا بإرسال رسالة تأكيد إلى بريدك الإلكتروني.<br/>
+                        اضغط على <span style={{ color: 'var(--primary)' }}>رابط التأكيد</span> في الرسالة ثم عُد هنا واضغط الزر أدناه.
                     </p>
                 </div>
 
-                <form onSubmit={handleSubmit}>
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '2.5rem' }}>
-                        {otp.map((digit, i) => (
-                            <input
-                                key={i}
-                                ref={inputRefs[i]}
-                                type="text"
-                                inputMode="numeric"
-                                value={digit}
-                                onChange={e => handleChange(i, e.target.value)}
-                                onKeyDown={e => handleKeyDown(i, e)}
-                                style={{
-                                    width: '50px',
-                                    height: '64px',
-                                    fontSize: '1.8rem',
-                                    fontWeight: 900,
-                                    textAlign: 'center',
-                                    background: 'rgba(255,255,255,0.03)',
-                                    border: '2px solid var(--glass-border)',
-                                    borderRadius: '12px',
-                                    color: 'var(--primary)',
-                                    outline: 'none',
-                                    transition: 'all 0.2s ease'
-                                }}
-                                className="otp-input"
-                                autoComplete="off"
-                            />
-                        ))}
+                {/* Animated mail icon */}
+                <div style={{ margin: '2rem 0', padding: '24px', background: 'rgba(0, 209, 255, 0.03)', borderRadius: '16px', border: '1px dashed rgba(0, 209, 255, 0.15)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+                        <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#00d1ff', animation: 'pulse 2s infinite', boxShadow: '0 0 15px #00d1ff' }} />
+                        <span style={{ fontSize: '11px', fontWeight: 900, color: 'var(--primary)', letterSpacing: '2px' }}>AWAITING EMAIL CONFIRMATION</span>
                     </div>
+                </div>
 
-                    {error && (
-                        <div style={{ color: '#ff4d4d', fontSize: '12px', fontWeight: 700, marginBottom: '2rem', background: 'rgba(255, 77, 77, 0.1)', padding: '12px', borderRadius: '12px', border: '1px solid rgba(255, 77, 77, 0.2)' }}>
-                            ACCESS DENIED: {error === 'INVALID_CODE' ? 'INVALID ENCRYPTION KEY' : error}
-                        </div>
-                    )}
+                {error && (
+                    <div style={{ color: '#ff9f43', fontSize: '12px', fontWeight: 700, marginBottom: '1.5rem', background: 'rgba(255, 159, 67, 0.1)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255, 159, 67, 0.2)', direction: 'rtl' }}>
+                        {error === 'EMAIL_NOT_CONFIRMED' 
+                            ? '⏳ لم يتم تأكيد البريد بعد! اضغط على الرابط في إيميلك أولاً ثم حاول مجدداً.' 
+                            : error}
+                    </div>
+                )}
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <button type="submit" className="btn primary sharp" disabled={loading || otp.join('').length !== 6} style={{ height: '54px', fontSize: '1rem' }}>
-                            {loading ? 'SYNCING...' : 'AUTHORIZE CONNECTION'}
-                            <ArrowRight size={20} />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <button onClick={handleCheckVerification} className="btn primary sharp" disabled={loading || checking} style={{ height: '56px', fontSize: '1rem' }}>
+                        {checking ? 'CHECKING...' : (
+                            <>
+                                <CheckCircle size={20} />
+                                لقد أكدت بريدي — تحقق الآن
+                            </>
+                        )}
+                    </button>
+                    
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <button 
+                            type="button" 
+                            onClick={handleResend} 
+                            disabled={resendTimer > 0 || resending}
+                            className="btn ghost sm" 
+                            style={{ flex: 1, fontSize: '10px', height: '44px' }}
+                        >
+                            <RefreshCw size={14} className={resending ? 'spinner' : ''} />
+                            {resendTimer > 0 ? `RETRY IN ${resendTimer}s` : 'إعادة إرسال الإيميل'}
                         </button>
-                        
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                            <button 
-                                type="button" 
-                                onClick={handleResend} 
-                                disabled={resendTimer > 0 || resending}
-                                className="btn ghost sm" 
-                                style={{ flex: 1, fontSize: '10px', height: '44px' }}
-                            >
-                                <RefreshCw size={14} className={resending ? 'spinner' : ''} />
-                                {resendTimer > 0 ? `RETRY IN ${resendTimer}s` : 'RESEND CODE'}
-                            </button>
-                            <button 
-                                type="button" 
-                                onClick={signOut}
-                                className="btn ghost sm" 
-                                style={{ flex: 1, fontSize: '10px', height: '44px', color: '#ff4d4d' }}
-                            >
-                                <LogOut size={14} />
-                                ABORT SESSION
-                            </button>
-                        </div>
+                        <button 
+                            type="button" 
+                            onClick={signOut}
+                            className="btn ghost sm" 
+                            style={{ flex: 1, fontSize: '10px', height: '44px', color: '#ff4d4d' }}
+                        >
+                            <LogOut size={14} />
+                            تسجيل خروج
+                        </button>
                     </div>
-                </form>
+                </div>
 
                 <div style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px' }}>
                     <Logo size={24} />

@@ -7,7 +7,6 @@ export interface Env {
   SUPABASE_SERVICE_ROLE_KEY: string;
   LIVEKIT_API_KEY: string;
   LIVEKIT_API_SECRET: string;
-  GWET_MAIL_KEY: string;
 }
 
 export function getSupabaseAdmin(env: Env) {

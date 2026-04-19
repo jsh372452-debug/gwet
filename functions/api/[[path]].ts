@@ -122,78 +122,6 @@ function mapUser(dbUser: any) {
     };
 }
 
-async function sendVerificationEmail(env: Env, to: string, username: string, code: string) {
-    if (!env.GWET_MAIL_KEY) {
-        throw new Error('SECURITY CONFIG ERROR: RESEND_API_KEY is missing in environment variables.');
-    }
-    if (!to) {
-        throw new Error('INVALID RECIPIENT: No email address provided.');
-    }
-
-    const html = `
-    <!DOCTYPE html>
-    <html dir="rtl" lang="ar">
-    <head>
-        <meta charset="UTF-8">
-        <style>
-            body { background-color: #010409; color: #ffffff; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 40px; }
-            .container { max-width: 600px; margin: 0 auto; background: #0d1117; border: 1px solid #30363d; border-radius: 20px; padding: 40px; text-align: center; }
-            .logo { color: #00d1ff; font-size: 32px; font-weight: 900; letter-spacing: 4px; margin-bottom: 20px; }
-            .header { font-size: 20px; font-weight: 700; color: #8b949e; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 2px; }
-            .content { font-size: 16px; line-height: 1.6; color: #c9d1d9; margin-bottom: 40px; }
-            .code-box { background: rgba(0, 209, 255, 0.1); border: 1px dashed #00d1ff; border-radius: 12px; padding: 20px; font-size: 36px; font-weight: 900; color: #00d1ff; letter-spacing: 10px; margin: 30px 0; }
-            .footer { font-size: 11px; color: #484f58; border-top: 1px solid #30363d; padding-top: 20px; margin-top: 40px; }
-            .primary-text { color: #58a6ff; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="logo">GWET</div>
-            <div class="header">بروتوكول التحقق من الهوية</div>
-            <div class="content">
-                مرحباً أيها العميل <span class="primary-text">${username}</span>،<br>
-                لقد تلقينا طلباً للوصول إلى شبكة GWET. لضمان أمان حسابك واتمام عملية الربط العصبي، يرجى استخدام رمز التفويض التالي:
-            </div>
-            <div class="code-box">${code}</div>
-            <div class="content">
-                هذا الرمز صالح للاستخدام مرة واحدة فقط. إذا لم تكن أنت من قام بهذا الطلب، يرجى تجاهل هذه الرسالة فوراً.
-            </div>
-            <div class="footer">
-                نظام GWET الأساسي © 2026<br>
-                قسم العمليات الأمنية - تقنيات الجيل القادم
-            </div>
-        </div>
-    </body>
-    </html>
-    `;
-
-    try {
-        const res = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${env.GWET_MAIL_KEY}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                from: 'GWET CORE <onboarding@resend.dev>',
-                to: [to],
-                subject: 'GWET IDENTITY VERIFICATION CODE',
-                html: html
-            })
-        });
-
-        const resBody = await res.text();
-        console.log(`[RESEND] Status: ${res.status}, Response: ${resBody}`);
-
-        if (!res.ok) {
-            throw new Error(`Resend API error (${res.status}): ${resBody}`);
-        }
-    } catch (e: any) {
-        console.error('Email send failed:', e);
-        throw e;
-    }
-}
-
 // ═══════════════════════════════════════════════════════════════
 // HANDLERS
 // ═══════════════════════════════════════════════════════════════
@@ -208,52 +136,30 @@ async function handleRegister(env: Env, sb: any, user: { id: string, username: s
         } catch (e) { /* ignore parse error */ }
     }
 
-    // Generate secure 6-digit verification code
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-
     const { data: profile, error: err } = await sb.from('profiles').upsert({
         id: user.id,
         username: finalUsername,
         display_name: finalUsername,
-        verification_code: verificationCode,
-        is_verified: false // New accounts always start unverified
+        is_verified: false // Will be set to true when Supabase confirms email
     }).select().single();
 
     if (err) return error(err.message, 400);
 
-    // LOG THE CODE TO CONSOLE FOR TESTING
-    console.log(`[GWET CORE] Verification code for ${finalUsername} (${user.id}): ${verificationCode}`);
-
-    // SEND REAL EMAIL VIA RESEND
-    if (user.email) {
-        try {
-            await sendVerificationEmail(env, user.email, finalUsername, verificationCode);
-        } catch (e: any) {
-            console.error('Email failed:', e);
-            // We tell the user specifically that email delivery failed so they can check their Resend config
-            return error(`EMAIL_DELIVERY_FAILED: ${e.message}`, 500);
-        }
-    } else {
-        return error('EMAIL_REQUIRED: No email associated with this session.', 400);
-    }
+    console.log(`[GWET CORE] User registered: ${finalUsername} (${user.id})`);
 
     return json({ user: mapUser(profile) });
 }
 
 async function handleVerify(env: Env, sb: any, user: { id: string }, request: Request) {
-    const { code } = await request.json() as any;
+    // Check if Supabase has confirmed the user's email
+    const supabase = getSupabaseAdmin(env);
+    const { data: { user: authUser } } = await supabase.auth.admin.getUserById(user.id);
     
-    const { data: profile, error: err } = await sb.from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-    
-    if (err || !profile) return error('Profile not found', 404);
-    
-    if (profile.verification_code !== code) {
-        return error('INVALID_CODE', 400); 
+    if (!authUser?.email_confirmed_at) {
+        return error('EMAIL_NOT_CONFIRMED', 400);
     }
     
+    // Email is confirmed — mark user as verified in our profiles table
     const { data: updated, error: verifyErr } = await sb.from('profiles')
         .update({ is_verified: true, verification_code: null })
         .eq('id', user.id)
@@ -266,28 +172,18 @@ async function handleVerify(env: Env, sb: any, user: { id: string }, request: Re
 }
 
 async function handleResendCode(env: Env, sb: any, user: { id: string, username: string, email?: string }) {
-    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    if (!user.email) return error('No email found', 400);
     
-    const { data: profile, error: err } = await sb.from('profiles')
-        .update({ verification_code: verificationCode })
-        .eq('id', user.id)
-        .select()
-        .single();
-        
-    if (err) return error(err.message, 400);
+    // Use Supabase to resend the confirmation email
+    const supabase = getSupabaseAdmin(env);
+    const { error: resendErr } = await supabase.auth.resend({
+        type: 'signup',
+        email: user.email
+    });
     
-    // LOG THE CODE TO CONSOLE FOR TESTING
-    console.log(`[GWET CORE] Resent verification code for ${profile?.username} (${user.id}): ${verificationCode}`);
+    if (resendErr) return error(resendErr.message, 400);
     
-    // SEND REAL EMAIL VIA RESEND
-    if (user.email) {
-        try {
-            await sendVerificationEmail(env, user.email, profile?.username || 'Operator', verificationCode);
-        } catch (e: any) {
-            return error(`EMAIL_DELIVERY_FAILED: ${e.message}`, 500);
-        }
-    }
-
+    console.log(`[GWET CORE] Resent confirmation email for ${user.email}`);
     return json({ success: true });
 }
 
