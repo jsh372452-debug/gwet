@@ -65,6 +65,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     register: async (email, password, username) => {
         set({ loading: true, error: null });
         try {
+            // 1. Supabase Signup
             const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
@@ -77,8 +78,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
             let session = data.session;
 
-            // If no session but user was created, try to log in immediately
-            // This handles cases where Supabase doesn't return session on signup
+            // 2. Auto-login if session didn't start (common with email settings)
             if (!session && data.user) {
                 const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
                     email,
@@ -89,14 +89,21 @@ export const useAuthStore = create<AuthState>((set) => ({
             }
 
             if (!session) {
-                set({ loading: false, error: 'Account created, please try logging in manually.' });
+                set({ loading: false, error: 'Account created. Please login manually.' });
                 return;
             }
 
+            // 3. Set the token for subsequent API calls
             setToken(session.access_token);
-            const { user } = await api.auth.session();
-            set({ user, loading: false });
+
+            // 4. Synchronization - Tell the backend to create the profile record
+            // We pass the user data explicitly to ensure it works even if session state is slightly lagging
+            const { user: profileUser } = await api.auth.register(username, email, session.user.id);
+            
+            // 5. Success - Set the user and stop loading
+            set({ user: profileUser, loading: false });
         } catch (err: any) {
+            console.error('Registration/Sync failed:', err);
             set({ error: err.message || 'Registration failed', loading: false });
         }
     },

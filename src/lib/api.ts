@@ -127,9 +127,9 @@ export interface LeaderboardEntry {
 export const api = {
     // ─── Auth ──────────────────────────────────────────────
     auth: {
-        register: (username: string, password: string) =>
-            request<{ token: string; user: AAGUser }>('auth/register', {
-                method: 'POST', body: JSON.stringify({ username, password })
+        register: (username: string, email: string, id: string) =>
+            request<{ user: AAGUser }>('auth/register', {
+                method: 'POST', body: JSON.stringify({ username, email, id })
             }),
 
         login: (username: string, password: string) =>

@@ -39,7 +39,7 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         // ─── Route Mapping ───────────────────────────────────
 
         // Auth syncing/profile
-        if (method === 'POST' && path === 'auth/register') return handleRegister(env, sb, user);
+        if (method === 'POST' && path === 'auth/register') return handleRegister(env, sb, user, request);
         if (method === 'GET' && path === 'auth/session') return handleSession(env, user);
         if (method === 'PUT' && path === 'auth/profile') return handleUpdateProfile(env, request, user);
 
@@ -101,15 +101,20 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 // HANDLERS
 // ═══════════════════════════════════════════════════════════════
 
-async function handleRegister(env: Env, sb: any, user: { id: string, username: string }) {
-    // In Supabase, Auth creates the user. This endpoint just ensures the public.profiles record exists.
-    
-    // Get email from request metadata or session if passed from frontend
-    // For simplicity, we upsert based on the verified session user
+async function handleRegister(env: Env, sb: any, user: { id: string, username: string }, request?: Request) {
+    // Collect data from body if available (frontend register call)
+    let finalUsername = user.username;
+    if (request) {
+        try {
+            const body = await request.json() as any;
+            if (body.username) finalUsername = body.username;
+        } catch (e) { /* ignore parse error */ }
+    }
+
     const { data: profile, error: err } = await sb.from('profiles').upsert({
         id: user.id,
-        username: user.username,
-        display_name: user.username,
+        username: finalUsername,
+        display_name: finalUsername,
     }).select().single();
 
     if (err) return error(err.message, 400);
