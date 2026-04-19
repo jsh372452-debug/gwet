@@ -61,36 +61,36 @@ export const Dashboard: React.FC = () => {
     };
 
     return (
-        <div className="app-layout" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
-            <div className="bg-glow purple" />
-            <div className="bg-glow cyan" />
+        <ErrorBoundary>
+            <div className="app-layout" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
+                <div className="bg-glow purple" />
+                <div className="bg-glow cyan" />
 
-            <Sidebar activeTab={activeTab} setActiveTab={switchTab} />
+                <Sidebar activeTab={activeTab} setActiveTab={switchTab} />
 
-            <main className="main-content">
-                {/* Header */}
-                <header className="top-header">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
-                        <Logo size={28} />
-                        <h1 style={{ fontSize: 'var(--font-md)', fontWeight: 800, letterSpacing: '1px' }}>{tabTitles[activeTab]}</h1>
-                    </div>
-
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
-                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                            <Search size={14} style={{ position: 'absolute', left: '10px', color: 'var(--text-muted)' }} />
-                            <input className="input" placeholder={t('search')} style={{ width: '220px', paddingLeft: '32px', fontSize: 'var(--font-sm)' }} />
+                <main className="main-content">
+                    {/* Header */}
+                    <header className="top-header">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+                            <Logo size={28} />
+                            <h1 style={{ fontSize: 'var(--font-md)', fontWeight: 800, letterSpacing: '1px' }}>{tabTitles[activeTab]}</h1>
                         </div>
-                        <button className="btn icon-only"><Bell size={16} /></button>
-                    </div>
-                </header>
 
-                {/* Content */}
-                <div className="content-area">
-                    <ErrorBoundary>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
+                            <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                <Search size={14} style={{ position: 'absolute', left: '10px', color: 'var(--text-muted)' }} />
+                                <input className="input" placeholder={t('search')} style={{ width: '220px', paddingLeft: '32px', fontSize: 'var(--font-sm)' }} />
+                            </div>
+                            <button className="btn icon-only"><Bell size={16} /></button>
+                        </div>
+                    </header>
+
+                    {/* Content */}
+                    <div className="content-area">
                         {renderContent()}
-                    </ErrorBoundary>
-                </div>
-            </main>
-        </div>
+                    </div>
+                </main>
+            </div>
+        </ErrorBoundary>
     );
 };
