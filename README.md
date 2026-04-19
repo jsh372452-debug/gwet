@@ -41,6 +41,28 @@ To run this project locally or in production, ensure the following variables are
 
 ---
 
+### ⚠️ Post-Migration Database Patch
+
+If you are experiencing issues with the onboarding process (page stuck on "Initializing"), you must run the following SQL script in your **Supabase SQL Editor** to ensure your `profiles` table has all the required columns:
+
+```sql
+-- Fix profiles table schema for GWET AAG
+ALTER TABLE profiles 
+ADD COLUMN IF NOT EXISTS gaming_platform TEXT DEFAULT 'PC',
+ADD COLUMN IF NOT EXISTS country TEXT DEFAULT 'Global',
+ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'en',
+ADD COLUMN IF NOT EXISTS is_onboarded BOOLEAN DEFAULT FALSE;
+
+-- Ensure display_name exists
+ALTER TABLE profiles 
+ADD COLUMN IF NOT EXISTS display_name TEXT;
+
+-- Update existing records if needed
+UPDATE profiles SET display_name = username WHERE display_name IS NULL;
+```
+
+---
+
 ### 📦 Installation
 
 ```bash

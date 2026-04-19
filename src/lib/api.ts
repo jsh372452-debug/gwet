@@ -24,7 +24,8 @@ async function request<T = any>(path: string, options: RequestInit = {}): Promis
     };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    const res = await fetch(`${API_BASE}/${path}`, { ...options, headers });
+    const fullUrl = `${API_BASE}/${path}`.replace(/\/+/g, '/');
+    const res = await fetch(fullUrl, { ...options, headers });
 
     const contentType = res.headers.get('Content-Type') || '';
     let data: any;

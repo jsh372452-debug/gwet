@@ -15,9 +15,11 @@ export const ProfileOnboarding: React.FC = () => {
     const [country, setCountry] = useState('Global');
     const [language, setLanguage] = useState('en');
     const [saving, setSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const handleComplete = async () => {
         setSaving(true);
+        setError(null);
         try {
             await updateProfile({
                 displayName,
@@ -27,8 +29,9 @@ export const ProfileOnboarding: React.FC = () => {
                 isOnboarded: true
             });
             // App state will automatically update and reroute to dashboard
-        } catch (error) {
-            console.error('Failed to complete onboarding:', error);
+        } catch (err: any) {
+            console.error('Failed to complete onboarding:', err);
+            setError(err.message || 'Synchronization failed. Please check your database schema.');
             setSaving(false);
         }
     };
@@ -152,8 +155,14 @@ export const ProfileOnboarding: React.FC = () => {
                             </select>
                         </div>
 
+                        {error && (
+                            <div style={{ color: '#ff4d4d', fontSize: '11px', fontWeight: 700, textAlign: 'center', background: 'rgba(255, 77, 77, 0.05)', padding: '1rem', borderRadius: '12px', border: '1px solid rgba(255, 77, 77, 0.1)', marginBottom: '1.5rem' }}>
+                                {error}
+                            </div>
+                        )}
+
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '10px' }}>
-                            <button className="btn ghost" onClick={() => setStep(1)}>BACK</button>
+                            <button className="btn ghost" onClick={() => setStep(1)} disabled={saving}>BACK</button>
                             <button className="btn primary" onClick={handleComplete} disabled={saving}>
                                 {saving ? "INITIALIZING..." : "FINALIZE REGISTRATION"}
                             </button>
