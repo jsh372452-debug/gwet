@@ -63,11 +63,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                     <div className="badge sharp" style={{ position: 'absolute', top: -1, right: -1, fontSize: '0.5rem', background: 'var(--primary)', color: 'white', fontWeight: 900 }}>ELITE</div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
                         <div className="avatar-premium" style={{ width: 44, height: 44, fontSize: '1rem' }}>
-                            {user?.avatarUrl ? <img src={user.avatarUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (user?.displayName?.[0] || 'G').toUpperCase()}
+                            {user?.avatarUrl ? <img src={user.avatarUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (user?.displayName?.charAt(0) || 'G').toUpperCase()}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: '13px', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {user?.displayName.toUpperCase()} <Flag code={user?.country || 'Global'} size={14} />
+                                {(user?.displayName || user?.username || 'USER').toUpperCase()} <Flag code={user?.country || 'Global'} size={14} />
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 800 }}>
@@ -80,7 +80,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                 </div>
 
                 <button onClick={signOut} className="btn danger sharp" style={{ width: '100%', fontWeight: 900 }}>
-                    <LogOut size={16} /> {t('logout').toUpperCase()}
+                    <LogOut size={16} /> {t('logout')?.toUpperCase() || 'LOGOUT'}
                 </button>
             </div>
         </aside>

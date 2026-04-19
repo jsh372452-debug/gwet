@@ -157,11 +157,11 @@ export const Feed: React.FC = () => {
                             <div style={{ flex: 1 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <span style={{ fontWeight: 900, cursor: 'pointer', letterSpacing: '0.5px' }} onClick={() => setSelectedUserId(post.ownerId)}>{post.ownerName.toUpperCase()}</span>
+                                        <span style={{ fontWeight: 900, cursor: 'pointer', letterSpacing: '0.5px' }} onClick={() => setSelectedUserId(post.ownerId)}>{(post.ownerName || 'ANON').toUpperCase()}</span>
                                         <TierBadge tier={getTier(post.ownerInfluence)} size={20} />
                                     </div>
                                     {post.gameTag && post.gameTag !== 'Global' && (
-                                        <span style={{ fontSize: '10px', background: 'var(--primary-soft)', color: 'var(--primary)', padding: '2px 8px', fontWeight: 900 }}>{post.gameTag.toUpperCase()}</span>
+                                        <span style={{ fontSize: '10px', background: 'var(--primary-soft)', color: 'var(--primary)', padding: '2px 8px', fontWeight: 900 }}>{(post.gameTag || '').toUpperCase()}</span>
                                     )}
                                     <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginLeft: 'auto', fontWeight: 700 }}>
                                         {new Date(post.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -202,7 +202,7 @@ export const Feed: React.FC = () => {
                                             </div>
                                             <div style={{ flex: 1 }}>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                                    <span style={{ fontSize: '11px', fontWeight: 900, color: 'var(--primary)', letterSpacing: '0.5px' }}>{c.ownerName.toUpperCase()}</span>
+                                                    <span style={{ fontSize: '11px', fontWeight: 900, color: 'var(--primary)', letterSpacing: '0.5px' }}>{(c.ownerName || 'ANON').toUpperCase()}</span>
                                                     <TierBadge tier={getTier(c.ownerInfluence)} size={14} />
                                                     <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                                 </div>
