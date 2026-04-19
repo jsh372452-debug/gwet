@@ -168,7 +168,7 @@ async function sendVerificationEmail(env: Env, to: string, username: string, cod
     `;
 
     try {
-        await fetch('https://api.resend.com/emails', {
+        const res = await fetch('https://api.resend.com/emails', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${env.RESEND_API_KEY}`,
@@ -181,8 +181,16 @@ async function sendVerificationEmail(env: Env, to: string, username: string, cod
                 html: html
             })
         });
-    } catch (e) {
+
+        const resBody = await res.text();
+        console.log(`[RESEND] Status: ${res.status}, Response: ${resBody}`);
+
+        if (!res.ok) {
+            throw new Error(`Resend API error (${res.status}): ${resBody}`);
+        }
+    } catch (e: any) {
         console.error('Email send failed:', e);
+        throw e;
     }
 }
 
