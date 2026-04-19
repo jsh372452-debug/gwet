@@ -11,6 +11,7 @@ import { SettingsHub } from './SettingsHub';
 import { ReputationHub } from './ReputationHub';
 import { Explore } from './Explore';
 import { Logo } from './Logo';
+import { ErrorBoundary } from './ErrorBoundary';
 import { Search, Bell } from 'lucide-react';
 
 type Tab = 'feed' | 'communities' | 'reputation' | 'chat' | 'settings' | 'explore';
@@ -85,7 +86,9 @@ export const Dashboard: React.FC = () => {
 
                 {/* Content */}
                 <div className="content-area">
-                    {renderContent()}
+                    <ErrorBoundary>
+                        {renderContent()}
+                    </ErrorBoundary>
                 </div>
             </main>
         </div>

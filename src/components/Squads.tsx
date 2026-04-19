@@ -35,8 +35,8 @@ export const Squads: React.FC = () => {
                         <Target size={18} color="white" />
                     </div>
                     <div style={{ flex: 1 }}>
-                        <h2 style={{ fontSize: '1.1rem', fontWeight: 900, margin: 0 }}>{activeCommunity.name.toUpperCase()}</h2>
-                        <span style={{ fontSize: '10px', color: 'var(--text-dim)', fontWeight: 700 }}>{activeCommunity.memberCount || 1} MEMBERS · {activeCommunity.gameTag?.toUpperCase() || 'GLOBAL'}</span>
+                        <h2 style={{ fontSize: '1.1rem', fontWeight: 900, margin: 0 }}>{(activeCommunity.name || 'COMMUNITY').toUpperCase()}</h2>
+                        <span style={{ fontSize: '10px', color: 'var(--text-dim)', fontWeight: 700 }}>{activeCommunity.memberCount || 1} MEMBERS · {(activeCommunity.gameTag || 'GLOBAL').toUpperCase()}</span>
                     </div>
                 </div>
 
@@ -124,8 +124,8 @@ export const Squads: React.FC = () => {
 
                             <div style={{ padding: '2.5rem 1.5rem 1.5rem' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                                    <h3 style={{ fontSize: '1.2rem', fontWeight: 900, margin: 0 }}>{c.name.toUpperCase()}</h3>
-                                    <div style={{ fontSize: '10px', background: 'rgba(0, 209, 255, 0.1)', color: 'var(--primary)', padding: '2px 10px', fontWeight: 900, borderRadius: '20px', border: '1px solid rgba(0, 209, 255, 0.2)' }}>{c.gameTag?.toUpperCase() || 'GLOBAL'}</div>
+                                    <h3 style={{ fontSize: '1.2rem', fontWeight: 900, margin: 0 }}>{(c.name || 'COMMUNITY').toUpperCase()}</h3>
+                                    <div style={{ fontSize: '10px', background: 'rgba(0, 209, 255, 0.1)', color: 'var(--primary)', padding: '2px 10px', fontWeight: 900, borderRadius: '20px', border: '1px solid rgba(0, 209, 255, 0.2)' }}>{(c.gameTag || 'GLOBAL').toUpperCase()}</div>
                                 </div>
                                 <p style={{ color: 'var(--text-dim)', fontSize: '13px', lineHeight: 1.6, height: '40px', overflow: 'hidden', marginBottom: '1.5rem' }}>
                                     {c.description || 'No operational directive defined.'}
