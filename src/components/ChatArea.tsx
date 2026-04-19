@@ -81,8 +81,8 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ targetId, type, onBack }) =>
             </div>
 
             <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                {loading && messages.length === 0 && <div style={{ color: 'var(--text-muted)', textAlign: 'center' }}>ESTABLISHING CONNECTION...</div>}
-                {messages.map((m) => {
+                {loading && (messages || []).length === 0 && <div style={{ color: 'var(--text-muted)', textAlign: 'center' }}>ESTABLISHING CONNECTION...</div>}
+                {(messages || []).map((m) => {
                     const isMe = m.ownerId === user?.id;
                     return (
                         <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>

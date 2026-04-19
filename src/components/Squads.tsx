@@ -94,7 +94,7 @@ export const Squads: React.FC = () => {
             )}
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.5rem', paddingBottom: '4rem' }}>
-                {communities.length === 0 && (
+                {(communities || []).length === 0 && (
                     <div className="glass-card" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem' }}>
                         <Shield size={48} color="var(--text-dim)" style={{ marginBottom: '1rem', opacity: 0.2 }} />
                         <h3 style={{ opacity: 0.5 }}>NO ACTIVE COMMUNITIES FOUND</h3>

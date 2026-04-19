@@ -129,7 +129,7 @@ export const Feed: React.FC = () => {
 
             {/* Posts */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingBottom: '4rem' }}>
-                {loading && posts.length === 0 && (
+                {loading && (posts || []).length === 0 && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                         {[1, 2, 3].map(i => (
                             <div key={i} className="glass-card sharp" style={{ height: '160px', opacity: 0.5 }}>
@@ -141,7 +141,7 @@ export const Feed: React.FC = () => {
                     </div>
                 )}
 
-                {filteredPosts.length === 0 && !loading && (
+                {(filteredPosts || []).length === 0 && !loading && (
                     <div className="glass-card sharp" style={{ textAlign: 'center', padding: '4rem' }}>
                         <MessageSquare size={48} color="var(--text-muted)" style={{ marginBottom: '1rem', opacity: 0.2 }} />
                         <h3 style={{ margin: 0, opacity: 0.5 }}>NO TRANSMISSIONS YET</h3>
