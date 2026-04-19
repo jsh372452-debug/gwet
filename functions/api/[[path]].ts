@@ -123,9 +123,11 @@ function mapUser(dbUser: any) {
 }
 
 async function sendVerificationEmail(env: Env, to: string, username: string, code: string) {
-    if (!env.RESEND_API_KEY || !to) {
-        console.warn('Email skipped: No API Key or recipient. Code:', code);
-        return;
+    if (!env.RESEND_API_KEY) {
+        throw new Error('SECURITY CONFIG ERROR: RESEND_API_KEY is missing in environment variables.');
+    }
+    if (!to) {
+        throw new Error('INVALID RECIPIENT: No email address provided.');
     }
 
     const html = `
@@ -216,7 +218,15 @@ async function handleRegister(env: Env, sb: any, user: { id: string, username: s
 
     // SEND REAL EMAIL VIA RESEND
     if (user.email) {
-        await sendVerificationEmail(env, user.email, finalUsername, verificationCode);
+        try {
+            await sendVerificationEmail(env, user.email, finalUsername, verificationCode);
+        } catch (e: any) {
+            console.error('Email failed:', e);
+            // We tell the user specifically that email delivery failed so they can check their Resend config
+            return error(`EMAIL_DELIVERY_FAILED: ${e.message}`, 500);
+        }
+    } else {
+        return error('EMAIL_REQUIRED: No email associated with this session.', 400);
     }
 
     return json({ user: mapUser(profile) });
@@ -263,7 +273,11 @@ async function handleResendCode(env: Env, sb: any, user: { id: string, username:
     
     // SEND REAL EMAIL VIA RESEND
     if (user.email) {
-        await sendVerificationEmail(env, user.email, profile?.username || 'Operator', verificationCode);
+        try {
+            await sendVerificationEmail(env, user.email, profile?.username || 'Operator', verificationCode);
+        } catch (e: any) {
+            return error(`EMAIL_DELIVERY_FAILED: ${e.message}`, 500);
+        }
     }
 
     return json({ success: true });
