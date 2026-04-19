@@ -28,10 +28,21 @@ export const useAuthStore = create<AuthState>((set) => ({
 
     updateProfile: async (data) => {
         try {
-            const { user: updatedUser } = await api.auth.updateProfile(data);
+            // Map camelCase to snake_case for Postgres compatibility
+            const mappedData: any = {};
+            if (data.displayName !== undefined) mappedData.display_name = data.displayName;
+            if (data.avatarUrl !== undefined) mappedData.avatar_url = data.avatarUrl;
+            if (data.bio !== undefined) mappedData.bio = data.bio;
+            if (data.gamingPlatform !== undefined) mappedData.gaming_platform = data.gamingPlatform;
+            if (data.country !== undefined) mappedData.country = data.country;
+            if (data.language !== undefined) mappedData.language = data.language;
+            if (data.isOnboarded !== undefined) mappedData.is_onboarded = data.isOnboarded;
+
+            const { user: updatedUser } = await api.auth.updateProfile(mappedData);
             set({ user: updatedUser });
         } catch (err) {
             console.error('Update profile failed:', err);
+            throw err; // Re-throw to be caught by component UI
         }
     },
 

@@ -98,6 +98,26 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 };
 
 // ═══════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════
+
+function mapUser(dbUser: any) {
+    if (!dbUser) return null;
+    return {
+        id: dbUser.id,
+        username: dbUser.username,
+        displayName: dbUser.display_name,
+        avatarUrl: dbUser.avatar_url,
+        bio: dbUser.bio,
+        gamingPlatform: dbUser.gaming_platform,
+        influenceScore: dbUser.influence_score || 0,
+        isOnboarded: !!dbUser.is_onboarded,
+        country: dbUser.country,
+        language: dbUser.language
+    };
+}
+
+// ═══════════════════════════════════════════════════════════════
 // HANDLERS
 // ═══════════════════════════════════════════════════════════════
 
@@ -118,7 +138,7 @@ async function handleRegister(env: Env, sb: any, user: { id: string, username: s
     }).select().single();
 
     if (err) return error(err.message, 400);
-    return json({ user: profile });
+    return json({ user: mapUser(profile) });
 }
 
 async function handleSession(env: Env, user: { id: string }) {
@@ -130,7 +150,7 @@ async function handleSession(env: Env, user: { id: string }) {
         // This can happen if register sync failed
         return handleRegister(env, sb, { id: user.id, username: 'player_' + user.id.slice(0, 5) });
     }
-    return json({ user: profile });
+    return json({ user: mapUser(profile) });
 }
 
 async function handleUpdateProfile(env: Env, request: Request, user: { id: string }) {
@@ -144,14 +164,16 @@ async function handleUpdateProfile(env: Env, request: Request, user: { id: strin
         .single();
 
     if (err) return error(err.message, 400);
-    return json({ user: updated });
+    return json({ user: mapUser(updated) });
 }
 
 async function handleGetUserProfile(env: Env, userId: string) {
     const sb = getSupabaseAdmin(env);
     const { data: profile } = await sb.from('profiles').select('*').eq('id', userId).single();
     if (!profile) return error('User not found', 404);
-    return json(profile);
+    
+    // Enrich with counts if needed, but for now just the profile
+    return json({ profile: mapUser(profile) });
 }
 
 async function handleSmartFeed(env: Env, url: URL, user: { id: string }) {
