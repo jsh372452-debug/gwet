@@ -87,7 +87,7 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ targetId, type, onBack }) =>
                     return (
                         <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
                             <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '4px', padding: '0 4px', display: 'flex', gap: '8px' }}>
-                                <span>{m.ownerName.toUpperCase()}</span>
+                                <span>{(m.ownerName || 'ANON').toUpperCase()}</span>
                                 <span>{new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                             </div>
                             <div style={{ 
