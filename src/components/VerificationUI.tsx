@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { ShieldCheck, RefreshCw, LogOut, Mail, CheckCircle } from 'lucide-react';
+import { RefreshCw, LogOut, Mail, ArrowRight } from 'lucide-react';
 import { Logo } from './Logo';
 
 export const VerificationUI: React.FC = () => {
-    const { user, verifyCode, resendCode, signOut, loading, error } = useAuthStore();
+    const { resendCode, signOut, loading, error } = useAuthStore();
     const [resending, setResending] = useState(false);
     const [resendTimer, setResendTimer] = useState(0);
-    const [checking, setChecking] = useState(false);
 
     React.useEffect(() => {
         if (resendTimer > 0) {
@@ -15,17 +14,6 @@ export const VerificationUI: React.FC = () => {
             return () => clearTimeout(timer);
         }
     }, [resendTimer]);
-
-    const handleCheckVerification = async () => {
-        setChecking(true);
-        try {
-            await verifyCode('supabase-confirm');
-        } catch (err) {
-            // Error handled in store
-        } finally {
-            setChecking(false);
-        }
-    };
 
     const handleResend = async () => {
         if (resendTimer > 0) return;
@@ -53,7 +41,7 @@ export const VerificationUI: React.FC = () => {
                     <h2 style={{ fontSize: '1.6rem', fontWeight: 900, letterSpacing: '1px', textTransform: 'uppercase' }}>تحقق من بريدك الإلكتروني</h2>
                     <p style={{ color: 'var(--text-dim)', fontSize: '13px', fontWeight: 700, marginTop: '12px', lineHeight: 1.8, direction: 'rtl' }}>
                         قمنا بإرسال رسالة تأكيد إلى بريدك الإلكتروني.<br/>
-                        اضغط على <span style={{ color: 'var(--primary)' }}>رابط التأكيد</span> في الرسالة ثم عُد هنا واضغط الزر أدناه.
+                        اضغط على <span style={{ color: 'var(--primary)' }}>رابط التأكيد</span> في الرسالة للدخول تلقائياً.
                     </p>
                 </div>
 
@@ -67,22 +55,22 @@ export const VerificationUI: React.FC = () => {
 
                 {error && (
                     <div style={{ color: '#ff9f43', fontSize: '12px', fontWeight: 700, marginBottom: '1.5rem', background: 'rgba(255, 159, 67, 0.1)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255, 159, 67, 0.2)', direction: 'rtl' }}>
-                        {error === 'EMAIL_NOT_CONFIRMED' 
-                            ? '⏳ لم يتم تأكيد البريد بعد! اضغط على الرابط في إيميلك أولاً ثم حاول مجدداً.' 
-                            : error}
+                        {error}
                     </div>
                 )}
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <button onClick={handleCheckVerification} className="btn primary sharp" disabled={loading || checking} style={{ height: '56px', fontSize: '1rem' }}>
-                        {checking ? 'CHECKING...' : (
-                            <>
-                                <CheckCircle size={20} />
-                                لقد أكدت بريدي — تحقق الآن
-                            </>
-                        )}
-                    </button>
-                    
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                        <button 
+                            type="button" 
+                            onClick={() => window.location.reload()}
+                            className="btn primary sharp" 
+                            style={{ flex: 1, height: '48px' }}
+                        >
+                            لدي حساب — تسجيل الدخول <ArrowRight size={16} />
+                        </button>
+                    </div>
+
                     <div style={{ display: 'flex', gap: '10px' }}>
                         <button 
                             type="button" 
@@ -101,7 +89,7 @@ export const VerificationUI: React.FC = () => {
                             style={{ flex: 1, fontSize: '10px', height: '44px', color: '#ff4d4d' }}
                         >
                             <LogOut size={14} />
-                            تسجيل خروج
+                            إنهاء وإلغاء
                         </button>
                     </div>
                 </div>

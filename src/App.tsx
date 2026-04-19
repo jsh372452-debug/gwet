@@ -10,24 +10,21 @@ import { VerificationUI } from './components/VerificationUI';
 import { Loader2 } from 'lucide-react';
 
 function App() {
-  const { user, checkSession, loading } = useAuthStore();
+  const { user, checkSession, loading, awaitingConfirmation } = useAuthStore();
   const { isRTL, lang } = useTranslation();
 
   useEffect(() => {
     checkSession();
 
-    // Set up a listener for auth changes (like email confirmation or token refresh)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth event:', event);
       if (session) {
         setToken(session.access_token);
-        // We only fetch the profile if the user isn't already loaded or on sign-in
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           checkSession();
         }
       } else if (event === 'SIGNED_OUT') {
         clearToken();
-        // Since we are using zustand, the store state should be cleared
       }
     });
 
@@ -53,6 +50,13 @@ function App() {
       </div>
     );
   }
+
+  // Awaiting email confirmation — BLOCK access
+  if (awaitingConfirmation) return (
+    <div style={{ minHeight: '100vh', background: '#010410' }}>
+      <VerificationUI />
+    </div>
+  );
 
   if (!user) return (
     <div style={{ minHeight: '100vh', background: '#010410', position: 'relative', overflow: 'hidden' }}>
