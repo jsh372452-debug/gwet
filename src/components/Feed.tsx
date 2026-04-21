@@ -5,7 +5,7 @@ import { useTranslation } from '../i18n';
 import Flag from './Flag';
 import { UserProfile } from './UserProfile';
 import { TierBadge } from './TierBadge';
-import { Send, MessageSquare, Share2, Flame, Search, X, Loader, Users, Zap } from 'lucide-react';
+import { Send, MessageSquare, Share2, Flame, Search, X, Loader, Users, Zap, Image as ImageIcon } from 'lucide-react';
 
 export const Feed: React.FC = () => {
     const { user } = useAuthStore();
@@ -26,10 +26,7 @@ export const Feed: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         
-        if (!content.trim()) {
-            alert(isRTL ? 'المحتوى غير موجود!' : 'CONTENT IS EMPTY!');
-            return;
-        }
+        if (!content.trim()) return;
         if (!user || posting) return;
 
         setPosting(true);
@@ -38,7 +35,7 @@ export const Feed: React.FC = () => {
             setContent('');
             setMediaUrl('');
         } catch (err: any) {
-            alert(isRTL ? `خطأ في النشر: ${err.message}` : `PUBLISH ERROR: ${err.message}`);
+            console.error('Publish error:', err);
         } finally {
             setPosting(false);
         }
@@ -59,14 +56,6 @@ export const Feed: React.FC = () => {
         setCommentText('');
     };
 
-    const handleLikeToggle = async (postId: string, userLiked: boolean) => {
-        if (userLiked) {
-            await unlikePost(postId);
-        } else {
-            await likePost(postId);
-        }
-    };
-
     const getTier = (influence: number) => {
         if (influence > 5000) return 'MYTHIC';
         if (influence > 2500) return 'LEGEND';
@@ -84,135 +73,168 @@ export const Feed: React.FC = () => {
     );
 
     return (
-        <div className="page-container" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
-            {/* Search */}
-            <div className="glass-card" style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '1.5rem', padding: '10px 15px' }}>
-                <Search size={16} color="var(--primary)" />
-                <input className="gaming-input" placeholder={t('search').toUpperCase()} value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
-                    style={{ border: 'none', background: 'none', padding: 0, margin: 0, height: 'auto', flex: 1 }} />
-                {searchQuery && <X size={16} style={{ cursor: 'pointer', color: 'var(--text-dim)' }} onClick={() => setSearchQuery('')} />}
+        <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto', direction: isRTL ? 'rtl' : 'ltr' }}>
+            
+            {/* Feed Type Switcher */}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+                <button 
+                    onClick={() => setFeedType('smart')}
+                    className={`btn ${feedType === 'smart' ? 'btn-primary' : 'btn-ghost'}`}
+                    style={{ flex: 1, height: '40px' }}
+                >
+                    <Zap size={16} fill={feedType === 'smart' ? 'white' : 'none'} /> {t('latest')}
+                </button>
+                <button 
+                    onClick={() => setFeedType('following')}
+                    className={`btn ${feedType === 'following' ? 'btn-primary' : 'btn-ghost'}`}
+                    style={{ flex: 1, height: '40px' }}
+                >
+                    <Users size={16} fill={feedType === 'following' ? 'white' : 'none'} /> {t('joined')}
+                </button>
             </div>
 
-            {/* Feed Sort Tabs */}
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '2rem' }}>
-                <button className={`btn ${feedType === 'smart' ? 'primary' : 'ghost'} `} onClick={() => setFeedType('smart')} style={{ flex: 1 }}>
-                    <Zap size={14} style={{ marginRight: 8 }} /> SMART FEED
-                </button>
-                <button className={`btn ${feedType === 'following' ? 'primary' : 'ghost'} `} onClick={() => setFeedType('following')} style={{ flex: 1 }}>
-                    <Users size={14} style={{ marginRight: 8 }} /> FOLLOWING
-                </button>
-            </div>
-
-            {/* Compose */}
-            <div className="glass-card premium-pattern" style={{ marginBottom: '2.5rem', borderLeft: '4px solid var(--primary)' }}>
+            {/* Compose Area */}
+            <div className="card" style={{ padding: '20px', marginBottom: '32px', borderLeft: '4px solid var(--brand-electric)' }}>
                 <form onSubmit={handleSubmit}>
-                    <div style={{ display: 'flex', gap: '1.25rem', marginBottom: '1.25rem' }}>
-                        <div className="avatar-premium" style={{ width: 44, height: 44 }}>
-                            {user?.avatarUrl ? <img src={user.avatarUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (user?.displayName?.[0] || 'G').toUpperCase()}
+                    <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
+                        <div className="avatar" style={{ width: '48px', height: '48px', flexShrink: 0 }}>
+                            {user?.avatarUrl ? <img src={user.avatarUrl} /> : (user?.displayName?.[0] || 'G').toUpperCase()}
                         </div>
-                        <textarea className="gaming-input" placeholder={isRTL ? 'شارك لحظتك الأخيرة...' : 'SHARE YOUR ELITE MOMENT...'} value={content} onChange={(e) => setContent(e.target.value)}
-                            style={{ minHeight: '80px', margin: 0 }} />
+                        <textarea 
+                            className="input" 
+                            placeholder={t('share')} 
+                            value={content} 
+                            onChange={(e) => setContent(e.target.value)}
+                            style={{ minHeight: '100px', padding: '12px', resize: 'none', background: 'var(--bg-input)' }}
+                        />
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <select className="gaming-input" value={tag} onChange={e => setTag(e.target.value)} style={{ width: 'auto', padding: '5px 10px', height: '35px', margin: 0 }}>
-                            <option value="Global">Global</option>
-                            <option value="Valorant">Valorant</option>
-                            <option value="LoL">League of Legends</option>
-                            <option value="CS2">CS2</option>
-                        </select>
-                        <button type="submit" className="btn primary" disabled={!content.trim() || posting}>
-                            {posting ? <Loader size={14} className="spinner" /> : t('gweet').toUpperCase()}
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                            <select 
+                                className="input" 
+                                value={tag} 
+                                onChange={e => setTag(e.target.value)} 
+                                style={{ width: 'auto', height: '36px', fontSize: '13px', padding: '0 12px' }}
+                            >
+                                <option value="Global">Global</option>
+                                <option value="Valorant">Valorant</option>
+                                <option value="LoL">League of Legends</option>
+                                <option value="CS2">CS2</option>
+                            </select>
+                            <button type="button" className="btn btn-ghost btn-icon" style={{ width: '36px', height: '36px' }}>
+                                <ImageIcon size={18} />
+                            </button>
+                        </div>
+                        <button type="submit" className="btn btn-primary" style={{ height: '36px', padding: '0 24px' }} disabled={!content.trim() || posting}>
+                            {posting ? <Loader size={16} className="spinner" /> : t('gweet')}
                         </button>
                     </div>
                 </form>
             </div>
 
-            {/* Posts */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingBottom: '4rem' }}>
-                {loading && (posts || []).length === 0 && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                        {[1, 2, 3].map(i => (
-                            <div key={i} className="glass-card sharp" style={{ height: '160px', opacity: 0.5 }}>
-                                <div className="skeleton" style={{ width: '40px', height: '40px', marginBottom: '1rem' }} />
-                                <div className="skeleton" style={{ width: '60%', height: '14px', marginBottom: '0.5rem' }} />
-                                <div className="skeleton" style={{ width: '90%', height: '14px' }} />
-                            </div>
-                        ))}
-                    </div>
-                )}
-
-                {(filteredPosts || []).length === 0 && !loading && (
-                    <div className="glass-card sharp" style={{ textAlign: 'center', padding: '4rem' }}>
-                        <MessageSquare size={48} color="var(--text-muted)" style={{ marginBottom: '1rem', opacity: 0.2 }} />
-                        <h3 style={{ margin: 0, opacity: 0.5 }}>NO TRANSMISSIONS YET</h3>
+            {/* Posts List */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {loading && posts.length === 0 && (
+                    <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                        <Loader size={32} className="spinner" />
+                        <p style={{ marginTop: '16px', fontWeight: 700 }}>SYNCHRONIZING WITH STORM FEED...</p>
                     </div>
                 )}
 
                 {filteredPosts.map(post => (
-                    <div key={post.id} className="glass-card sharp premium-pattern" style={{ padding: '1.5rem' }}>
-                        <div style={{ display: 'flex', gap: '1.25rem' }}>
-                            <div className="avatar-premium" style={{ width: 44, height: 44, fontSize: '1rem', cursor: 'pointer' }} onClick={() => setSelectedUserId(post.ownerId)}>
-                                {post.ownerAvatar ? <img src={post.ownerAvatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : post.ownerName?.charAt(0).toUpperCase()}
+                    <div key={post.id} className="card interactive" style={{ padding: '20px' }}>
+                        <div style={{ display: 'flex', gap: '16px' }}>
+                            <div 
+                                className="avatar" 
+                                style={{ width: '44px', height: '44px', cursor: 'pointer', flexShrink: 0 }}
+                                onClick={() => setSelectedUserId(post.ownerId)}
+                            >
+                                {post.ownerAvatar ? <img src={post.ownerAvatar} /> : post.ownerName?.charAt(0).toUpperCase()}
                             </div>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                        <span style={{ fontWeight: 900, cursor: 'pointer', letterSpacing: '0.5px' }} onClick={() => setSelectedUserId(post.ownerId)}>{(post.ownerName || 'ANON').toUpperCase()}</span>
-                                        <TierBadge tier={getTier(post.ownerInfluence)} size={20} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                    <div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <span 
+                                                style={{ fontWeight: 800, cursor: 'pointer', fontSize: '15px' }} 
+                                                onClick={() => setSelectedUserId(post.ownerId)}
+                                            >
+                                                {post.ownerName || 'ANON'}
+                                            </span>
+                                            <TierBadge tier={getTier(post.ownerInfluence)} size={18} />
+                                            <Flag code={post.ownerCountry || 'Global'} size={14} />
+                                        </div>
+                                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                            {new Date(post.createdAt).toLocaleDateString()} · {post.gameTag}
+                                        </div>
                                     </div>
-                                    {post.gameTag && post.gameTag !== 'Global' && (
-                                        <span style={{ fontSize: '10px', background: 'var(--primary-soft)', color: 'var(--primary)', padding: '2px 8px', fontWeight: 900 }}>{(post.gameTag || '').toUpperCase()}</span>
-                                    )}
-                                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', marginLeft: 'auto', fontWeight: 700 }}>
-                                        {new Date(post.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                    </span>
+                                    <div className="chip chip-info" style={{ fontSize: '10px' }}>
+                                        LVL {Math.floor(post.ownerInfluence / 100) + 1}
+                                    </div>
                                 </div>
-                                <div style={{ marginTop: '1rem', color: 'var(--text-main)', lineHeight: 1.6, fontSize: '15px' }}>{post.content}</div>
-                                {post.mediaUrl && <img src={post.mediaUrl} style={{ width: '100%', marginTop: '1rem', borderRadius: '8px' }} />}
+                                <div style={{ marginTop: '16px', fontSize: '15px', lineHeight: 1.6, wordBreak: 'break-word' }}>
+                                    {post.content}
+                                </div>
+                                {post.mediaUrl && (
+                                    <div style={{ marginTop: '16px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
+                                        <img src={post.mediaUrl} style={{ width: '100%', display: 'block' }} />
+                                    </div>
+                                )}
+
+                                {/* Actions */}
+                                <div style={{ display: 'flex', gap: '24px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border-subtle)' }}>
+                                    <button 
+                                        className="btn btn-ghost" 
+                                        onClick={() => handleLikeToggle(post.id, post.userLiked)}
+                                        style={{ height: '32px', color: post.userLiked ? 'var(--brand-electric)' : 'var(--text-secondary)' }}
+                                    >
+                                        <Flame size={16} fill={post.userLiked ? 'var(--brand-electric)' : 'none'} /> {post.likeCount || 0}
+                                    </button>
+                                    <button 
+                                        className="btn btn-ghost" 
+                                        onClick={() => handleToggleComments(post.id)}
+                                        style={{ height: '32px' }}
+                                    >
+                                        <MessageSquare size={16} /> {post.replyCount || 0}
+                                    </button>
+                                    <button className="btn btn-ghost" style={{ height: '32px' }}>
+                                        <Share2 size={16} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
-                        <div style={{ display: 'flex', gap: '2rem', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--glass-border)' }}>
-                            <button className="btn ghost sm" onClick={() => handleLikeToggle(post.id, post.userLiked)} disabled={interacting} style={{ fontWeight: 900, color: post.userLiked ? 'var(--primary)' : 'var(--text-muted)' }}>
-                                <Flame size={16} fill={post.userLiked ? 'var(--primary)' : 'none'} /> {post.likeCount || 0}
-                            </button>
-                            <button className="btn ghost sm" onClick={() => handleToggleComments(post.id)} style={{ fontWeight: 900 }}>
-                                <MessageSquare size={16} /> {post.replyCount || comments[post.id]?.length || 0}
-                            </button>
-                            <button className="btn ghost sm"><Share2 size={16} /> {post.shareCount || 0}</button>
-                            {/* Show Score badge just for coolness */}
-                            <span style={{ marginLeft: 'auto', fontSize: '11px', fontWeight: 900, color: 'var(--accent)', opacity: 0.8, display: 'flex', alignItems: 'center' }}>
-                                AAG SCORE: {Math.round(post.score)}
-                            </span>
-                        </div>
-
+                        {/* Comments Drawer */}
                         {expandedPost === post.id && (
-                            <div style={{ marginTop: '1.5rem', padding: '1.5rem', background: 'rgba(255,255,255,0.02)', border: '1px solid var(--glass-border)' }}>
-                                <div style={{ display: 'flex', gap: '10px', marginBottom: '1.5rem' }}>
-                                    <input className="gaming-input" placeholder={isRTL ? 'اكتب تعليقك...' : 'APPEND COMMENT...'} value={commentText} onChange={e => setCommentText(e.target.value)}
+                            <div style={{ marginTop: '16px', padding: '16px', background: 'var(--bg-input)', borderRadius: '10px' }}>
+                                <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+                                    <input 
+                                        className="input" 
+                                        placeholder={t('comment')}
+                                        value={commentText} 
+                                        onChange={e => setCommentText(e.target.value)}
                                         onKeyDown={e => { if (e.key === 'Enter') handleCommentSubmit(post.id); }}
-                                        style={{ flex: 1, margin: 0, height: '36px', fontSize: '13px' }} />
-                                    <button className="btn primary sharp sm" onClick={() => handleCommentSubmit(post.id)}><Send size={14} /></button>
+                                        style={{ height: '36px' }}
+                                    />
+                                    <button className="btn btn-primary" onClick={() => handleCommentSubmit(post.id)} style={{ padding: '0 16px' }}>
+                                        <Send size={14} />
+                                    </button>
                                 </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                                    {comments[post.id]?.map(c => (
-                                        <div key={c.id} style={{ display: 'flex', gap: '12px' }}>
-                                            <div className="avatar-premium" style={{ width: 32, height: 32, fontSize: '0.8rem' }}>
-                                                {c.ownerAvatar ? <img src={c.ownerAvatar} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : c.ownerName.charAt(0)}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                    {(comments[post.id] || []).map(c => (
+                                        <div key={c.id} style={{ display: 'flex', gap: '10px' }}>
+                                            <div className="avatar" style={{ width: '28px', height: '28px' }}>
+                                                {c.ownerAvatar ? <img src={c.ownerAvatar} /> : c.ownerName.charAt(0)}
                                             </div>
                                             <div style={{ flex: 1 }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                                                    <span style={{ fontSize: '11px', fontWeight: 900, color: 'var(--primary)', letterSpacing: '0.5px' }}>{(c.ownerName || 'ANON').toUpperCase()}</span>
-                                                    <TierBadge tier={getTier(c.ownerInfluence)} size={14} />
-                                                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '2px' }}>
+                                                    <span style={{ fontSize: '12px', fontWeight: 700 }}>{c.ownerName}</span>
+                                                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{new Date(c.createdAt).toLocaleTimeString()}</span>
                                                 </div>
-                                                <p style={{ fontSize: '14px', margin: 0, color: 'var(--text-main)' }}>{c.content}</p>
+                                                <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{c.content}</p>
                                             </div>
                                         </div>
                                     ))}
-                                    {(!comments[post.id] || comments[post.id].length === 0) && (
-                                        <p style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center', fontWeight: 700 }}>NO COMMENTS DETECTED</p>
-                                    )}
                                 </div>
                             </div>
                         )}

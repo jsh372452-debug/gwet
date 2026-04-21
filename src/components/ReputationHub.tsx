@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { api, LeaderboardEntry } from '../lib/api';
-import { Shield, Zap, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Shield, Zap, TrendingUp, AlertTriangle, Trophy, Medal, Target } from 'lucide-react';
 import { TierBadge } from './TierBadge';
 import { ErrorBoundary } from './ErrorBoundary';
 
@@ -37,66 +37,114 @@ export const ReputationHub: React.FC = () => {
 
     return (
         <ErrorBoundary>
-            <div className="page-container">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '2.5rem' }}>
-                    <div style={{ padding: '12px', background: 'var(--primary-glow)', borderRadius: '12px', color: 'var(--primary)' }}>
-                        <Shield size={32} />
+            <div style={{ padding: '24px', maxWidth: '1000px', margin: '0 auto' }}>
+                
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '40px' }}>
+                    <div style={{ 
+                        width: '64px', height: '64px', background: 'var(--gradient-bolt)', 
+                        borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                        color: 'white', boxShadow: 'var(--glow-electric)' 
+                    }}>
+                        <Trophy size={32} />
                     </div>
                     <div>
-                        <h2 style={{ fontSize: '1.8rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px' }}>AAG LEADERBOARD</h2>
-                        <p style={{ color: 'var(--text-dim)', fontSize: '12px', fontWeight: 700 }}>INFLUENCE IS POWER</p>
+                        <h2 style={{ fontSize: '28px', fontWeight: 800, fontFamily: 'Space Grotesk' }}>REPUTATION HUB</h2>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Influence is the currency of the storm.</p>
                     </div>
                 </div>
 
-                <div className="glass-card" style={{ marginBottom: '2rem' }}>
-                    <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <Zap size={18} color="var(--primary)" /> YOUR STANDING
-                    </h3>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                        <div style={{ fontSize: '2.5rem', fontWeight: 900, color: 'var(--primary)' }}>
-                            {Math.round(user?.influenceScore || 0)}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginBottom: '32px' }}>
+                    {/* User Standing Card */}
+                    <div className="card" style={{ padding: '32px', position: 'relative', overflow: 'hidden' }}>
+                        <div style={{ position: 'absolute', top: '-10px', right: '-10px', opacity: 0.05 }}>
+                            <Zap size={120} color="var(--brand-electric)" />
                         </div>
-                        <div>
-                            <div style={{ fontSize: '12px', color: 'var(--text-dim)', fontWeight: 800 }}>AAG INFLUENCE SCORE</div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                                <TierBadge tier={getTier(user?.influenceScore || 0)} size={18} />
-                                <span style={{ fontSize: '14px', fontWeight: 900, color: 'var(--text-main)' }}>{getTier(user?.influenceScore || 0)} TIER</span>
+                        <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                            Your Operative Standing
+                        </h3>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                            <div style={{ fontSize: '48px', fontWeight: 800, color: 'var(--brand-electric)', fontFamily: 'Space Grotesk' }}>
+                                {Math.round(user?.influenceScore || 0)}
+                            </div>
+                            <div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                                    <TierBadge tier={getTier(user?.influenceScore || 0)} size={24} />
+                                    <span style={{ fontWeight: 800, fontSize: '18px' }}>{getTier(user?.influenceScore || 0)}</span>
+                                </div>
+                                <div className="chip chip-gold">RANKING ACTIVE</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Stats Card */}
+                    <div className="card" style={{ padding: '32px' }}>
+                         <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                            Platform Metrics
+                        </h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                            <div>
+                                <div style={{ fontSize: '20px', fontWeight: 800 }}>+{Math.round((user?.influenceScore || 0) / 10)}</div>
+                                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Today's Gains</div>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: '20px', fontWeight: 800 }}>99%</div>
+                                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Comms Integrity</div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="glass-card">
-                    <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <TrendingUp size={18} color="var(--primary)" /> TOP OPERATIVES
-                    </h3>
+                {/* Leaderboard Table */}
+                <div className="card" style={{ padding: '32px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+                        <h3 style={{ fontSize: '18px', fontWeight: 800, fontFamily: 'Space Grotesk', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <TrendingUp size={20} color="var(--brand-electric)" /> GLOBAL LEADERBOARD
+                        </h3>
+                        <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 700 }}>UPDATED LIVE</span>
+                    </div>
 
                     {loading ? (
-                        <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>SCORING IN PROGRESS...</div>
+                        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>
+                            <Zap size={32} className="spinner" />
+                            <p style={{ marginTop: '16px', fontWeight: 700 }}>RECALCULATING INFLUENCE...</p>
+                        </div>
                     ) : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             {(leaderboard || []).map((u, i) => (
-                                <div key={u.id} style={{
-                                    display: 'flex', alignItems: 'center', gap: '15px', padding: '12px 15px',
-                                    background: i < 3 ? 'rgba(0, 209, 255, 0.05)' : 'rgba(255,255,255,0.02)',
-                                    borderLeft: i < 3 ? '3px solid var(--primary)' : '3px solid transparent',
-                                    borderRadius: '8px'
-                                }}>
-                                    <div style={{ fontSize: '1.2rem', fontWeight: 900, width: '30px', color: i === 0 ? '#fbbf24' : i === 1 ? '#94a3b8' : i === 2 ? '#b45309' : 'var(--text-muted)' }}>
+                                <div 
+                                    key={u.id} 
+                                    className="card interactive" 
+                                    style={{ 
+                                        display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 20px',
+                                        background: i < 3 ? 'rgba(59, 130, 246, 0.05)' : 'var(--bg-input)',
+                                        border: 'none', borderRadius: '12px'
+                                    }}
+                                >
+                                    <div style={{ 
+                                        width: '40px', fontSize: '18px', fontWeight: 800, fontFamily: 'JetBrains Mono',
+                                        color: i === 0 ? 'var(--xp-gold)' : i === 1 ? '#94A3B8' : i === 2 ? '#B45309' : 'var(--text-muted)'
+                                    }}>
                                         #{u.rank}
                                     </div>
-                                    <div className="avatar-premium" style={{ width: 32, height: 32, fontSize: '0.8rem' }}>
-                                        {u.avatarUrl ? <img src={u.avatarUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (u.displayName || u.username || 'G').charAt(0).toUpperCase()}
+                                    <div className="avatar" style={{ width: '40px', height: '40px', border: i < 3 ? '2px solid var(--brand-electric)' : 'none' }}>
+                                        {u.avatarUrl ? <img src={u.avatarUrl} /> : (u.displayName || u.username || 'G').charAt(0).toUpperCase()}
                                     </div>
                                     <div style={{ flex: 1 }}>
-                                        <div style={{ fontWeight: 900, fontSize: '14px' }}>{(u.displayName || u.username || 'USER').toUpperCase()}</div>
-                                        <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{u.gamingPlatform || 'GLOBAL'}</div>
+                                        <div style={{ fontWeight: 800, fontSize: '15px', color: 'var(--text-primary)' }}>
+                                            {(u.displayName || u.username || 'USER').toUpperCase()}
+                                            {i === 0 && <Medal size={14} color="var(--xp-gold)" style={{ marginLeft: '8px' }} />}
+                                        </div>
+                                        <div style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>{u.gamingPlatform || 'OPERATIVE'}</div>
                                     </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <TierBadge tier={getTier(u.influenceScore)} size={20} />
-                                        <div style={{ fontSize: '1.1rem', fontWeight: 900, color: 'var(--primary)', width: '60px', textAlign: 'right' }}>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--brand-glow)', fontFamily: 'JetBrains Mono' }}>
                                             {Math.round(u.influenceScore)}
                                         </div>
+                                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700 }}>INFLUENCE</div>
+                                    </div>
+                                    <div style={{ width: '32px', display: 'flex', justifyContent: 'center' }}>
+                                        <TierBadge tier={getTier(u.influenceScore)} size={22} />
                                     </div>
                                 </div>
                             ))}
@@ -104,12 +152,13 @@ export const ReputationHub: React.FC = () => {
                     )}
                 </div>
                 
-                <div className="glass-card" style={{ marginTop: '2rem', background: 'rgba(255, 0, 0, 0.05)', borderLeft: '3px solid #ff4444' }}>
-                    <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px', color: '#ff4444' }}>
-                        <AlertTriangle size={18} /> ANTI-SPAM GUARD ACTIVE
-                    </h3>
-                    <p style={{ fontSize: '12px', color: 'var(--text-dim)', lineHeight: 1.6, margin: 0 }}>
-                        The AAG Influence Engine automatically throttles low-reputation accounts and penalizes spam behaviors. Daily interaction limits are enforced at 200 actions per operative. Malicious activity rapidly degrades influence score and platform visibility.
+                {/* Protocol Note */}
+                <div className="card" style={{ marginTop: '32px', background: 'rgba(239, 68, 68, 0.05)', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '24px' }}>
+                    <h4 style={{ color: 'var(--danger)', fontSize: '14px', fontWeight: 800, marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Shield size={16} /> ANTI-SPAM PROTOCOL_V4 ACTIVE
+                    </h4>
+                    <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
+                        AAG Security enforces strict interaction limits. Malicious activity, bot-like behavior, and cross-platform manipulation results in immediate influence decay. Standard operative limit: 200 daily transmissions.
                     </p>
                 </div>
             </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { api, AAGMessage } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
-import { Send, Terminal, ShieldAlert } from 'lucide-react';
+import { Send, Terminal, ShieldAlert, Hash, Volume2, PlusCircle, Smile, Gift } from 'lucide-react';
 import { useTranslation } from '../i18n';
 
 interface ChatAreaProps {
@@ -12,7 +12,7 @@ interface ChatAreaProps {
 
 export const ChatArea: React.FC<ChatAreaProps> = ({ targetId, type, onBack }) => {
     const { user } = useAuthStore();
-    const { isRTL } = useTranslation();
+    const { isRTL, t } = useTranslation();
     const [messages, setMessages] = useState<AAGMessage[]>([]);
     const [input, setInput] = useState('');
     const [loading, setLoading] = useState(true);
@@ -62,44 +62,71 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ targetId, type, onBack }) =>
 
         try {
             await api.chat.send(currentInput, roomId);
-            // Will re-sync on next poll
         } catch (err: any) {
             console.error('Send failed', err);
-            if (err.message?.includes('limit reached')) {
-                alert('ANTI-SPAM GUARD: Chat limit reached for today.');
-            }
         }
     };
 
     return (
-        <div className="glass-card compact" style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 0, overflow: 'hidden' }}>
-            <div style={{ padding: '15px 20px', borderBottom: '1px solid var(--glass-border)', background: 'rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center' }}>
-                <Terminal size={18} color="var(--primary)" style={{ marginRight: '10px' }} />
-                <h3 style={{ margin: 0, fontSize: '14px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '1px' }}>
-                    {type === 'global' ? 'GLOBAL COMMS LINK' : `ENCRYPTED COMM CHANNEL [${targetId}]`}
-                </h3>
-            </div>
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg-deep)' }}>
+            
+            {/* Header - Already handled by Dashboard in 3-pane mode, but keeping a subtle back button/title for sub-views */}
+            {onBack && (
+                <div className="glass-panel" style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', gap: '12px', borderBottom: '1px solid var(--border-subtle)' }}>
+                     <button onClick={onBack} className="btn btn-ghost sm">Back</button>
+                </div>
+            )}
 
-            <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                {loading && (messages || []).length === 0 && <div style={{ color: 'var(--text-muted)', textAlign: 'center' }}>ESTABLISHING CONNECTION...</div>}
-                {(messages || []).map((m) => {
-                    const isMe = m.ownerId === user?.id;
+            {/* Message Area */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                {loading && messages.length === 0 && (
+                    <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                        SYNCING_COMMS_CHANNELS...
+                    </div>
+                )}
+                
+                {messages.length === 0 && !loading && (
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingBottom: '40px' }}>
+                        <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px' }}>
+                            <Hash size={32} color="var(--brand-electric)" />
+                        </div>
+                        <h2 style={{ fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}>Welcome to {type === 'global' ? 'Global Comms' : 'this Clan Hub'}!</h2>
+                        <p style={{ color: 'var(--text-secondary)' }}>Start the transmission. Secure comms are now active.</p>
+                    </div>
+                )}
+
+                {messages.map((m, i) => {
+                    const prevMsg = messages[i - 1];
+                    const isCompact = prevMsg && prevMsg.ownerId === m.ownerId && 
+                        (new Date(m.createdAt).getTime() - new Date(prevMsg.createdAt).getTime()) < 300000; // 5 mins
+
                     return (
-                        <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
-                            <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', marginBottom: '4px', padding: '0 4px', display: 'flex', gap: '8px' }}>
-                                <span>{(m.ownerName || 'ANON').toUpperCase()}</span>
-                                <span>{new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                            </div>
-                            <div style={{ 
-                                background: isMe ? 'var(--primary-soft)' : 'rgba(255,255,255,0.05)', 
-                                border: isMe ? '1px solid var(--primary)' : '1px solid var(--glass-border)',
-                                color: isMe ? '#fff' : 'var(--text-main)',
-                                padding: '10px 15px', 
-                                borderRadius: isMe ? '12px 2px 12px 12px' : '2px 12px 12px 12px',
-                                fontSize: '14px',
-                                maxWidth: '80%'
-                            }}>
-                                {m.content}
+                        <div 
+                            key={m.id} 
+                            style={{ 
+                                display: 'flex', 
+                                gap: '16px', 
+                                padding: isCompact ? '0 16px 2px 72px' : '16px 16px 2px 16px',
+                                background: 'transparent',
+                                transition: 'background 0.2s ease'
+                            }}
+                            className="chat-msg"
+                        >
+                            {!isCompact && (
+                                <div className="avatar" style={{ width: '40px', height: '40px', flexShrink: 0, marginTop: '2px' }}>
+                                    {m.ownerAvatar ? <img src={m.ownerAvatar} /> : (m.ownerName?.[0] || '?').toUpperCase()}
+                                </div>
+                            )}
+                            <div style={{ flex: 1 }}>
+                                {!isCompact && (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px' }}>
+                                        <span style={{ fontWeight: 700, fontSize: '14px', color: 'var(--brand-electric)', cursor: 'pointer' }}>{m.ownerName}</span>
+                                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                    </div>
+                                )}
+                                <p style={{ fontSize: '15px', color: 'var(--text-primary)', lineHeight: 1.5, margin: 0 }}>
+                                    {m.content}
+                                </p>
                             </div>
                         </div>
                     );
@@ -107,20 +134,38 @@ export const ChatArea: React.FC<ChatAreaProps> = ({ targetId, type, onBack }) =>
                 <div ref={messagesEndRef} />
             </div>
 
-            <form onSubmit={handleSend} style={{ padding: '15px 20px', borderTop: '1px solid var(--glass-border)', background: 'rgba(0,0,0,0.2)' }}>
-                <div style={{ display: 'flex', gap: '10px' }}>
+            {/* Input Area */}
+            <div style={{ padding: '0 24px 24px' }}>
+                <form 
+                    onSubmit={handleSend} 
+                    className="card" 
+                    style={{ 
+                        display: 'flex', gap: '12px', padding: '12px 16px', 
+                        background: 'var(--bg-input)', alignItems: 'center',
+                        border: 'none', borderRadius: '10px'
+                    }}
+                >
+                    <button type="button" className="btn btn-ghost btn-icon" style={{ width: '32px', height: '32px', color: 'var(--text-muted)' }}><PlusCircle size={20} /></button>
                     <input 
-                        className="gaming-input" 
+                        className="input" 
                         value={input} 
                         onChange={e => setInput(e.target.value)} 
-                        placeholder={isRTL ? 'اكتب رسالتك...' : 'TRANSMIT MESSAGE...'} 
-                        style={{ margin: 0, flex: 1 }} 
+                        placeholder={t('ai_input')}
+                        style={{ background: 'transparent', border: 'none', height: '24px', padding: 0 }}
                     />
-                    <button type="submit" className="btn primary sharp" disabled={!input.trim()}>
-                        <Send size={18} />
-                    </button>
-                </div>
-            </form>
+                    <div style={{ display: 'flex', gap: '8px', color: 'var(--text-muted)' }}>
+                        <button type="button" className="btn btn-ghost btn-icon" style={{ width: '32px', height: '32px' }}><Gift size={20} /></button>
+                        <button type="button" className="btn btn-ghost btn-icon" style={{ width: '32px', height: '32px' }}><Smile size={20} /></button>
+                        <button type="submit" disabled={!input.trim()} className="btn btn-primary btn-icon" style={{ width: '32px', height: '32px', borderRadius: '4px' }}>
+                            <Send size={16} />
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <style>{`
+                .chat-msg:hover { background: rgba(255,255,255,0.02) !important; }
+            `}</style>
         </div>
     );
 };

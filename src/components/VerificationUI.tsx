@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { RefreshCw, LogOut, Mail, ArrowRight } from 'lucide-react';
+import { RefreshCw, LogOut, Mail, CheckCircle, ArrowRight, Zap } from 'lucide-react';
 import { Logo } from './Logo';
 
 export const VerificationUI: React.FC = () => {
-    const { resendCode, signOut, loading, error } = useAuthStore();
+    const { resendCode, signOut, loading, error, isVerifySuccess } = useAuthStore();
     const [resending, setResending] = useState(false);
     const [resendTimer, setResendTimer] = useState(0);
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (resendTimer > 0) {
             const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
             return () => clearTimeout(timer);
@@ -28,77 +28,88 @@ export const VerificationUI: React.FC = () => {
         }
     };
 
-    return (
-        <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', background: '#010409', position: 'relative', overflow: 'hidden' }}>
-            <div className="energy-blob blue-blob" style={{ top: '20%', left: '20%' }} />
-            <div className="energy-blob purple-blob" style={{ bottom: '20%', right: '20%' }} />
-
-            <div className="glass-card" style={{ width: '100%', maxWidth: '480px', padding: '4rem 3rem', borderRadius: '32px', position: 'relative', zIndex: 10, textAlign: 'center' }}>
-                <div style={{ marginBottom: '2.5rem' }}>
-                    <div style={{ display: 'inline-block', marginBottom: '1rem', padding: '18px', background: 'rgba(0, 209, 255, 0.1)', borderRadius: '24px', border: '1px solid rgba(0, 209, 255, 0.2)' }}>
-                        <Mail size={48} color="var(--primary)" />
+    if (isVerifySuccess) {
+        return (
+            <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', background: 'var(--bg-deep)', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'fixed', inset: 0, opacity: 0.1, zIndex: 0, backgroundImage: 'radial-gradient(circle at 50% 50%, var(--brand-electric) 0%, transparent 70%)' }} />
+                
+                <div className="card" style={{ width: '100%', maxWidth: '480px', padding: '64px 48px', borderRadius: '24px', textAlign: 'center', position: 'relative', zIndex: 10 }}>
+                    <div style={{ 
+                        width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(34, 197, 94, 0.1)', 
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px',
+                        border: '1px solid var(--success)', boxShadow: '0 0 30px rgba(34, 197, 94, 0.2)'
+                    }}>
+                        <CheckCircle size={40} color="var(--success)" />
                     </div>
-                    <h2 style={{ fontSize: '1.6rem', fontWeight: 900, letterSpacing: '1px', textTransform: 'uppercase' }}>تحقق من بريدك الإلكتروني</h2>
-                    <p style={{ color: 'var(--text-dim)', fontSize: '13px', fontWeight: 700, marginTop: '12px', lineHeight: 1.8, direction: 'rtl' }}>
-                        قمنا بإرسال رسالة تأكيد إلى بريدك الإلكتروني.<br/>
-                        اضغط على <span style={{ color: 'var(--primary)' }}>رابط التأكيد</span> في الرسالة للدخول تلقائياً.
+
+                    <h2 style={{ fontSize: '24px', fontWeight: 800, fontFamily: 'Space Grotesk', marginBottom: '16px' }}>IDENTITY CONFIRMED</h2>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '15px', lineHeight: 1.6, marginBottom: '32px' }}>
+                        Your neural link has been established. You can now close this window and return to your original session, or click below to launch the hub here.
+                    </p>
+
+                    <button 
+                        className="btn btn-primary" 
+                        style={{ width: '100%', height: '52px', fontSize: '16px' }}
+                        onClick={() => window.location.href = '/'}
+                    >
+                        LAUNCH GWET HUB <Zap size={18} fill="white" />
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem', background: 'var(--bg-deep)', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ position: 'fixed', inset: 0, opacity: 0.1, zIndex: 0, backgroundImage: 'radial-gradient(circle at 20% 20%, var(--brand-electric) 0%, transparent 40%)' }} />
+
+            <div className="card" style={{ width: '100%', maxWidth: '480px', padding: '64px 48px', borderRadius: '24px', textAlign: 'center', position: 'relative', zIndex: 10 }}>
+                <div style={{ marginBottom: '32px' }}>
+                    <div style={{ display: 'inline-flex', marginBottom: '20px', padding: '16px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '16px', border: '1px solid var(--border-subtle)' }}>
+                        <Mail size={40} color="var(--brand-electric)" />
+                    </div>
+                    <h2 style={{ fontSize: '24px', fontWeight: 800, fontFamily: 'Space Grotesk', marginBottom: '12px' }}>VERIFY YOUR IDENTITY</h2>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.6 }}>
+                        We've dispatched a secure confirmation link to your email.<br/>
+                        Click the <span style={{ color: 'var(--brand-electric)', fontWeight: 700 }}>VERIFY</span> button in that message to authorize your access.
                     </p>
                 </div>
 
-                {/* Animated mail icon */}
-                <div style={{ margin: '2rem 0', padding: '24px', background: 'rgba(0, 209, 255, 0.03)', borderRadius: '16px', border: '1px dashed rgba(0, 209, 255, 0.15)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
-                        <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#00d1ff', animation: 'pulse 2s infinite', boxShadow: '0 0 15px #00d1ff' }} />
-                        <span style={{ fontSize: '11px', fontWeight: 900, color: 'var(--primary)', letterSpacing: '2px' }}>AWAITING EMAIL CONFIRMATION</span>
+                <div style={{ margin: '24px 0', padding: '16px', background: 'var(--bg-input)', borderRadius: '12px', border: '1px dashed var(--border-subtle)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--brand-electric)', animation: 'pulse 2s infinite', boxShadow: '0 0 10px var(--brand-electric)' }} />
+                        <span className="mono-font" style={{ fontSize: '11px', fontWeight: 700, color: 'var(--brand-electric)', letterSpacing: '1px' }}>AWAITING_AUTH_RESPONSE</span>
                     </div>
                 </div>
 
-                {error && (
-                    <div style={{ color: '#ff9f43', fontSize: '12px', fontWeight: 700, marginBottom: '1.5rem', background: 'rgba(255, 159, 67, 0.1)', padding: '14px', borderRadius: '12px', border: '1px solid rgba(255, 159, 67, 0.2)', direction: 'rtl' }}>
-                        {error}
-                    </div>
-                )}
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                        <button 
-                            type="button" 
-                            onClick={() => window.location.reload()}
-                            className="btn primary sharp" 
-                            style={{ flex: 1, height: '48px' }}
-                        >
-                            لدي حساب — تسجيل الدخول <ArrowRight size={16} />
-                        </button>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '10px' }}>
-                        <button 
-                            type="button" 
-                            onClick={handleResend} 
-                            disabled={resendTimer > 0 || resending}
-                            className="btn ghost sm" 
-                            style={{ flex: 1, fontSize: '10px', height: '44px' }}
-                        >
-                            <RefreshCw size={14} className={resending ? 'spinner' : ''} />
-                            {resendTimer > 0 ? `RETRY IN ${resendTimer}s` : 'إعادة إرسال الإيميل'}
-                        </button>
-                        <button 
-                            type="button" 
-                            onClick={signOut}
-                            className="btn ghost sm" 
-                            style={{ flex: 1, fontSize: '10px', height: '44px', color: '#ff4d4d' }}
-                        >
-                            <LogOut size={14} />
-                            إنهاء وإلغاء
-                        </button>
-                    </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <button 
+                        type="button" 
+                        onClick={handleResend} 
+                        disabled={resendTimer > 0 || resending}
+                        className="btn btn-ghost" 
+                        style={{ width: '100%', height: '48px' }}
+                    >
+                        <RefreshCw size={16} className={resending ? 'spinner' : ''} />
+                        {resendTimer > 0 ? `RETRY IN ${resendTimer}s` : 'RESEND ENCRYPTION LINK'}
+                    </button>
+                    
+                    <button 
+                        type="button" 
+                        onClick={signOut}
+                        className="btn btn-ghost" 
+                        style={{ width: '100%', height: '48px', color: 'var(--danger)', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+                    >
+                        <LogOut size={16} />
+                        TERMINATE REGISTRATION
+                    </button>
                 </div>
 
-                <div style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '15px' }}>
+                <div style={{ marginTop: '48px', paddingTop: '24px', borderTop: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
                     <Logo size={24} />
                     <div style={{ textAlign: 'left' }}>
-                        <div style={{ fontSize: '9px', fontWeight: 900, color: 'var(--text-dim)', letterSpacing: '2px' }}>CORE TEAM DIRECTIVE</div>
-                        <div style={{ fontSize: '10px', fontWeight: 800 }}>GWET SECURITY DIVISION</div>
+                        <div className="mono-font" style={{ fontSize: '9px', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '2px' }}>CORE COMMAND</div>
+                        <div style={{ fontSize: '11px', fontWeight: 800 }}>GWET SECURITY DIVISION</div>
                     </div>
                 </div>
             </div>

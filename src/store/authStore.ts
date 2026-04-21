@@ -9,6 +9,8 @@ interface AuthState {
     error: string | null;
     awaitingConfirmation: boolean;
     pendingEmail: string | null;
+    isVerifySuccess: boolean;
+    setVerificationSuccess: (val: boolean) => void;
     login: (email: string, pass: string) => Promise<void>;
     register: (email: string, pass: string, username: string) => Promise<void>;
     signOut: () => void;
@@ -29,6 +31,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     error: null,
     awaitingConfirmation: false,
     pendingEmail: null,
+    isVerifySuccess: false,
+    setVerificationSuccess: (val) => set({ isVerifySuccess: val }),
 
     setUser: (user) => set({ user }),
 

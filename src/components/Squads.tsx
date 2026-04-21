@@ -3,13 +3,13 @@ import { useGameStore } from '../store/gameStore';
 import { AAGCommunity } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../i18n';
-import { Users, Plus, Shield, MessageSquare, ArrowLeft, Target } from 'lucide-react';
+import { Users, Plus, Shield, MessageSquare, ArrowLeft, Target, Trash2, Settings, ExternalLink } from 'lucide-react';
 import { ChatArea } from './ChatArea';
 
 export const Squads: React.FC = () => {
     const { communities, loadCommunities, createCommunity, joinCommunity, leaveCommunity } = useGameStore();
     const { user } = useAuthStore();
-    const { isRTL } = useTranslation();
+    const { isRTL, t } = useTranslation();
 
     const [showCreate, setShowCreate] = useState(false);
     const [activeCommunity, setActiveCommunity] = useState<AAGCommunity | null>(null);
@@ -25,123 +25,145 @@ export const Squads: React.FC = () => {
         setShowCreate(false); setName(''); setDesc(''); setGameCategory('Global');
     };
 
-    // Detail View
     if (activeCommunity) {
         return (
-            <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 8rem)', direction: isRTL ? 'rtl' : 'ltr' }}>
-                <div className="glass-card compact" style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '1rem', borderBottom: `2px solid var(--primary)` }}>
-                    <button onClick={() => setActiveCommunity(null)} className="btn ghost sm"><ArrowLeft size={18} /></button>
-                    <div className="avatar-premium" style={{ width: 36, height: 36, background: 'var(--primary-glow)' }}>
-                        <Target size={18} color="white" />
+            <div style={{ display: 'flex', flexDirection: 'column', height: '100%', direction: isRTL ? 'rtl' : 'ltr' }}>
+                <div className="glass-panel" style={{ display: 'flex', alignItems: 'center', gap: '16px', padding: '16px 24px', borderBottom: '1px solid var(--border-subtle)' }}>
+                    <button onClick={() => setActiveCommunity(null)} className="btn btn-ghost btn-icon" style={{ width: '36px', height: '36px' }}>
+                        <ArrowLeft size={18} />
+                    </button>
+                    <div className="avatar" style={{ width: '40px', height: '40px', background: 'var(--gradient-bolt)' }}>
+                        <span style={{ fontSize: '18px', fontWeight: 800 }}>{activeCommunity.name.charAt(0).toUpperCase()}</span>
                     </div>
                     <div style={{ flex: 1 }}>
-                        <h2 style={{ fontSize: '1.1rem', fontWeight: 900, margin: 0 }}>{(activeCommunity.name || 'COMMUNITY').toUpperCase()}</h2>
-                        <span style={{ fontSize: '10px', color: 'var(--text-dim)', fontWeight: 700 }}>{activeCommunity.memberCount || 1} MEMBERS · {(activeCommunity.gameTag || 'GLOBAL').toUpperCase()}</span>
+                        <h2 style={{ fontSize: '16px', fontWeight: 800, margin: 0 }}>{activeCommunity.name}</h2>
+                        <div style={{ display: 'flex', gap: '8px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                           <span>{activeCommunity.memberCount || 1} {t('members')}</span>
+                           <span>•</span>
+                           <span style={{ color: 'var(--brand-electric)', fontWeight: 700 }}>#{activeCommunity.gameTag?.toUpperCase()}</span>
+                        </div>
                     </div>
                 </div>
 
-                <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                    <ChatArea targetId={activeCommunity.id} type="community" />
+                <div style={{ flex: 1, overflow: 'hidden' }}>
+                    <ChatArea targetId={activeCommunity.id} type="community" onBack={() => setActiveCommunity(null)} />
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="page-container" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '2.5rem' }}>
-                <div style={{ padding: '12px', background: 'var(--primary-glow)', borderRadius: '12px', color: 'var(--primary)' }}><Shield size={32} /></div>
+        <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto', direction: isRTL ? 'rtl' : 'ltr' }}>
+            
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '40px' }}>
+                <div style={{ 
+                    width: '64px', height: '64px', background: 'var(--bg-elevated)', 
+                    borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                    color: 'var(--brand-electric)', border: '1px solid var(--border-subtle)' 
+                }}>
+                    <Shield size={32} />
+                </div>
                 <div>
-                    <h2 style={{ fontSize: '1.8rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px' }}>{isRTL ? 'المجتمعات' : 'COMMUNITIES'}</h2>
-                    <p style={{ color: 'var(--text-dim)', fontSize: '12px', fontWeight: 700 }}>COORDINATE AND CONQUER</p>
+                    <h2 style={{ fontSize: '28px', fontWeight: 800, fontFamily: 'Space Grotesk' }}>{t('squads')}</h2>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Manage your clans and coordinate operations.</p>
                 </div>
-                <div style={{ marginLeft: isRTL ? '0' : 'auto', marginRight: isRTL ? 'auto' : '0', display: 'flex', gap: '10px' }}>
-                    <button className="btn primary" onClick={() => setShowCreate(!showCreate)}>
-                        <Plus size={16} /> FOUND COMMUNITY
-                    </button>
-                </div>
+                <button 
+                    className="btn btn-primary" 
+                    style={{ marginLeft: isRTL ? '0' : 'auto', marginRight: isRTL ? 'auto' : '0', height: '44px' }}
+                    onClick={() => setShowCreate(!showCreate)}
+                >
+                    <Plus size={18} /> FOUND CLAN
+                </button>
             </div>
 
             {showCreate && (
-                <div className="glass-card" style={{ marginBottom: '2.5rem', borderLeft: '4px solid var(--primary)' }}>
-                    <h3 style={{ marginBottom: '1.5rem', fontWeight: 900 }}>CREATE NEW COMMUNITY</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.25rem' }}>
+                <div className="card" style={{ marginBottom: '40px', padding: '32px', border: '1.5px solid var(--brand-electric)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+                        <h3 style={{ fontSize: '20px', fontWeight: 800 }}>ESTABLISH NEW HUB</h3>
+                        <button className="btn btn-ghost btn-icon" onClick={() => setShowCreate(false)}><ArrowLeft size={18} /></button>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '24px' }}>
                         <div>
-                            <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>COMMUNITY NAME</label>
-                            <input className="gaming-input" placeholder="e.g. Apex Predators" value={name} onChange={e => setName(e.target.value)} />
+                            <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase' }}>Clash Name</label>
+                            <input className="input" placeholder="e.g. Apex Predators" value={name} onChange={e => setName(e.target.value)} />
                         </div>
                         <div>
-                            <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>GAME TARGET</label>
-                            <select className="gaming-input" value={gameCategory} onChange={e => setGameCategory(e.target.value)}>
+                            <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase' }}>Operational Tag</label>
+                            <select className="input" value={gameCategory} onChange={e => setGameCategory(e.target.value)}>
                                 <option value="Global">Universal</option>
                                 <option value="Valorant">Valorant</option>
-                                <option value="League of Legends">League of Legends</option>
-                                <option value="Counter-Strike">Counter-Strike</option>
+                                <option value="LoL">League of Legends</option>
+                                <option value="CS2">Counter-Strike</option>
                                 <option value="Overwatch">Overwatch</option>
                                 <option value="Fortnite">Fortnite</option>
-                                <option value="Call of Duty">Call of Duty</option>
                             </select>
                         </div>
                     </div>
-                    <div>
-                        <label style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>DESCRIPTION</label>
-                        <textarea className="gaming-input" placeholder="Rules of engagement..." value={desc} onChange={e => setDesc(e.target.value)} style={{ minHeight: '80px' }} />
+                    
+                    <div style={{ marginBottom: '32px' }}>
+                        <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase' }}>Directives / Intro</label>
+                        <textarea className="input" placeholder="What is this clan about?" value={desc} onChange={e => setDesc(e.target.value)} style={{ minHeight: '100px', padding: '12px', resize: 'none' }} />
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
-                        <button className="btn primary" onClick={handleCreate} style={{ padding: '0.75rem 2.5rem' }}>INITIALIZE COMMUNITY</button>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+                        <button className="btn btn-ghost" onClick={() => setShowCreate(false)}>CANCEL</button>
+                        <button className="btn btn-primary" onClick={handleCreate} style={{ padding: '0 32px' }}>INITIALIZE HUB</button>
                     </div>
                 </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.5rem', paddingBottom: '4rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '24px' }}>
                 {(communities || []).length === 0 && (
-                    <div className="glass-card" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem' }}>
-                        <Shield size={48} color="var(--text-dim)" style={{ marginBottom: '1rem', opacity: 0.2 }} />
-                        <h3 style={{ opacity: 0.5 }}>NO ACTIVE COMMUNITIES FOUND</h3>
+                    <div className="card" style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '80px 24px', background: 'var(--bg-input)' }}>
+                        <div style={{ fontSize: '48px', opacity: 0.1, marginBottom: '24px' }}>🛡️</div>
+                        <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-secondary)' }}>NO ACTIVE HUBS</h3>
+                        <p style={{ color: 'var(--text-muted)', marginBottom: '24px' }}>You haven't joined or founded any clans yet.</p>
+                        <button className="btn btn-primary" onClick={() => setShowCreate(true)}>Create your first hub</button>
                     </div>
                 )}
 
-                {(communities || []).map(c => {
-                    return (
-                        <div key={c.id} className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
-                            <div style={{
-                                height: '90px', background: 'linear-gradient(135deg, #001a33, #000)',
-                                position: 'relative'
-                            }}>
-                                <div style={{
-                                    position: 'absolute', bottom: '-22px', left: isRTL ? 'auto' : '20px', right: isRTL ? '20px' : 'auto',
-                                    width: '60px', height: '60px', background: 'var(--bg-dark)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    borderRadius: '14px', border: `3px solid var(--bg-dark)`,
-                                    boxShadow: '0 4px 15px rgba(0,0,0,0.4)',
-                                    zIndex: 2
-                                }}>
-                                    <div style={{ width: '100%', height: '100%', borderRadius: '12px', background: 'var(--bg-card)', border: `1px solid var(--primary)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <Target size={26} color={'var(--primary)'} />
-                                    </div>
+                {(communities || []).map(c => (
+                    <div key={c.id} className="card interactive" style={{ padding: 0, overflow: 'hidden' }}>
+                        {/* Card Banner */}
+                        <div style={{ 
+                            height: '80px', background: 'linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)), var(--gradient-bolt)',
+                            position: 'relative'
+                        }}>
+                             <div className="chip chip-gold" style={{ position: 'absolute', top: '12px', right: '12px', fontSize: '10px' }}>
+                                OWNER
+                            </div>
+                        </div>
+
+                        <div style={{ padding: '0 24px 24px', marginTop: '-32px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '16px' }}>
+                                <div className="avatar" style={{ width: '64px', height: '64px', borderRadius: '16px', border: '4px solid var(--bg-surface)', boxShadow: 'var(--shadow-md)' }}>
+                                    <span style={{ fontSize: '28px', fontWeight: 800 }}>{c.name.charAt(0).toUpperCase()}</span>
+                                </div>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <button className="btn btn-ghost btn-icon" style={{ width: '36px', height: '36px' }}><Settings size={18} /></button>
                                 </div>
                             </div>
 
-                            <div style={{ padding: '2.5rem 1.5rem 1.5rem' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                                    <h3 style={{ fontSize: '1.2rem', fontWeight: 900, margin: 0 }}>{(c.name || 'COMMUNITY').toUpperCase()}</h3>
-                                    <div style={{ fontSize: '10px', background: 'rgba(0, 209, 255, 0.1)', color: 'var(--primary)', padding: '2px 10px', fontWeight: 900, borderRadius: '20px', border: '1px solid rgba(0, 209, 255, 0.2)' }}>{(c.gameTag || 'GLOBAL').toUpperCase()}</div>
+                            <h3 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '4px' }}>{c.name}</h3>
+                            <div className="chip chip-info" style={{ marginBottom: '16px' }}>#{c.gameTag?.toUpperCase()}</div>
+
+                            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.5, height: '42px', overflow: 'hidden', marginBottom: '20px' }}>
+                                {c.description || 'Welcome to our elite gaming circle. Coordinate comms and secure victory.'}
+                            </p>
+
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '16px', borderTop: '1px solid var(--border-subtle)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '13px', fontWeight: 600 }}>
+                                    <Users size={16} /> {c.memberCount || 1} Operatives
                                 </div>
-                                <p style={{ color: 'var(--text-dim)', fontSize: '13px', lineHeight: 1.6, height: '40px', overflow: 'hidden', marginBottom: '1.5rem' }}>
-                                    {c.description || 'No operational directive defined.'}
-                                </p>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '1.25rem', borderTop: '1px solid var(--glass-border)' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-dim)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                            <Users size={16} /> {c.memberCount || 1}
-                                        </div>
-                                    </div>
-                                    <button className="btn primary sm" onClick={() => setActiveCommunity(c)}>ACCESS COMM</button>
-                                </div>
+                                <button className="btn btn-primary sm" onClick={() => setActiveCommunity(c)}>
+                                    ENTER HUB <ArrowRight size={14} style={{ marginLeft: '6px' }} />
+                                </button>
                             </div>
                         </div>
-                    );
-                })}
+                    </div>
+                ))}
             </div>
         </div>
     );

@@ -1,79 +1,63 @@
-# GWET — Global Web Gaming Network
-## Next-Gen Adaptive Activity Graph (AAG)
+# GWET — The Ultimate Gaming Social Client 🌪️⚡
 
-GWET is a cutting-edge gaming social network built on top of a dynamic activity graph. This project uses **Cloudflare Pages** for hosting and its backend logic (Functions), and **Supabase** for high-performance data storage and authentication.
-
----
-
-### 🚀 Architecture Overview (Post-Migration)
-
-We have recently migrated the core engine from Cloudflare D1 to **Supabase**.
-
-#### 1. Authentication (Supabase Auth)
-- **Email/Password**: Standard secure authentication.
-- **Auto-Sync**: Every signed-up user is automatically synced to the `public.profiles` table.
-- **Persistence**: Sessions are managed via Supabase's native GoTrue implementation with `onAuthStateChange` listeners for seamless UX.
-
-#### 2. Database (Supabase Postgres)
-- **AAG Engine**: The "Adaptive Activity Graph" is now powered by Postgres.
-  - `profiles`: User gaming metadata and influence scores.
-  - `entities`: Posts, clips, and comments.
-  - `edges`: Dynamic interactions (Likes, Shares, Joins, Follows).
-  - `communities`: Gaming-specific hubs.
-
-#### 3. Scoring & Intelligence
-- **Scoring Algorithm**: Located in `functions/_lib/scoring.ts`, it calculates feed relevance based on freshness, edge weight, and user influence.
-- **SpamGuard**: Integrated anti-spam protection that monitors activity rates and entity reputation.
+**GWET** is a premium, high-performance gaming social network built for elite operatives and clans. This platform has been completely re-built from the ground up to provide a world-class, Discord-style localized experience.
 
 ---
 
-### 🛠️ Environment Configuration
+## 💎 The Gwet Transformation
 
-To run this project locally or in production, ensure the following variables are set:
+We have recently completed a massive re-platforming to move away from legacy architectures into a **State-of-the-Art Gaming Hub**.
+
+### 1. Premium 3-Pane Architecture
+The app now utilizes a strict 3-pane UI system for maximum operational efficiency:
+- **Server Rail**: Rapid navigation between global hubs and joined clans.
+- **Contextual Sidebar**: Channel-style navigation, member lists, and user status controls.
+- **Tactical Main Pane**: A centered, high-performance area for broadcasting feeds, chat channels, and leaderboards.
+
+### 2. Ironclad Verification Sync 🛡️
+We've implemented a robust cross-tab authorization synchronization system:
+- **Real-time Listener**: The waiting tab monitors authentication state changes from Supabase GoTrue instantly.
+- **Success Redirection**: Arriving from an email verification link triggers a dedicated "Identity Confirmed" landing page, while simultaneously unlocking all other active sessions.
+
+### 3. Gwet Design System (GDS)
+A premium dark-themed visual schema built on tactical precision:
+- **Palette**: Deep Navy (`#0B1020`) background with **Electric Blue** (`#3B82F6`) highlights.
+- **Typography**: Space Grotesk (Display), Inter (System), and JetBrains Mono (Comms).
+- **Aesthetics**: Glassmorphism, radial energy blobs, and high-contrast tactical chips.
+
+---
+
+## 🚀 Architecture Overview
+
+### 📬 Comms & Comms
+- **Storm Feed**: Predictive relevance scoring for gaming achievements.
+- **Clan Hubs**: Private encrypted communication channels for squads.
+- **Reputation (AAG)**: Dynamic influence scoring that ranks operatives based on activity quality and helpfulness.
+
+### ⚙️ Tech Stack
+- **Framework**: React + Vite (High-performance FE).
+- **Backend**: Cloudflare Pages Functions (Edge Runtime).
+- **Database/Auth**: Supabase (Postgres + GoTrue).
+- **Design**: Vanilla CSS with GDS Token System.
+
+---
+
+## 🛠️ Environment Configuration
 
 | Variable | Description |
 | :--- | :--- |
 | `VITE_SUPABASE_URL` | Your Supabase Project URL |
-| `VITE_SUPABASE_ANON_KEY` | Your Supabase Anon/Public Key |
-| `SUPABASE_SERVICE_ROLE_KEY` | (Server-side Only) Admin Key for scoring calculations |
-| `LIVEKIT_API_KEY` | API Key for LiveKit integration |
-| `LIVEKIT_API_SECRET` | Secret Key for LiveKit integration |
+| `VITE_SUPABASE_ANON_KEY` | Your Supabase Public Key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Admin Key for edge scoring calculations |
 
 ---
 
-### ⚠️ Post-Migration Database Patch
+## 📦 Getting Started
 
-If you are experiencing issues with the onboarding process (page stuck on "Initializing"), you must run the following SQL script in your **Supabase SQL Editor** to ensure your `profiles` table has all the required columns:
-
-```sql
--- Fix profiles table schema for GWET AAG
-ALTER TABLE profiles 
-ADD COLUMN IF NOT EXISTS gaming_platform TEXT DEFAULT 'PC',
-ADD COLUMN IF NOT EXISTS country TEXT DEFAULT 'Global',
-ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'en',
-ADD COLUMN IF NOT EXISTS is_onboarded BOOLEAN DEFAULT FALSE;
-
--- Ensure display_name exists
-ALTER TABLE profiles 
-ADD COLUMN IF NOT EXISTS display_name TEXT;
-
--- Update existing records if needed
-UPDATE profiles SET display_name = username WHERE display_name IS NULL;
-```
+1. **Install Dependencies**: `npm install`
+2. **Local Intel**: `npm run dev`
+3. **Deployment**: Pushing to the `main` branch triggers a Cloudflare Pages CI/CD pipeline.
 
 ---
 
-### 📦 Installation
-
-```bash
-npm install
-npm run dev
-```
-
-### 🚢 Deployment
-
-The project is configured for Cloudflare Pages. Push to `main` to trigger an automatic build. Ensure `Wrangler` is used for environment variable management.
-
----
-
-**Developed with ❤️ by the GWET Team.**
+**FORGED BY THE GWET COMMAND DIVISION.** 🌪️

@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { Settings, Shield, User, Globe, Gamepad2, Save } from 'lucide-react';
+import { Settings, Shield, User, Globe, Gamepad2, Save, Monitor, Bell, Lock, LogOut } from 'lucide-react';
 import { useTranslation } from '../i18n';
 import Flag from './Flag';
 import { countries } from '../data/countries';
 
 export const SettingsHub: React.FC = () => {
-    const { user, updateProfile } = useAuthStore();
+    const { user, updateProfile, signOut } = useAuthStore();
     const { t, isRTL } = useTranslation();
     
     const [displayName, setDisplayName] = useState(user?.displayName || '');
@@ -26,70 +26,105 @@ export const SettingsHub: React.FC = () => {
     };
 
     return (
-        <div className="page-container" style={{ direction: isRTL ? 'rtl' : 'ltr' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '2.5rem' }}>
-                <div style={{ padding: '12px', background: 'var(--primary-glow)', borderRadius: '12px', color: 'var(--primary)' }}>
+        <div style={{ padding: '24px', maxWidth: '1000px', margin: '0 auto', direction: isRTL ? 'rtl' : 'ltr' }}>
+            
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '40px' }}>
+                <div style={{ 
+                    width: '64px', height: '64px', background: 'var(--bg-elevated)', 
+                    borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                    color: 'var(--brand-electric)', border: '1px solid var(--border-subtle)' 
+                }}>
                     <Settings size={32} />
                 </div>
                 <div>
-                    <h2 style={{ fontSize: '1.8rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px' }}>SETTINGS & COMMS</h2>
-                    <p style={{ color: 'var(--text-dim)', fontSize: '12px', fontWeight: 700 }}>CONFIGURE YOUR OPERATOR LOADOUT</p>
+                    <h2 style={{ fontSize: '28px', fontWeight: 800, fontFamily: 'Space Grotesk' }}>{t('settings')}</h2>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Configure your operator profile and storm preferences.</p>
                 </div>
             </div>
 
-            <div className="glass-card" style={{ marginBottom: '2rem' }}>
-                <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}><User size={18} color="var(--primary)" /> IDENTITY PROFILE</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                    <div>
-                        <label style={{ fontSize: '10px', color: 'var(--text-dim)', fontWeight: 800, marginBottom: '8px', display: 'block' }}>DISPLAY NAME</label>
-                        <input className="gaming-input" value={displayName} onChange={e => setDisplayName(e.target.value)} />
-                    </div>
-                    <div>
-                        <label style={{ fontSize: '10px', color: 'var(--text-dim)', fontWeight: 800, marginBottom: '8px', display: 'block' }}>GAMING PLATFORM</label>
-                        <select className="gaming-input" value={gamingPlatform} onChange={e => setGamingPlatform(e.target.value)}>
-                            {['PC', 'PlayStation', 'Xbox', 'Mobile', 'Nintendo Switch'].map((p) => (
-                                <option key={p} value={p}>{p}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div style={{ gridColumn: '1 / -1' }}>
-                        <label style={{ fontSize: '10px', color: 'var(--text-dim)', fontWeight: 800, marginBottom: '8px', display: 'block' }}>BIO / RULES OF ENGAGEMENT</label>
-                        <textarea className="gaming-input" value={bio} onChange={e => setBio(e.target.value)} style={{ minHeight: '80px' }} />
-                    </div>
-                </div>
-            </div>
-
-            <div className="glass-card" style={{ marginBottom: '2rem' }}>
-                <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}><Globe size={18} color="var(--primary)" /> REGION & LOCALIZATION</h3>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                    <div>
-                        <label style={{ fontSize: '10px', color: 'var(--text-dim)', fontWeight: 800, marginBottom: '8px', display: 'block' }}>OPERATING REGION</label>
-                        <div style={{ position: 'relative' }}>
-                            <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}>
-                                <Flag code={country} size={20} />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                
+                {/* Identity Section */}
+                <section>
+                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'uppercase' }}>
+                        <User size={16} /> Identity_Protocol
+                    </h3>
+                    <div className="card" style={{ padding: '32px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '24px' }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>PUBLIC ALIAS</label>
+                                <input className="input" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Display Name" />
                             </div>
-                            <select className="gaming-input" style={{ paddingLeft: '45px' }} value={country} onChange={(e) => setCountry(e.target.value)}>
-                                <option value="Global">Global / Universal</option>
-                                {countries.map((c) => (
-                                    <option key={c.code} value={c.code}>{c.name}</option>
-                                ))}
-                            </select>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>CHOSEN PLATFORM</label>
+                                <select className="input" value={gamingPlatform} onChange={e => setGamingPlatform(e.target.value)}>
+                                    {['PC', 'PlayStation', 'Xbox', 'Mobile', 'Nintendo Switch'].map((p) => (
+                                        <option key={p} value={p}>{p}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>DIRECTIVES / BIO</label>
+                            <textarea className="input" value={bio} onChange={e => setBio(e.target.value)} style={{ minHeight: '100px', padding: '12px', resize: 'none' }} placeholder="Tell the world who you are..." />
                         </div>
                     </div>
-                    <div>
-                        <label style={{ fontSize: '10px', color: 'var(--text-dim)', fontWeight: 800, marginBottom: '8px', display: 'block' }}>INTERFACE LANGUAGE</label>
-                        <select className="gaming-input" value={language} onChange={(e) => setLanguage(e.target.value)}>
-                            <option value="en">English (US)</option>
-                            <option value="ar">العربية (Arabic)</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
+                </section>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button className="btn primary" onClick={handleSave} disabled={saving} style={{ padding: '0.75rem 2.5rem' }}>
-                    <Save size={16} /> {saving ? 'UPLOADING...' : 'SAVE CONFIGURATION'}
-                </button>
+                {/* Regional Section */}
+                <section>
+                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'uppercase' }}>
+                        <Globe size={16} /> Localization_Settings
+                    </h3>
+                    <div className="card" style={{ padding: '32px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px' }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>OPERATING REGION</label>
+                                <div style={{ position: 'relative' }}>
+                                    <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', zIndex: 1 }}>
+                                        <Flag code={country} size={20} />
+                                    </div>
+                                    <select className="input" style={{ paddingLeft: '48px' }} value={country} onChange={(e) => setCountry(e.target.value)}>
+                                        <option value="Global">Universal / Global</option>
+                                        {countries.map((c) => (
+                                            <option key={c.code} value={c.code}>{c.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>INTERFACE LANGUAGE</label>
+                                <select className="input" value={language} onChange={(e) => setLanguage(e.target.value)}>
+                                    <option value="en">English (Elite Console)</option>
+                                    <option value="ar">العربية (Arabic Sync)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Utility Section */}
+                <section>
+                     <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'uppercase' }}>
+                        <Lock size={16} /> Account_Security
+                    </h3>
+                    <div className="card" style={{ padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                            <div style={{ fontWeight: 800, fontSize: '15px' }}>TERMINATE SESSION</div>
+                            <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Logout from current neural link.</div>
+                        </div>
+                        <button className="btn btn-ghost" onClick={signOut} style={{ color: 'var(--danger)', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                            <LogOut size={16} /> {t('logout')}
+                        </button>
+                    </div>
+                </section>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px', paddingBottom: '40px' }}>
+                    <button className="btn btn-primary" onClick={handleSave} disabled={saving} style={{ padding: '0 40px', height: '48px' }}>
+                        <Save size={18} /> {saving ? 'SYNCING...' : t('save')}
+                    </button>
+                </div>
             </div>
         </div>
     );

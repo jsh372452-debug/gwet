@@ -7,26 +7,39 @@ import { Dashboard } from './components/Dashboard';
 import { ProfileOnboarding } from './components/ProfileOnboarding';
 import { useTranslation } from './i18n';
 import { VerificationUI } from './components/VerificationUI';
+import { Landing } from './components/Landing';
 import { Loader2 } from 'lucide-react';
 
 function App() {
   const { user, checkSession, loading, awaitingConfirmation } = useAuthStore();
   const { isRTL, lang } = useTranslation();
+  const [showAuth, setShowAuth] = React.useState(false);
 
   useEffect(() => {
     checkSession();
 
+    // Listen for auth state changes (including from other tabs)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth event:', event);
-      if (session) {
-        setToken(session.access_token);
-        if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          checkSession();
+      
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        if (session) {
+          setToken(session.access_token);
+          await checkSession();
         }
       } else if (event === 'SIGNED_OUT') {
         clearToken();
       }
     });
+
+    // Check for success hash from email redirect
+    if (window.location.hash.includes('access_token')) {
+      useAuthStore.getState().setVerificationSuccess(true);
+      // Clean up hash after a delay
+      setTimeout(() => {
+          window.history.replaceState(null, '', window.location.pathname);
+      }, 5000);
+    }
 
     return () => subscription.unsubscribe();
   }, [checkSession]);
@@ -39,12 +52,12 @@ function App() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#010410' }}>
-        <div className="glass-card" style={{ padding: '3rem 4rem', textAlign: 'center', borderRadius: '30px' }}>
-          <Loader2 className="spinner" size={48} color="var(--primary)" style={{ marginBottom: '2rem' }} />
-          <div style={{ fontSize: '10px', fontWeight: 900, color: 'var(--primary)', letterSpacing: '4px', textTransform: 'uppercase' }}>INITIALIZING NEURAL LINK</div>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: 'var(--bg-deep)' }}>
+        <div className="card" style={{ padding: '3rem 4rem', textAlign: 'center', borderRadius: '30px' }}>
+          <Loader2 className="spinner" size={48} color="var(--brand-electric)" style={{ marginBottom: '2rem' }} />
+          <div style={{ fontSize: '10px', fontWeight: 900, color: 'var(--brand-electric)', letterSpacing: '4px', textTransform: 'uppercase' }}>INITIALIZING NEURAL LINK</div>
           <div style={{ marginTop: '1.5rem', height: '4px', width: '200px', borderRadius: '2px', background: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: '60%', background: 'var(--primary)', boxShadow: '0 0 15px var(--primary)', borderRadius: '2px' }} />
+            <div style={{ height: '100%', width: '60%', background: 'var(--brand-electric)', boxShadow: '0 0 15px var(--brand-electric)', borderRadius: '2px' }} />
           </div>
         </div>
       </div>
@@ -53,21 +66,24 @@ function App() {
 
   // Awaiting email confirmation — BLOCK access
   if (awaitingConfirmation) return (
-    <div style={{ minHeight: '100vh', background: '#010410' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-deep)' }}>
       <VerificationUI />
     </div>
   );
 
-  if (!user) return (
-    <div style={{ minHeight: '100vh', background: '#010410', position: 'relative', overflow: 'hidden' }}>
-      <div className="energy-blob blue-blob" style={{ top: '-10%', right: '-10%' }} />
-      <div className="energy-blob cyan-blob" style={{ bottom: '-10%', left: '-10%' }} />
-      <AuthUI />
-    </div>
-  );
+  if (!user) {
+    if (!showAuth) return <Landing onLaunch={() => setShowAuth(true)} />;
+    
+    return (
+      <div style={{ minHeight: '100vh', background: 'var(--bg-deep)', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'fixed', inset: 0, opacity: 0.1, zIndex: 0, backgroundImage: 'radial-gradient(circle at 0% 0%, var(--brand-electric) 0%, transparent 40%), radial-gradient(circle at 100% 100%, var(--brand-storm) 0%, transparent 40%)' }} />
+        <AuthUI />
+      </div>
+    );
+  }
 
   if (user && !user.isVerified) return (
-    <div style={{ minHeight: '100vh', background: '#010410' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-deep)' }}>
       <VerificationUI />
     </div>
   );
@@ -80,7 +96,7 @@ function App() {
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: '#010410' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-deep)' }}>
       <Dashboard />
     </div>
   );

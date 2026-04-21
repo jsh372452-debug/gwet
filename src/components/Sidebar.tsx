@@ -2,8 +2,7 @@ import React from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../i18n';
 import Flag from './Flag';
-import { Layout, Shield, Terminal, Settings, LogOut, Users, Compass } from 'lucide-react';
-import { TierBadge } from './TierBadge';
+import { Hash, Volume2, Settings, Mic, Headphones, LogOut, Layout, Compass, Users, Trophy } from 'lucide-react';
 import { Logo } from './Logo';
 
 interface SidebarProps {
@@ -15,74 +14,85 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
     const { user, signOut } = useAuthStore();
     const { t } = useTranslation();
 
-    const menuItems = [
-        { id: 'feed', icon: Layout, label: t('network') || 'NETWORK' },
-        { id: 'explore', icon: Compass, label: t('explore') || 'DISCOVERY' },
-        { id: 'communities', icon: Users, label: t('squads') || 'COMMUNITIES' },
-        { id: 'reputation', icon: Shield, label: t('reputation') || 'LEADERBOARD' },
-        { id: 'chat', icon: Terminal, label: t('comms') || 'CHAT' },
-        { id: 'settings', icon: Settings, label: t('settings') || 'SETTINGS' },
+    const mainRoutes = [
+        { id: 'feed', icon: Layout, label: 'NETWORK_FEED' },
+        { id: 'explore', icon: Compass, label: 'DISCOVERY' },
+        { id: 'communities', icon: Users, label: 'COMMUNITIES' },
+        { id: 'reputation', icon: Trophy, label: 'LEADERBOARD' },
+        { id: 'chat', icon: Hash, label: 'GLOBAL_CHAT' },
     ];
 
-    const getTier = (influence: number) => {
-        if (influence > 5000) return 'MYTHIC';
-        if (influence > 2500) return 'LEGEND';
-        if (influence > 1000) return 'DIAMOND';
-        if (influence > 500) return 'PLATINUM';
-        if (influence > 250) return 'GOLD';
-        if (influence > 100) return 'SILVER';
-        return 'BRONZE';
-    };
-
     return (
-        <aside className="sidebar">
-            {/* Logo */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '3rem', padding: '0 10px' }}>
-                <Logo size={40} />
-                <h1 style={{ fontSize: '24px', fontWeight: 900, letterSpacing: '2px', background: 'linear-gradient(135deg, #fff, #8b949e)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                    GWET
-                </h1>
+        <aside style={{ 
+            width: '260px', background: 'var(--bg-surface)', borderRight: '1px solid var(--border-subtle)',
+            display: 'flex', flexDirection: 'column', height: '100%'
+        }}>
+            {/* Header */}
+            <div style={{ 
+                padding: '16px', borderBottom: '1px solid var(--border-subtle)', 
+                fontFamily: 'Space Grotesk', fontWeight: 800, fontSize: '15px'
+            }}>
+                GWET STORM HUB
             </div>
 
-            {/* Navigation */}
-            <nav className="sidebar-nav">
-                {menuItems.map((item) => (
+            {/* Navigation / Channels */}
+            <nav style={{ flex: 1, padding: '12px', overflowY: 'auto' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '1px', padding: '12px 8px 8px' }}>
+                    MAIN_DIRECTIVES
+                </div>
+                {mainRoutes.map((route) => (
                     <button
-                        key={item.id}
-                        onClick={() => setActiveTab(item.id)}
-                        className={`nav-item ${activeTab === item.id ? 'active' : ''}`}
+                        key={route.id}
+                        onClick={() => setActiveTab(route.id)}
+                        style={{ 
+                            width: '100%', display: 'flex', alignItems: 'center', gap: '8px', 
+                            padding: '8px 12px', borderRadius: '6px', border: 'none',
+                            background: activeTab === route.id ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
+                            color: activeTab === route.id ? 'var(--text-primary)' : 'var(--text-secondary)',
+                            cursor: 'pointer', textAlign: 'left', marginBottom: '2px',
+                            transition: 'all 0.2s ease'
+                        }}
                     >
-                        <item.icon size={18} />
-                        <span>{item.label}</span>
+                        <route.icon size={18} opacity={activeTab === route.id ? 1 : 0.6} />
+                        <span style={{ fontSize: '14px', fontWeight: 600 }}>{route.label}</span>
                     </button>
                 ))}
+
+                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '1px', padding: '24px 8px 8px' }}>
+                    VOICE_CHANNELS
+                </div>
+                <div className="ch-voice-item" style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '6px', color: 'var(--text-secondary)', opacity: 0.5, cursor: 'not-allowed' }}>
+                   <Volume2 size={18} />
+                   <span style={{ fontSize: '14px', fontWeight: 600 }}>Storm Lobby</span>
+                </div>
             </nav>
 
-            <div style={{ marginTop: 'auto' }}>
-                <div className="glass-card sharp compact" style={{ marginBottom: 'var(--space-md)', position: 'relative', border: '1px solid var(--glass-border)' }}>
-                    <div className="badge sharp" style={{ position: 'absolute', top: -1, right: -1, fontSize: '0.5rem', background: 'var(--primary)', color: 'white', fontWeight: 900 }}>ELITE</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
-                        <div className="avatar-premium" style={{ width: 44, height: 44, fontSize: '1rem' }}>
-                            {user?.avatarUrl ? <img src={user.avatarUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (user?.displayName?.charAt(0) || 'G').toUpperCase()}
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: '13px', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {(user?.displayName || user?.username || 'USER').toUpperCase()} <Flag code={user?.country || 'Global'} size={14} />
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 800 }}>
-                                    SCORE: {Math.round(user?.influenceScore || 0)}
-                                </div>
-                                <TierBadge tier={getTier(user?.influenceScore || 0)} size={14} />
-                            </div>
-                        </div>
+            {/* User Panel */}
+            <div style={{ 
+                padding: '10px 8px', background: 'var(--bg-input)', borderTop: '1px solid var(--border-subtle)',
+                display: 'flex', alignItems: 'center', gap: '10px'
+            }}>
+                <div className="avatar" style={{ width: '36px', height: '36px', flexShrink: 0 }}>
+                    {user?.avatarUrl ? <img src={user.avatarUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (user?.displayName?.charAt(0) || user?.username?.charAt(0) || 'G').toUpperCase()}
+                    <div style={{ position: 'absolute', bottom: 0, right: 0, width: 10, height: 10, borderRadius: '50%', background: 'var(--success)', border: '2px solid var(--bg-input)' }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '13px', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {user?.displayName || user?.username || 'OPERATOR'}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        Online <Flag code={user?.country || 'Global'} size={12} />
                     </div>
                 </div>
-
-                <button onClick={signOut} className="btn danger sharp" style={{ width: '100%', fontWeight: 900 }}>
-                    <LogOut size={16} /> {t('logout')?.toUpperCase() || 'LOGOUT'}
-                </button>
+                <div style={{ display: 'flex', gap: '4px' }}>
+                    <button className="btn btn-icon btn-ghost" style={{ width: '32px', height: '32px' }}><Mic size={16} /></button>
+                    <button className="btn btn-icon btn-ghost" style={{ width: '32px', height: '32px' }}><Settings size={16} onClick={() => setActiveTab('settings')} /></button>
+                </div>
             </div>
+
+            <style>{`
+                button:hover { background: rgba(255,255,255,0.05) !important; color: white !important; }
+            `}</style>
         </aside>
     );
 };
