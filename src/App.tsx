@@ -8,10 +8,11 @@ import { ProfileOnboarding } from './components/ProfileOnboarding';
 import { useTranslation } from './i18n';
 import { VerificationUI } from './components/VerificationUI';
 import { Landing } from './components/Landing';
+import { GooglePasswordSetup } from './components/GooglePasswordSetup';
 import { Loader2 } from 'lucide-react';
 
 function App() {
-  const { user, checkSession, loading, awaitingConfirmation } = useAuthStore();
+  const { user, checkSession, loading, awaitingConfirmation, requiresPasswordSetup } = useAuthStore();
   const { isRTL, lang } = useTranslation();
   const [showAuth, setShowAuth] = React.useState(false);
 
@@ -22,6 +23,10 @@ function App() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth event:', event);
       
+      if (session && session.user.app_metadata?.provider === 'google' && !session.user.user_metadata?.google_password_set) {
+        useAuthStore.getState().setRequiresPasswordSetup(true);
+      }
+
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         if (session) {
           setToken(session.access_token);
@@ -45,6 +50,12 @@ function App() {
   }, [checkSession]);
 
   useEffect(() => {
+    supabase.auth.getSession().then(({data}) => {
+        if (data.session && data.session.user.app_metadata?.provider === 'google' && !data.session.user.user_metadata?.google_password_set) {
+            useAuthStore.getState().setRequiresPasswordSetup(true);
+        }
+    });
+
     document.documentElement.lang = lang;
     document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
     document.body.style.direction = isRTL ? 'rtl' : 'ltr';
@@ -64,6 +75,10 @@ function App() {
     );
   }
 
+  if (requiresPasswordSetup) {
+      return <GooglePasswordSetup onComplete={() => useAuthStore.getState().setRequiresPasswordSetup(false)} />;
+  }
+
   // Awaiting email confirmation — BLOCK access
   if (awaitingConfirmation) return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-deep)' }}>
@@ -76,8 +91,7 @@ function App() {
     
     return (
       <div style={{ minHeight: '100vh', background: 'var(--bg-deep)', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'fixed', inset: 0, opacity: 0.1, zIndex: 0, backgroundImage: 'radial-gradient(circle at 0% 0%, var(--brand-electric) 0%, transparent 40%), radial-gradient(circle at 100% 100%, var(--brand-storm) 0%, transparent 40%)' }} />
-        <AuthUI />
+        <AuthUI onBack={() => setShowAuth(false)} />
       </div>
     );
   }

@@ -2,9 +2,14 @@ import React, { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../i18n';
 import { Logo } from './Logo';
-import { Mail, Lock, User as UserIcon, Eye, EyeOff, Github, Chrome, Gamepad2, ArrowRight } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, Eye, EyeOff, Github, Chrome, Gamepad2, ArrowLeft } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
-export const AuthUI: React.FC = () => {
+interface AuthUIProps {
+    onBack?: () => void;
+}
+
+export const AuthUI: React.FC<AuthUIProps> = ({ onBack }) => {
     const [isLogin, setIsLogin] = useState(true);
     const [showPassword, setShowPassword] = useState(false);
     const [email, setEmail] = useState('');
@@ -15,75 +20,97 @@ export const AuthUI: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (isLogin) await login(email, password);
-        else {
+        useAuthStore.setState({ error: null });
+        
+        if (isLogin) {
+            await login(email, password);
+        } else {
             if (password.length < 8) {
-                alert("SECURITY PROTOCOL: PASSWORD MUST BE AT LEAST 8 CHARACTERS");
+                alert("Password must be at least 8 characters.");
                 return;
             }
             await register(email, password, username);
         }
     };
 
+    const handleGoogleLogin = async () => {
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: window.location.origin
+            }
+        });
+        if (error) console.error("Google Auth Error:", error);
+    };
+
     return (
-        <div style={{ height: '100vh', width: '100vw', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', background: 'var(--bg-deep)' }}>
+        <div style={{ height: '100vh', width: '100vw', display: 'flex', background: 'var(--bg-deep)' }}>
             
-            {/* Left Panel: Brand */}
+            {/* Left Panel: Brand / Stealth */}
             <div className="hide-mobile" style={{ 
-                position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', 
-                justifyContent: 'center', alignItems: 'center', padding: '64px',
-                background: 'linear-gradient(135deg, #0B1020 0%, #1E3A8A 100%)'
+                flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', 
+                justifyContent: 'space-between', padding: '64px',
+                background: 'var(--bg-surface)', borderRight: '1px solid var(--border-subtle)'
             }}>
-                <div style={{ position: 'absolute', inset: 0, opacity: 0.15, pointerEvents: 'none' }}>
-                    <div className="lightning-streak" style={{ position: 'absolute', top: '10%', left: '20%', width: '2px', height: '100px', background: 'var(--brand-electric)', boxShadow: '0 0 20px var(--brand-electric)', transform: 'rotate(20deg)' }} />
-                    <div className="lightning-streak" style={{ position: 'absolute', bottom: '20%', right: '30%', width: '2px', height: '150px', background: 'var(--brand-storm)', boxShadow: '0 0 20px var(--brand-storm)', transform: 'rotate(-15deg)' }} />
-                </div>
+                {onBack && (
+                    <button onClick={onBack} className="btn btn-ghost" style={{ alignSelf: 'flex-start' }}>
+                        <ArrowLeft size={16} /> Back to Entry
+                    </button>
+                )}
                 
-                <div style={{ position: 'absolute', opacity: 0.05, transform: 'scale(2) rotate(-10deg)', zIndex: 0 }}>
-                    <Logo size={400} />
+                <div style={{ position: 'absolute', opacity: 0.02, transform: 'scale(3) rotate(-5deg)', zIndex: 0, left: '-20%', top: '20%' }}>
+                    <Logo size={800} />
                 </div>
 
-                <div style={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
-                    <div style={{ marginBottom: '32px' }}>
-                        <Logo size={96} />
-                    </div>
-                    <h2 style={{ fontSize: '48px', fontWeight: 800, fontFamily: 'Space Grotesk', lineHeight: 1.1, marginBottom: '16px' }}>
-                        Power up.<br />Squad up.<br /><span className="gradient-text">Win.</span>
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                    <Logo size={64} style={{ marginBottom: '32px' }} />
+                    <h2 style={{ fontSize: '40px', fontWeight: 800, fontFamily: 'Space Grotesk', lineHeight: 1.1, marginBottom: '16px', letterSpacing: '-1px' }}>
+                        SYSTEM_AUTH<br />REQ_CLEARANCE
                     </h2>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px', maxWidth: '300px' }}>
+                        Secure access gateway. Your digital identity protocol starts here. Ensure transmission is encrypted.
+                    </p>
                 </div>
 
-                <div style={{ position: 'absolute', bottom: '32px', left: '48px', right: '48px', display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '13px', fontWeight: 600 }}>
-                    <span>EARLY ACCESS</span>
-                    <span>BETA V1.0</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '12px', fontWeight: 600, letterSpacing: '1px' }}>
+                    <span>SECURE CONNECTION</span>
+                    <span>NODE V1.0</span>
                 </div>
             </div>
 
             {/* Right Panel: Form */}
             <div style={{ 
-                background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', 
-                justifyContent: 'center', padding: '48px' 
+                flex: 1, display: 'flex', alignItems: 'center', 
+                justifyContent: 'center', padding: '48px', position: 'relative'
             }}>
-                <div className="card" style={{ width: '100%', maxWidth: '420px', padding: '40px', background: 'transparent', border: 'none' }}>
-                    <div style={{ marginBottom: '32px' }}>
-                        <h1 style={{ fontSize: '28px', fontWeight: 800, marginBottom: '8px' }}>
-                            {isLogin ? 'Welcome back, gamer.' : 'Create your gamertag.'}
+                {/* Mobile back button */}
+                {onBack && (
+                    <button onClick={onBack} className="btn btn-ghost" style={{ position: 'absolute', top: '24px', left: '24px', display: 'none' }} id="mobile-back">
+                        <ArrowLeft size={16} />
+                    </button>
+                )}
+
+                <div style={{ width: '100%', maxWidth: '400px' }}>
+                    <div style={{ marginBottom: '40px' }}>
+                        <h1 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '8px', letterSpacing: '-0.5px' }}>
+                            {isLogin ? 'Authenticate.' : 'Initialize Profile.'}
                         </h1>
                         <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
-                            {isLogin ? 'Enter your credentials to join the storm.' : 'Start your journey with Gwet today.'}
+                            {isLogin ? 'Provide your standard credentials.' : 'Establish your new digital identity.'}
                         </p>
                     </div>
 
-                    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                         <div>
-                            <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                                Email / Gamertag
+                            <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                Email Designation
                             </label>
                             <div style={{ position: 'relative' }}>
-                                <Mail size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                <Mail size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                                 <input 
                                     className="input" 
                                     style={{ paddingLeft: '48px' }}
-                                    placeholder="Enter your email"
+                                    placeholder="Enter secure email"
                                     type="email"
                                     required
                                     value={email}
@@ -94,11 +121,11 @@ export const AuthUI: React.FC = () => {
 
                         {!isLogin && (
                             <div>
-                                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                                    Chosen Gamertag
+                                <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                    Identity Alias (Gamertag)
                                 </label>
                                 <div style={{ position: 'relative' }}>
-                                    <UserIcon size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                    <UserIcon size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                                     <input 
                                         className="input" 
                                         style={{ paddingLeft: '48px' }}
@@ -113,13 +140,13 @@ export const AuthUI: React.FC = () => {
 
                         <div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                                <label style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>
-                                    Password
+                                <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                    Passkey
                                 </label>
-                                {isLogin && <a href="#" style={{ fontSize: '11px', color: 'var(--brand-electric)', textDecoration: 'none', fontWeight: 700 }}>Forgot password?</a>}
+                                {isLogin && <a href="#" style={{ fontSize: '11px', color: 'var(--text-primary)', textDecoration: 'none', fontWeight: 700 }}>Reset?</a>}
                             </div>
                             <div style={{ position: 'relative' }}>
-                                <Lock size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                                <Lock size={16} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                                 <input 
                                     className="input" 
                                     style={{ paddingLeft: '48px', paddingRight: '48px' }}
@@ -134,60 +161,51 @@ export const AuthUI: React.FC = () => {
                                     onClick={() => setShowPassword(!showPassword)}
                                     style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
                                 >
-                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                                 </button>
                             </div>
                         </div>
 
                         {error && (
-                            <div style={{ padding: '12px', background: 'rgba(239, 44, 68, 0.1)', border: '1px solid var(--danger)', borderRadius: '8px', color: 'var(--danger)', fontSize: '12px', fontWeight: 600 }}>
+                            <div style={{ padding: '12px', background: 'rgba(239, 44, 68, 0.05)', border: '1px solid var(--danger)', color: 'var(--danger)', fontSize: '12px', fontWeight: 600 }}>
                                 {error}
                             </div>
                         )}
 
-                        <button className="btn btn-primary" style={{ height: '48px', fontSize: '15px' }} disabled={loading}>
-                            {loading ? 'Processing...' : (isLogin ? 'Sign In ⚡' : 'Join the Storm ⚡')}
+                        <button className="btn btn-primary" type="submit" style={{ height: '48px', fontSize: '14px', marginTop: '8px', background: 'var(--text-primary)', color: 'var(--bg-deep)' }} disabled={loading}>
+                            {loading ? 'Processing...' : (isLogin ? 'AUTHORIZE' : 'INITIALIZE')}
                         </button>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', margin: '8px 0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', margin: '16px 0' }}>
                             <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }} />
-                            <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: 600 }}>OR CONTINUE WITH</span>
+                            <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 700, letterSpacing: '1px' }}>EXTERNAL OAUTH</span>
                             <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }} />
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-                            <button type="button" className="btn btn-ghost" style={{ padding: '0', height: '44px' }} title="Discord"><Gamepad2 size={20} /></button>
-                            <button type="button" className="btn btn-ghost" style={{ padding: '0', height: '44px' }} title="Google"><Chrome size={20} /></button>
-                            <button type="button" className="btn btn-ghost" style={{ padding: '0', height: '44px' }} title="Github"><Github size={20} /></button>
+                            <button type="button" className="btn btn-ghost" style={{ padding: '0', height: '44px', borderRadius: '0' }} title="Discord"><Gamepad2 size={18} color="var(--text-secondary)" /></button>
+                            <button type="button" onClick={handleGoogleLogin} className="btn btn-ghost" style={{ padding: '0', height: '44px', borderRadius: '0' }} title="Google"><Chrome size={18} color="var(--text-secondary)" /></button>
+                            <button type="button" className="btn btn-ghost" style={{ padding: '0', height: '44px', borderRadius: '0' }} title="Github"><Github size={18} color="var(--text-secondary)" /></button>
                         </div>
 
-                        <p style={{ textAlign: 'center', marginTop: '16px', fontSize: '14px', color: 'var(--text-secondary)' }}>
-                            {isLogin ? "New here? " : "Already part of the storm? "}
+                        <div style={{ textAlign: 'center', marginTop: '24px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                            {isLogin ? "Require an alias? " : "Already authenticated? "}
                             <button 
                                 type="button"
                                 onClick={() => setIsLogin(!isLogin)}
-                                style={{ background: 'none', border: 'none', color: 'var(--brand-electric)', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                                style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontWeight: 700, cursor: 'pointer', padding: 0 }}
                             >
-                                {isLogin ? "Create your gamertag →" : "Sign in to Gwet"}
+                                {isLogin ? "Initialize here" : "Authorize here"}
                             </button>
-                        </p>
+                        </div>
                     </form>
                 </div>
             </div>
 
             <style>{`
-                .lightning-streak {
-                    animation: flicker 4s infinite;
-                }
-                @keyframes flicker {
-                    0%, 100% { opacity: 0; }
-                    50% { opacity: 0.5; }
-                    51% { opacity: 0.2; }
-                    52% { opacity: 0.8; }
-                }
                 @media (max-width: 800px) {
                     .hide-mobile { display: none !important; }
-                    div { grid-template-columns: 1fr !important; }
+                    #mobile-back { display: flex !important; }
                 }
             `}</style>
         </div>

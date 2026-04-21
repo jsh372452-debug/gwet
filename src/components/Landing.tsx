@@ -34,9 +34,9 @@ export const Landing: React.FC<{ onLaunch: () => void }> = ({ onLaunch }) => {
                 </div>
 
                 <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    <button className="btn btn-ghost hide-mobile">Sign In</button>
-                    <button className="btn btn-primary" onClick={onLaunch}>
-                        <Zap size={16} fill="white" /> Launch App
+                    <button className="btn btn-ghost hide-mobile" onClick={onLaunch}>Sign In</button>
+                    <button className="btn btn-primary" onClick={onLaunch} style={{ background: 'var(--text-primary)', color: 'var(--bg-deep)' }}>
+                        Initialize <ArrowRight size={16} />
                     </button>
                 </div>
             </nav>
@@ -49,39 +49,34 @@ export const Landing: React.FC<{ onLaunch: () => void }> = ({ onLaunch }) => {
                 {/* Background effects */}
                 <div style={{ 
                     position: 'absolute', inset: 0, 
-                    background: 'radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.08) 0%, transparent 40%), radial-gradient(circle at 80% 80%, rgba(30, 58, 138, 0.08) 0%, transparent 40%)',
-                    zIndex: 0
-                }} />
-                <div style={{ 
-                    position: 'absolute', inset: 0, 
                     backgroundImage: 'linear-gradient(var(--border-subtle) 1px, transparent 1px), linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px)',
-                    backgroundSize: '60px 60px', maskImage: 'radial-gradient(circle, black, transparent 80%)',
-                    opacity: 0.1, zIndex: 1
+                    backgroundSize: '80px 80px', maskImage: 'radial-gradient(circle, black, transparent 85%)',
+                    opacity: 0.15, zIndex: 1
                 }} />
 
                 <div style={{ maxWidth: '1200px', width: '100%', display: 'grid', gridTemplateColumns: '1fr 400px', gap: '64px', alignItems: 'center', position: 'relative', zIndex: 2 }}>
                     <div className="hero-content">
-                        <div className="chip chip-gold" style={{ marginBottom: '24px', background: 'rgba(251, 191, 36, 0.1)', color: 'var(--xp-gold)' }}>
-                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--xp-gold)', marginRight: 8, boxShadow: '0 0 10px var(--xp-gold)' }} />
-                            WELCOME TO GWET EARLY ACCESS
+                        <div className="chip" style={{ marginBottom: '24px', letterSpacing: '1px' }}>
+                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--text-primary)', marginRight: 8 }} />
+                            SYSTEM V1.0 ACTIVE
                         </div>
-                        <h1 style={{ fontSize: 'clamp(2.5rem, 6vw, 4.5rem)', lineHeight: 1.1, marginBottom: '24px' }}>
-                            Where Gamers<br/>
-                            <span className="gradient-text">Connect, Compete & Conquer.</span>
+                        <h1 style={{ fontSize: 'clamp(2.5rem, 6vw, 4.5rem)', lineHeight: 1.1, marginBottom: '24px', letterSpacing: '-1px' }}>
+                            Secure Protocol.<br/>
+                            <span>Digital Identity Matrix.</span>
                         </h1>
                         <p style={{ fontSize: '1.15rem', color: 'var(--text-secondary)', maxWidth: '560px', marginBottom: '32px' }}>
-                            Join voice channels, build your clan, find your squad, and dominate the leaderboards. Built for gamers, by gamers.
+                            Establish your credentials, synchronize with the global network, and secure your digital perimeter. Engineered for precision.
                         </p>
                         <div style={{ display: 'flex', gap: '16px' }}>
-                            <button className="btn btn-primary" style={{ padding: '16px 28px', fontSize: '16px' }} onClick={onLaunch}>
-                                Join Gwet — It's Free <Zap size={18} fill="white" />
+                            <button className="btn btn-primary" style={{ padding: '16px 28px', fontSize: '16px', background: 'var(--text-primary)', color: 'var(--bg-deep)' }} onClick={onLaunch}>
+                                Enter System <ArrowRight size={18} />
                             </button>
                             <button className="btn btn-ghost" style={{ padding: '16px 28px', fontSize: '16px' }}>
-                                Watch Demo <Play size={18} fill="currentColor" />
+                                View Documentation
                             </button>
                         </div>
                         <p style={{ marginTop: '20px', fontSize: '13px', color: 'var(--text-muted)' }}>
-                            No credit card · Free forever · 1-click setup
+                            End-to-end encrypted · Node decentralized
                         </p>
                     </div>
 

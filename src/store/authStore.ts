@@ -10,6 +10,8 @@ interface AuthState {
     awaitingConfirmation: boolean;
     pendingEmail: string | null;
     isVerifySuccess: boolean;
+    requiresPasswordSetup: boolean;
+    setRequiresPasswordSetup: (val: boolean) => void;
     setVerificationSuccess: (val: boolean) => void;
     login: (email: string, pass: string) => Promise<void>;
     register: (email: string, pass: string, username: string) => Promise<void>;
@@ -32,6 +34,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     awaitingConfirmation: false,
     pendingEmail: null,
     isVerifySuccess: false,
+    requiresPasswordSetup: false,
+    setRequiresPasswordSetup: (val) => set({ requiresPasswordSetup: val }),
     setVerificationSuccess: (val) => set({ isVerifySuccess: val }),
 
     setUser: (user) => set({ user }),
