@@ -53,8 +53,8 @@ export const AuthUI: React.FC = () => {
                 </div>
 
                 <div style={{ position: 'absolute', bottom: '32px', left: '48px', right: '48px', display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '13px', fontWeight: 600 }}>
-                    <span>240K GAMERS</span>
-                    <span>12K CLANS</span>
+                    <span>EARLY ACCESS</span>
+                    <span>BETA V1.0</span>
                 </div>
             </div>
 
