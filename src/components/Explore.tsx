@@ -65,7 +65,7 @@ export const Explore: React.FC = () => {
                                         <span style={{ fontSize: '24px', fontWeight: 800 }}>{c.name.charAt(0).toUpperCase()}</span>
                                     </div>
                                     <div className="chip chip-info" style={{ gap: '6px' }}>
-                                        <Users size={12} /> {c.members?.length || c.memberCount || 0}
+                                        <Users size={12} /> {c.memberCount || 0}
                                     </div>
                                 </div>
 

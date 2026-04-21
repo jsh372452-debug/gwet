@@ -56,6 +56,15 @@ export const Feed: React.FC = () => {
         setCommentText('');
     };
 
+    const handleLikeToggle = async (postId: string, userLiked: boolean) => {
+        if (interacting) return;
+        if (userLiked) {
+            await unlikePost(postId);
+        } else {
+            await likePost(postId);
+        }
+    };
+
     const getTier = (influence: number) => {
         if (influence > 5000) return 'MYTHIC';
         if (influence > 2500) return 'LEGEND';
@@ -162,7 +171,6 @@ export const Feed: React.FC = () => {
                                                 {post.ownerName || 'ANON'}
                                             </span>
                                             <TierBadge tier={getTier(post.ownerInfluence)} size={18} />
-                                            <Flag code={post.ownerCountry || 'Global'} size={14} />
                                         </div>
                                         <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
                                             {new Date(post.createdAt).toLocaleDateString()} · {post.gameTag}

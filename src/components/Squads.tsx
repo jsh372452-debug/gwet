@@ -3,7 +3,7 @@ import { useGameStore } from '../store/gameStore';
 import { AAGCommunity } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
 import { useTranslation } from '../i18n';
-import { Users, Plus, Shield, MessageSquare, ArrowLeft, Target, Trash2, Settings, ExternalLink } from 'lucide-react';
+import { Users, Plus, Shield, MessageSquare, ArrowLeft, Target, Trash2, Settings, ExternalLink, ArrowRight } from 'lucide-react';
 import { ChatArea } from './ChatArea';
 
 export const Squads: React.FC = () => {
