@@ -46,52 +46,53 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                         onClick={() => setActiveTab(route.id)}
                         style={{ 
                             width: '100%', display: 'flex', alignItems: 'center', gap: '8px', 
-                            padding: '8px 12px', borderRadius: '6px', border: 'none',
-                            background: activeTab === route.id ? 'rgba(59, 130, 246, 0.1)' : 'transparent',
-                            color: activeTab === route.id ? 'var(--text-primary)' : 'var(--text-secondary)',
+                            padding: '10px 12px', borderRadius: '0px', border: 'none',
+                            background: activeTab === route.id ? 'var(--text-primary)' : 'transparent',
+                            color: activeTab === route.id ? 'var(--bg-deep)' : 'var(--text-secondary)',
                             cursor: 'pointer', textAlign: 'left', marginBottom: '2px',
-                            transition: 'all 0.2s ease'
+                            transition: 'all 0.2s ease',
+                            borderLeft: activeTab === route.id ? '3px solid var(--text-primary)' : '3px solid transparent'
                         }}
                     >
                         <route.icon size={18} opacity={activeTab === route.id ? 1 : 0.6} />
-                        <span style={{ fontSize: '14px', fontWeight: 600 }}>{route.label}</span>
+                        <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.5px' }}>{route.label}</span>
                     </button>
                 ))}
 
-                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '1px', padding: '24px 8px 8px' }}>
+                <div style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '1.5px', padding: '24px 8px 8px', textTransform: 'uppercase' }}>
                     VOICE_CHANNELS
                 </div>
-                <div className="ch-voice-item" style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', borderRadius: '6px', color: 'var(--text-secondary)', opacity: 0.5, cursor: 'not-allowed' }}>
+                <div className="ch-voice-item" style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 12px', borderRadius: '0', color: 'var(--text-muted)', opacity: 0.5, cursor: 'not-allowed' }}>
                    <Volume2 size={18} />
-                   <span style={{ fontSize: '14px', fontWeight: 600 }}>Storm Lobby</span>
+                   <span style={{ fontSize: '12px', fontWeight: 700 }}>STORM_LOBBY</span>
                 </div>
             </nav>
 
             {/* User Panel */}
             <div style={{ 
-                padding: '10px 8px', background: 'var(--bg-input)', borderTop: '1px solid var(--border-subtle)',
-                display: 'flex', alignItems: 'center', gap: '10px'
+                padding: '12px 16px', background: 'var(--bg-input)', borderTop: '1px solid var(--border-subtle)',
+                display: 'flex', alignItems: 'center', gap: '12px'
             }}>
-                <div className="avatar" style={{ width: '36px', height: '36px', flexShrink: 0 }}>
+                <div className="avatar" style={{ width: '32px', height: '32px', flexShrink: 0, borderRadius: '0px' }}>
                     {user?.avatarUrl ? <img src={user.avatarUrl} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (user?.displayName?.charAt(0) || user?.username?.charAt(0) || 'G').toUpperCase()}
-                    <div style={{ position: 'absolute', bottom: 0, right: 0, width: 10, height: 10, borderRadius: '50%', background: 'var(--success)', border: '2px solid var(--bg-input)' }} />
+                    <div style={{ position: 'absolute', bottom: -2, right: -2, width: 8, height: 8, borderRadius: '0', background: 'var(--success)', border: '1px solid var(--bg-input)' }} />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '13px', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '0.5px' }}>
                         {user?.displayName || user?.username || 'OPERATOR'}
                     </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        Online <Flag code={user?.country || 'Global'} size={12} />
+                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', textTransform: 'uppercase' }}>
+                        ACTIVE_NODE <Flag code={user?.country || 'Global'} size={10} />
                     </div>
                 </div>
                 <div style={{ display: 'flex', gap: '4px' }}>
-                    <button className="btn btn-icon btn-ghost" style={{ width: '32px', height: '32px' }}><Mic size={16} /></button>
-                    <button className="btn btn-icon btn-ghost" style={{ width: '32px', height: '32px' }}><Settings size={16} onClick={() => setActiveTab('settings')} /></button>
+                    <button className="btn btn-icon btn-ghost" style={{ width: '28px', height: '28px', borderRadius: '0' }}><Mic size={14} /></button>
+                    <button className="btn btn-icon btn-ghost" style={{ width: '28px', height: '28px', borderRadius: '0' }}><Settings size={14} onClick={() => setActiveTab('settings')} /></button>
                 </div>
             </div>
 
             <style>{`
-                button:hover { background: rgba(255,255,255,0.05) !important; color: white !important; }
+                .ch-voice-item:hover { background: rgba(255,255,255,0.02); }
             `}</style>
         </aside>
     );

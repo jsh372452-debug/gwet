@@ -12,19 +12,19 @@ export const TierBadge: React.FC<TierBadgeProps> = ({ tier = 'BRONZE', size = 32
     const getTierConfig = () => {
         switch (tierKey) {
             case 'MYTHIC':
-                return { color: '#ff00ff', label: 'MYTHIC', glow: '0 0 15px #ff00ff' };
+                return { color: '#ffffff', label: 'MYTHIC_NODE', border: '#ffffff' };
             case 'LEGEND':
-                return { color: '#ff4d00', label: 'LEGEND', glow: '0 0 15px #ff4d00' };
+                return { color: '#e5e7eb', label: 'LEGEND_CORE', border: '#e5e7eb' };
             case 'DIAMOND':
-                return { color: '#00d4ff', label: 'DIAMOND', glow: '0 0 15px #00d4ff' };
+                return { color: '#9ca3af', label: 'DIAMOND_CELL', border: '#9ca3af' };
             case 'PLATINUM':
-                return { color: '#e5e7eb', label: 'PLATINUM', glow: '0 0 10px #ffffff' };
+                return { color: '#6b7280', label: 'PLATINUM_LINK', border: '#6b7280' };
             case 'GOLD':
-                return { color: '#fbbf24', label: 'GOLD', glow: '0 0 10px #fbbf24' };
+                return { color: '#4b5563', label: 'GOLD_UNIT', border: '#4b5563' };
             case 'SILVER':
-                return { color: '#94a3b8', label: 'SILVER', glow: '0 0-5px #94a3b8' };
+                return { color: '#374151', label: 'SILVER_SYNC', border: '#374151' };
             default:
-                return { color: '#b45309', label: 'BRONZE', glow: 'none' };
+                return { color: '#1f2937', label: 'BRONZE_ENTRY', border: '#1f2937' };
         }
     };
 
@@ -35,59 +35,49 @@ export const TierBadge: React.FC<TierBadgeProps> = ({ tier = 'BRONZE', size = 32
             case 'MYTHIC':
                 return (
                     <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M16 2L28 10V22L16 30L4 22V10L16 2Z" fill="url(#mythic_grad)" stroke="#ff00ff" strokeWidth="2" />
-                        <circle cx="16" cy="16" r="6" fill="white" fillOpacity="0.2" />
-                        <path d="M16 8L18 14H24L19 18L21 24L16 20L11 24L13 18L8 14H14L16 8Z" fill="white" />
-                        <defs>
-                            <linearGradient id="mythic_grad" x1="4" y1="2" x2="28" y2="30" gradientUnits="userSpaceOnUse">
-                                <stop stopColor="#ff00ff" />
-                                <stop offset="1" stopColor="#00d4ff" />
-                            </linearGradient>
-                        </defs>
+                        <rect x="4" y="4" width="24" height="24" stroke="var(--text-primary)" strokeWidth="2" />
+                        <rect x="10" y="10" width="12" height="12" fill="var(--text-primary)" />
+                        <path d="M4 4L10 10M28 4L22 10M4 28L10 22M28 28L22 22" stroke="var(--text-primary)" strokeWidth="1" />
                     </svg>
                 );
             case 'LEGEND':
                 return (
                     <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M4 12L16 4L28 12V24L16 30L4 24V12Z" fill="#ff4d00" fillOpacity="0.2" stroke="#ff4d00" strokeWidth="2" />
-                        <path d="M16 8L10 20H22L16 8Z" fill="#ff4d00" />
-                        <path d="M8 22H24V25H8V22Z" fill="#ff4d00" />
+                        <path d="M16 4L28 12V20L16 28L4 20V12L16 4Z" stroke="var(--text-primary)" strokeWidth="2" />
+                        <rect x="13" y="13" width="6" height="6" fill="var(--text-primary)" />
                     </svg>
                 );
             case 'DIAMOND':
                 return (
                     <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M16 4L26 12L16 28L6 12L16 4Z" fill="#00d4ff" fillOpacity="0.2" stroke="#00d4ff" strokeWidth="2" />
-                        <path d="M16 8L22 13L16 22L10 13L16 8Z" fill="#00d4ff" />
+                        <path d="M16 4L28 16L16 28L4 16L16 4Z" stroke="var(--text-primary)" strokeWidth="2" />
+                        <rect x="14" y="14" width="4" height="4" fill="var(--text-primary)" />
                     </svg>
                 );
             case 'PLATINUM':
                 return (
                     <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="6" y="6" width="20" height="20" rx="2" transform="rotate(45 16 16)" fill="#ffffff" fillOpacity="0.2" stroke="#ffffff" strokeWidth="2" />
-                        <path d="M16 10L18 16L24 18L18 20L16 26L14 20L8 18L14 16L16 10Z" fill="white" />
+                        <rect x="6" y="6" width="20" height="20" stroke="var(--text-secondary)" strokeWidth="2" />
+                        <rect x="12" y="12" width="8" height="8" fill="var(--text-secondary)" />
                     </svg>
                 );
             case 'GOLD':
                 return (
                     <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="16" cy="16" r="12" fill="#fbbf24" fillOpacity="0.2" stroke="#fbbf24" strokeWidth="2" />
-                        <path d="M16 8L20 20H12L16 8Z" fill="#fbbf24" />
-                        <rect x="12" y="22" width="8" height="2" fill="#fbbf24" />
+                        <rect x="8" y="8" width="16" height="16" stroke="var(--text-muted)" strokeWidth="2" />
+                        <rect x="13" y="13" width="6" height="6" fill="var(--text-muted)" />
                     </svg>
                 );
             case 'SILVER':
                 return (
                     <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M16 6L26 24H6L16 6Z" fill="#94a3b8" fillOpacity="0.2" stroke="#94a3b8" strokeWidth="2" />
-                        <circle cx="16" cy="18" r="4" fill="#94a3b8" />
+                        <rect x="10" y="10" width="12" height="12" stroke="var(--text-muted)" strokeWidth="2" />
                     </svg>
                 );
             default:
                 return (
                     <svg width={size} height={size} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M8 8H24V24H8V8Z" fill="#b45309" fillOpacity="0.2" stroke="#b45309" strokeWidth="2" />
-                        <path d="M12 12H20V20H12V12Z" fill="#b45309" />
+                        <rect x="12" y="12" width="8" height="8" stroke="var(--text-muted)" strokeWidth="1" />
                     </svg>
                 );
         }
@@ -95,11 +85,11 @@ export const TierBadge: React.FC<TierBadgeProps> = ({ tier = 'BRONZE', size = 32
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-            <div style={{ filter: `drop-shadow(${config.glow})`, display: 'flex' }}>
+            <div style={{ display: 'flex' }}>
                 {renderIcon()}
             </div>
             {showLabel && (
-                <span style={{ fontSize: '10px', fontWeight: 900, color: config.color, letterSpacing: '1px' }}>{config.label}</span>
+                <span style={{ fontSize: '9px', fontWeight: 900, color: 'var(--text-primary)', letterSpacing: '2px', textTransform: 'uppercase' }}>{config.label}</span>
             )}
         </div>
     );

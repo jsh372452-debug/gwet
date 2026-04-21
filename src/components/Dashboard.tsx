@@ -77,15 +77,16 @@ export const Dashboard: React.FC = () => {
                         onClick={() => switchTab('feed')}
                         className={`avatar interactive`} 
                         style={{ 
-                            width: '48px', height: '48px', borderRadius: activeTab === 'feed' ? '14px' : '999px',
-                            background: activeTab === 'feed' ? 'var(--gradient-bolt)' : 'var(--bg-elevated)',
+                            width: '48px', height: '48px', borderRadius: '0px',
+                            background: activeTab === 'feed' ? 'var(--text-primary)' : 'var(--bg-elevated)',
+                            color: activeTab === 'feed' ? 'var(--bg-deep)' : 'var(--text-primary)',
                             cursor: 'pointer'
                         }}
                     >
                         <Logo size={24} />
                     </div>
 
-                    <div style={{ width: '32px', height: '2px', background: 'var(--border-subtle)', margin: '4px 0' }} />
+                    <div style={{ width: '32px', height: '1px', background: 'var(--border-subtle)', margin: '4px 0' }} />
 
                     {communities.map((comm) => (
                         <div 
@@ -93,8 +94,9 @@ export const Dashboard: React.FC = () => {
                             onClick={() => handleServerClick(comm.id)}
                             className="avatar interactive"
                             style={{ 
-                                width: '48px', height: '48px', borderRadius: selectedServerId === comm.id ? '14px' : '999px',
-                                background: selectedServerId === comm.id ? 'var(--brand-electric)' : 'var(--bg-surface)',
+                                width: '48px', height: '48px', borderRadius: '0px',
+                                background: selectedServerId === comm.id ? 'var(--text-primary)' : 'var(--bg-surface)',
+                                color: selectedServerId === comm.id ? 'var(--bg-deep)' : 'var(--text-primary)',
                                 border: '1px solid var(--border-subtle)', cursor: 'pointer'
                             }}
                             title={comm.name}
@@ -103,11 +105,11 @@ export const Dashboard: React.FC = () => {
                         </div>
                     ))}
 
-                    <button className="btn btn-icon btn-ghost" style={{ borderRadius: '999px', borderStyle: 'dashed' }}>
+                    <button className="btn btn-icon btn-ghost" style={{ borderRadius: '0', borderStyle: 'solid', borderColor: 'var(--border-subtle)' }}>
                         <Plus size={20} />
                     </button>
 
-                    <button className="btn btn-icon btn-ghost" style={{ marginTop: 'auto' }} onClick={() => switchTab('settings')}>
+                    <button className="btn btn-icon btn-ghost" style={{ marginTop: 'auto', borderRadius: '0' }} onClick={() => switchTab('settings')}>
                         <Settings size={20} />
                     </button>
                 </aside>
@@ -120,10 +122,11 @@ export const Dashboard: React.FC = () => {
                     {/* Top Header */}
                     <header className="glass-panel" style={{ 
                         padding: '16px 24px', position: 'sticky', top: 0, zIndex: 10,
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        background: 'var(--bg-surface)', borderBottom: '1px solid var(--border-subtle)'
                     }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                           <h2 style={{ fontSize: '16px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                           <h2 style={{ fontSize: '14px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>
                                {activeTab === 'chat' ? (chatTarget.id === 'global' ? '# GLOBAL_COMMS' : `# ${communities.find(c => c.id === chatTarget.id)?.name.toUpperCase() || 'SERVER'}`) : activeTab.toUpperCase()}
                            </h2>
                         </div>
@@ -131,9 +134,9 @@ export const Dashboard: React.FC = () => {
                         <div style={{ display: 'flex', gap: '12px' }}>
                             <div style={{ position: 'relative' }}>
                                 <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                                <input className="input" placeholder={t('search')} style={{ width: '200px', height: '36px', paddingLeft: '36px', fontSize: '13px' }} />
+                                <input className="input" placeholder={t('search')} style={{ width: '200px', height: '36px', paddingLeft: '36px', fontSize: '13px', borderRadius: '0' }} />
                             </div>
-                            <button className="btn btn-icon btn-ghost" style={{ width: '36px', height: '36px' }}><Bell size={18} /></button>
+                            <button className="btn btn-icon btn-ghost" style={{ width: '36px', height: '36px', borderRadius: '0' }}><Bell size={18} /></button>
                         </div>
                     </header>
 
@@ -145,7 +148,7 @@ export const Dashboard: React.FC = () => {
             </div>
 
             <style>{`
-                .avatar.interactive:hover { border-radius: 14px !important; background: var(--brand-electric) !important; color: white !important; }
+                .avatar.interactive:hover { border-radius: 0px !important; background: var(--text-primary) !important; color: var(--bg-deep) !important; }
             `}</style>
         </ErrorBoundary>
     );

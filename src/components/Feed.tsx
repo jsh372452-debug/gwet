@@ -103,10 +103,10 @@ export const Feed: React.FC = () => {
             </div>
 
             {/* Compose Area */}
-            <div className="card" style={{ padding: '20px', marginBottom: '32px', borderLeft: '4px solid var(--brand-electric)' }}>
+            <div className="card" style={{ padding: '20px', marginBottom: '32px', borderLeft: '1px solid var(--text-primary)' }}>
                 <form onSubmit={handleSubmit}>
                     <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
-                        <div className="avatar" style={{ width: '48px', height: '48px', flexShrink: 0 }}>
+                        <div className="avatar" style={{ width: '48px', height: '48px', flexShrink: 0, borderRadius: '0' }}>
                             {user?.avatarUrl ? <img src={user.avatarUrl} /> : (user?.displayName?.[0] || 'G').toUpperCase()}
                         </div>
                         <textarea 
@@ -114,7 +114,7 @@ export const Feed: React.FC = () => {
                             placeholder={t('share')} 
                             value={content} 
                             onChange={(e) => setContent(e.target.value)}
-                            style={{ minHeight: '100px', padding: '12px', resize: 'none', background: 'var(--bg-input)' }}
+                            style={{ minHeight: '100px', padding: '12px', resize: 'none', background: 'var(--bg-input)', borderRadius: '0' }}
                         />
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -123,19 +123,19 @@ export const Feed: React.FC = () => {
                                 className="input" 
                                 value={tag} 
                                 onChange={e => setTag(e.target.value)} 
-                                style={{ width: 'auto', height: '36px', fontSize: '13px', padding: '0 12px' }}
+                                style={{ width: 'auto', height: '36px', fontSize: '11px', fontWeight: 700, padding: '0 12px', borderRadius: '0', textTransform: 'uppercase' }}
                             >
                                 <option value="Global">Global</option>
                                 <option value="Valorant">Valorant</option>
                                 <option value="LoL">League of Legends</option>
                                 <option value="CS2">CS2</option>
                             </select>
-                            <button type="button" className="btn btn-ghost btn-icon" style={{ width: '36px', height: '36px' }}>
+                            <button type="button" className="btn btn-ghost btn-icon" style={{ width: '36px', height: '36px', borderRadius: '0' }}>
                                 <ImageIcon size={18} />
                             </button>
                         </div>
-                        <button type="submit" className="btn btn-primary" style={{ height: '36px', padding: '0 24px' }} disabled={!content.trim() || posting}>
-                            {posting ? <Loader size={16} className="spinner" /> : t('gweet')}
+                        <button type="submit" className="btn btn-primary" style={{ height: '36px', padding: '0 24px', background: 'var(--text-primary)', color: 'var(--bg-deep)', borderRadius: '0' }} disabled={!content.trim() || posting}>
+                            {posting ? <Loader size={16} className="spinner" /> : 'TRANSMIT'}
                         </button>
                     </div>
                 </form>
@@ -146,16 +146,16 @@ export const Feed: React.FC = () => {
                 {loading && posts.length === 0 && (
                     <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
                         <Loader size={32} className="spinner" />
-                        <p style={{ marginTop: '16px', fontWeight: 700 }}>SYNCHRONIZING WITH STORM FEED...</p>
+                        <p style={{ marginTop: '16px', fontWeight: 800, fontSize: '10px', letterSpacing: '2px' }}>SYNCHRONIZING_STORM_FEED...</p>
                     </div>
                 )}
 
                 {filteredPosts.map(post => (
-                    <div key={post.id} className="card interactive" style={{ padding: '20px' }}>
+                    <div key={post.id} className="card interactive" style={{ padding: '24px', borderRadius: '0' }}>
                         <div style={{ display: 'flex', gap: '16px' }}>
                             <div 
                                 className="avatar" 
-                                style={{ width: '44px', height: '44px', cursor: 'pointer', flexShrink: 0 }}
+                                style={{ width: '44px', height: '44px', cursor: 'pointer', flexShrink: 0, borderRadius: '0' }}
                                 onClick={() => setSelectedUserId(post.ownerId)}
                             >
                                 {post.ownerAvatar ? <img src={post.ownerAvatar} /> : post.ownerName?.charAt(0).toUpperCase()}
@@ -165,48 +165,48 @@ export const Feed: React.FC = () => {
                                     <div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                             <span 
-                                                style={{ fontWeight: 800, cursor: 'pointer', fontSize: '15px' }} 
+                                                style={{ fontWeight: 800, cursor: 'pointer', fontSize: '14px', letterSpacing: '0.5px' }} 
                                                 onClick={() => setSelectedUserId(post.ownerId)}
                                             >
                                                 {post.ownerName || 'ANON'}
                                             </span>
-                                            <TierBadge tier={getTier(post.ownerInfluence)} size={18} />
+                                            <TierBadge tier={getTier(post.ownerInfluence)} size={16} />
                                         </div>
-                                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                                             {new Date(post.createdAt).toLocaleDateString()} · {post.gameTag}
                                         </div>
                                     </div>
-                                    <div className="chip chip-info" style={{ fontSize: '10px' }}>
+                                    <div className="chip" style={{ fontSize: '10px', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
                                         LVL {Math.floor(post.ownerInfluence / 100) + 1}
                                     </div>
                                 </div>
-                                <div style={{ marginTop: '16px', fontSize: '15px', lineHeight: 1.6, wordBreak: 'break-word' }}>
+                                <div style={{ marginTop: '16px', fontSize: '14px', lineHeight: 1.6, wordBreak: 'break-word', color: 'var(--text-primary)' }}>
                                     {post.content}
                                 </div>
                                 {post.mediaUrl && (
-                                    <div style={{ marginTop: '16px', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
+                                    <div style={{ marginTop: '16px', borderRadius: '0', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
                                         <img src={post.mediaUrl} style={{ width: '100%', display: 'block' }} />
                                     </div>
                                 )}
 
                                 {/* Actions */}
-                                <div style={{ display: 'flex', gap: '24px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border-subtle)' }}>
+                                <div style={{ display: 'flex', gap: '16px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border-subtle)' }}>
                                     <button 
                                         className="btn btn-ghost" 
                                         onClick={() => handleLikeToggle(post.id, post.userLiked)}
-                                        style={{ height: '32px', color: post.userLiked ? 'var(--brand-electric)' : 'var(--text-secondary)' }}
+                                        style={{ height: '32px', color: post.userLiked ? 'var(--text-primary)' : 'var(--text-muted)', border: 'none', background: 'transparent', padding: '0 8px' }}
                                     >
-                                        <Flame size={16} fill={post.userLiked ? 'var(--brand-electric)' : 'none'} /> {post.likeCount || 0}
+                                        <Flame size={14} fill={post.userLiked ? 'var(--text-primary)' : 'none'} /> {post.likeCount || 0}
                                     </button>
                                     <button 
                                         className="btn btn-ghost" 
                                         onClick={() => handleToggleComments(post.id)}
-                                        style={{ height: '32px' }}
+                                        style={{ height: '32px', color: 'var(--text-muted)', border: 'none', background: 'transparent', padding: '0 8px' }}
                                     >
-                                        <MessageSquare size={16} /> {post.replyCount || 0}
+                                        <MessageSquare size={14} /> {post.replyCount || 0}
                                     </button>
-                                    <button className="btn btn-ghost" style={{ height: '32px' }}>
-                                        <Share2 size={16} />
+                                    <button className="btn btn-ghost" style={{ height: '32px', color: 'var(--text-muted)', border: 'none', background: 'transparent', padding: '0 8px' }}>
+                                        <Share2 size={14} />
                                     </button>
                                 </div>
                             </div>
@@ -214,32 +214,32 @@ export const Feed: React.FC = () => {
 
                         {/* Comments Drawer */}
                         {expandedPost === post.id && (
-                            <div style={{ marginTop: '16px', padding: '16px', background: 'var(--bg-input)', borderRadius: '10px' }}>
-                                <div style={{ display: 'flex', gap: '10px', marginBottom: '16px' }}>
+                            <div style={{ marginTop: '20px', padding: '16px', background: 'var(--bg-input)', borderRadius: '0', borderLeft: '1px solid var(--border-subtle)' }}>
+                                <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
                                     <input 
                                         className="input" 
-                                        placeholder={t('comment')}
+                                        placeholder="Enter secure message..."
                                         value={commentText} 
                                         onChange={e => setCommentText(e.target.value)}
                                         onKeyDown={e => { if (e.key === 'Enter') handleCommentSubmit(post.id); }}
-                                        style={{ height: '36px' }}
+                                        style={{ height: '36px', borderRadius: '0', fontSize: '13px' }}
                                     />
-                                    <button className="btn btn-primary" onClick={() => handleCommentSubmit(post.id)} style={{ padding: '0 16px' }}>
+                                    <button className="btn btn-primary" onClick={() => handleCommentSubmit(post.id)} style={{ padding: '0 16px', borderRadius: '0', background: 'var(--text-primary)', color: 'var(--bg-deep)' }}>
                                         <Send size={14} />
                                     </button>
                                 </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                                     {(comments[post.id] || []).map(c => (
-                                        <div key={c.id} style={{ display: 'flex', gap: '10px' }}>
-                                            <div className="avatar" style={{ width: '28px', height: '28px' }}>
+                                        <div key={c.id} style={{ display: 'flex', gap: '12px' }}>
+                                            <div className="avatar" style={{ width: '24px', height: '24px', borderRadius: '0' }}>
                                                 {c.ownerAvatar ? <img src={c.ownerAvatar} /> : c.ownerName.charAt(0)}
                                             </div>
                                             <div style={{ flex: 1 }}>
-                                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '2px' }}>
-                                                    <span style={{ fontSize: '12px', fontWeight: 700 }}>{c.ownerName}</span>
-                                                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{new Date(c.createdAt).toLocaleTimeString()}</span>
+                                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
+                                                    <span style={{ fontSize: '12px', fontWeight: 800 }}>{c.ownerName}</span>
+                                                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{new Date(c.createdAt).toLocaleTimeString()}</span>
                                                 </div>
-                                                <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>{c.content}</p>
+                                                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{c.content}</p>
                                             </div>
                                         </div>
                                     ))}

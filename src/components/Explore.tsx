@@ -25,27 +25,27 @@ export const Explore: React.FC = () => {
             {/* Header Area */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '40px' }}>
                 <div style={{ 
-                    width: '64px', height: '64px', background: 'var(--gradient-bolt)', 
-                    borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                    color: 'white', boxShadow: 'var(--glow-electric)' 
+                    width: '64px', height: '64px', background: 'var(--bg-elevated)', 
+                    borderRadius: '0px', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                    color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' 
                 }}>
                     <Compass size={32} />
                 </div>
                 <div>
-                    <h2 style={{ fontSize: '28px', fontWeight: 800, fontFamily: 'Space Grotesk' }}>{t('explore')}</h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Discover clans, squads, and elite gaming communities.</p>
+                    <h2 style={{ fontSize: '24px', fontWeight: 800, fontFamily: 'Space Grotesk', letterSpacing: '-0.5px' }}>{t('explore').toUpperCase()}</h2>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Discover secure nodes and elite operative circles.</p>
                 </div>
             </div>
 
             {/* Search Bar */}
             <div style={{ position: 'relative', marginBottom: '48px' }}>
-                <Search size={20} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 <input 
                     className="input" 
-                    placeholder="Search by community name, game, or tag..." 
+                    placeholder="SEARCH_NETWORK_REGISTRY..." 
                     value={searchQuery} 
                     onChange={e => setSearchQuery(e.target.value)}
-                    style={{ paddingLeft: '52px', height: '56px', fontSize: '16px', background: 'var(--bg-input)' }} 
+                    style={{ paddingLeft: '52px', height: '56px', fontSize: '14px', background: 'var(--bg-input)', borderRadius: '0', letterSpacing: '1px' }} 
                 />
             </div>
 
@@ -53,44 +53,44 @@ export const Explore: React.FC = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '40px' }}>
                 <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                        <h3 style={{ fontSize: '18px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px' }}>FEATURED_HUBS</h3>
-                        <span style={{ fontSize: '13px', color: 'var(--brand-electric)', fontWeight: 700, cursor: 'pointer' }}>View All →</span>
+                        <h3 style={{ fontSize: '14px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '2px' }}>VERIFIED_NODES</h3>
+                        <span style={{ fontSize: '11px', color: 'var(--text-primary)', fontWeight: 800, cursor: 'pointer', letterSpacing: '1px' }}>VIEW_ALL_PROTOCOLS →</span>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
                         {filteredCommunities.map(c => (
-                            <div key={c.id} className="card interactive" style={{ padding: '24px', display: 'flex', flexDirection: 'column', minHeight: '240px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' }}>
-                                    <div className="avatar" style={{ width: '56px', height: '56px', borderRadius: '12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}>
+                            <div key={c.id} className="card interactive" style={{ padding: '24px', display: 'flex', flexDirection: 'column', minHeight: '260px', borderRadius: '0' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                                    <div className="avatar" style={{ width: '56px', height: '56px', borderRadius: '0px', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}>
                                         <span style={{ fontSize: '24px', fontWeight: 800 }}>{c.name.charAt(0).toUpperCase()}</span>
                                     </div>
-                                    <div className="chip chip-info" style={{ gap: '6px' }}>
+                                    <div className="chip" style={{ gap: '6px', background: 'var(--bg-input)', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)', fontSize: '10px' }}>
                                         <Users size={12} /> {c.memberCount || 0}
                                     </div>
                                 </div>
 
                                 <div style={{ marginBottom: '16px' }}>
-                                    <h4 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '4px' }}>{c.name}</h4>
+                                    <h4 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '6px', letterSpacing: '-0.5px' }}>{c.name.toUpperCase()}</h4>
                                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                        <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--brand-electric)', background: 'rgba(59, 130, 246, 0.1)', padding: '2px 8px', borderRadius: '4px' }}>
+                                        <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-primary)', background: 'var(--bg-elevated)', padding: '2px 8px', borderRadius: '0px', border: '1px solid var(--border-subtle)' }}>
                                             #{c.gameTag?.toUpperCase() || 'GLOBAL'}
                                         </span>
-                                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            <Globe size={10} /> Public
+                                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', textTransform: 'uppercase', fontWeight: 700 }}>
+                                            <Globe size={10} /> PUBLIC_CHANNEL
                                         </span>
                                     </div>
                                 </div>
 
-                                <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.5, flex: 1, marginBottom: '24px' }}>
-                                    {c.description || 'Join this elite squad to coordinate, compete, and climb the ranks together.'}
+                                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, flex: 1, marginBottom: '24px' }}>
+                                    {c.description || 'Secure communication node for elite synchronization and operational coordination.'}
                                 </p>
 
                                 <button 
                                     className="btn btn-primary" 
-                                    style={{ width: '100%', height: '40px' }} 
+                                    style={{ width: '100%', height: '40px', borderRadius: '0', background: 'var(--text-primary)', color: 'var(--bg-deep)' }} 
                                     onClick={() => joinCommunity(c.id)}
                                 >
-                                    JOIN HUB <ExternalLink size={14} style={{ marginLeft: '8px' }} />
+                                    INITIALIZE HUB <ExternalLink size={14} style={{ marginLeft: '8px' }} />
                                 </button>
                             </div>
                         ))}
@@ -100,9 +100,9 @@ export const Explore: React.FC = () => {
 
             {filteredCommunities.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '80px 0' }}>
-                    <div style={{ fontSize: '48px', opacity: 0.2, marginBottom: '16px' }}>🛰️</div>
-                    <h3 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-secondary)' }}>NO SIGNALS DETECTED</h3>
-                    <p style={{ color: 'var(--text-muted)' }}>Try searching for a different frequency or tag.</p>
+                    <div style={{ fontSize: '48px', opacity: 0.1, marginBottom: '16px' }}>🛰️</div>
+                    <h3 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-secondary)', letterSpacing: '1px' }}>NO SIGNALS DETECTED</h3>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '12px' }}>RESCANNING FREQUENCIES... TRY DIFFERENT PARAMETERS.</p>
                 </div>
             )}
         </div>

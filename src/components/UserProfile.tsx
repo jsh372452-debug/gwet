@@ -35,89 +35,89 @@ export const UserProfile: React.FC<Props> = ({ userId, onClose }) => {
     return (
         <div 
             style={{ 
-                position: 'fixed', inset: 0, background: 'rgba(1, 4, 16, 0.85)', 
-                backdropFilter: 'blur(12px)', zIndex: 1000, display: 'flex', 
+                position: 'fixed', inset: 0, background: 'rgba(0, 0, 0, 0.95)', 
+                backdropFilter: 'blur(20px)', zIndex: 1000, display: 'flex', 
                 alignItems: 'center', justifyContent: 'center', padding: '24px' 
             }} 
             onClick={onClose}
         >
             <div 
                 className="card" 
-                style={{ width: '100%', maxWidth: '480px', padding: 0, overflow: 'hidden', border: '1px solid var(--border-subtle)', boxShadow: 'var(--shadow-lg)' }} 
+                style={{ width: '100%', maxWidth: '440px', padding: 0, overflow: 'hidden', border: '1px solid var(--border-strong)', borderRadius: '0', background: 'var(--bg-surface)' }} 
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header/Cover */}
-                <div style={{ height: '120px', background: 'var(--gradient-bolt)', position: 'relative' }}>
-                    <div style={{ position: 'absolute', top: 16, left: isRTL ? 'auto' : 16, right: isRTL ? 16 : 'auto', filter: 'drop-shadow(0 0 10px rgba(0,0,0,0.3))' }}>
-                        <TierBadge tier={profile.tier || 'BRONZE'} size={56} showLabel />
+                <div style={{ height: '80px', background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border-subtle)', position: 'relative' }}>
+                    <div style={{ position: 'absolute', top: 12, left: isRTL ? 'auto' : 16, right: isRTL ? 16 : 'auto' }}>
+                        <TierBadge tier={profile.tier || 'BRONZE'} size={40} showLabel />
                     </div>
                     <button 
                         className="btn btn-ghost btn-icon" 
                         onClick={onClose} 
-                        style={{ position: 'absolute', top: 12, right: isRTL ? 'auto' : 12, left: isRTL ? 12 : 'auto', color: 'white', background: 'rgba(0,0,0,0.2)' }}
+                        style={{ position: 'absolute', top: 12, right: isRTL ? 'auto' : 12, left: isRTL ? 12 : 'auto', color: 'var(--text-muted)', background: 'var(--bg-input)', borderRadius: '0' }}
                     >
-                        <X size={20} />
+                        <X size={18} />
                     </button>
                 </div>
 
-                <div style={{ padding: '0 32px 32px 32px', marginTop: '-48px', textAlign: 'center' }}>
-                    <div className="avatar" style={{ margin: '0 auto 16px auto', border: '5px solid var(--bg-surface)', width: 96, height: 96, boxShadow: 'var(--shadow-md)' }}>
+                <div style={{ padding: '0 32px 32px 32px', marginTop: '-32px', textAlign: 'center' }}>
+                    <div className="avatar" style={{ margin: '0 auto 16px auto', border: '4px solid var(--border-strong)', width: 80, height: 80, borderRadius: '0', background: 'var(--bg-deep)' }}>
                         {profile.avatar_url ? <img src={profile.avatar_url} /> : (profile.display_name?.[0] || profile.username?.[0] || 'G').toUpperCase()}
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
-                        <Flag code={profile.country || 'Global'} size={24} />
-                        <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 800, fontFamily: 'Space Grotesk' }}>{profile.display_name || profile.username}</h2>
+                        <Flag code={profile.country || 'Global'} size={20} />
+                        <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, fontFamily: 'Space Grotesk', letterSpacing: '-0.5px' }}>{(profile.display_name || profile.username).toUpperCase()}</h2>
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '16px' }}>
-                        <div className="chip chip-info" style={{ textTransform: 'uppercase', letterSpacing: '1px' }}>{profile.gaming_platform || 'OPERATIVE'}</div>
-                        <div className="chip chip-gold">LVL {profile.level || 1}</div>
+                        <div className="chip" style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', background: 'var(--bg-input)', border: '1px solid var(--border-subtle)', borderRadius: '0' }}>{profile.gaming_platform || 'OPERATIVE'}</div>
+                        <div className="chip" style={{ fontSize: '10px', fontWeight: 800, background: 'var(--text-primary)', color: 'var(--bg-deep)', borderRadius: '0' }}>LVL_{profile.level || 1}</div>
                     </div>
 
                     {profile.bio && (
-                        <p style={{ margin: '16px 0 24px', color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.6 }}>
+                        <p style={{ margin: '16px 0 24px', color: 'var(--text-secondary)', fontSize: '13px', lineHeight: 1.6, textTransform: 'uppercase', letterSpacing: '0.3px' }}>
                             {profile.bio}
                         </p>
                     )}
 
                     {/* Stats Grid */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '32px' }}>
-                        <div style={{ background: 'var(--bg-input)', padding: '16px 8px', borderRadius: '12px', textAlign: 'center', border: '1px solid var(--border-subtle)' }}>
-                            <div style={{ color: 'var(--brand-electric)', marginBottom: '4px', display: 'flex', justifyContent: 'center' }}><Flame size={16} /></div>
-                            <div style={{ fontSize: '18px', fontWeight: 800, fontFamily: 'JetBrains Mono' }}>{Math.floor(profile.reputation || profile.influenceScore || 0)}</div>
-                            <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)' }}>REP</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1px', background: 'var(--border-subtle)', marginBottom: '32px', border: '1px solid var(--border-subtle)' }}>
+                        <div style={{ background: 'var(--bg-input)', padding: '16px 8px', textAlign: 'center' }}>
+                            <div style={{ color: 'var(--text-primary)', marginBottom: '4px', display: 'flex', justifyContent: 'center' }}><Shield size={14} /></div>
+                            <div style={{ fontSize: '16px', fontWeight: 800, fontFamily: 'JetBrains Mono' }}>{Math.floor(profile.reputation || profile.influenceScore || 0)}</div>
+                            <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>INF_SCR</div>
                         </div>
-                        <div style={{ background: 'var(--bg-input)', padding: '16px 8px', borderRadius: '12px', textAlign: 'center', border: '1px solid var(--border-subtle)' }}>
-                            <div style={{ color: 'var(--brand-electric)', marginBottom: '4px', display: 'flex', justifyContent: 'center' }}><MessageSquare size={16} /></div>
-                            <div style={{ fontSize: '18px', fontWeight: 800, fontFamily: 'JetBrains Mono' }}>{profile.post_count || 0}</div>
-                            <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)' }}>COMMS</div>
+                        <div style={{ background: 'var(--bg-input)', padding: '16px 8px', textAlign: 'center' }}>
+                            <div style={{ color: 'var(--text-primary)', marginBottom: '4px', display: 'flex', justifyContent: 'center' }}><MessageSquare size={14} /></div>
+                            <div style={{ fontSize: '16px', fontWeight: 800, fontFamily: 'JetBrains Mono' }}>{profile.post_count || 0}</div>
+                            <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>COMMS</div>
                         </div>
-                        <div style={{ background: 'var(--bg-input)', padding: '16px 8px', borderRadius: '12px', textAlign: 'center', border: '1px solid var(--border-subtle)' }}>
-                            <div style={{ color: 'var(--brand-electric)', marginBottom: '4px', display: 'flex', justifyContent: 'center' }}><Users size={16} /></div>
-                            <div style={{ fontSize: '18px', fontWeight: 800, fontFamily: 'JetBrains Mono' }}>{profile.squad_count || 0}</div>
-                            <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)' }}>CLANS</div>
+                        <div style={{ background: 'var(--bg-input)', padding: '16px 8px', textAlign: 'center' }}>
+                            <div style={{ color: 'var(--text-primary)', marginBottom: '4px', display: 'flex', justifyContent: 'center' }}><Users size={14} /></div>
+                            <div style={{ fontSize: '16px', fontWeight: 800, fontFamily: 'JetBrains Mono' }}>{profile.squad_count || 0}</div>
+                            <div style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>CLANS</div>
                         </div>
                     </div>
 
                     {/* Contact / Actions */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {(profile.whatsapp || profile.telegram) ? (
                             <div style={{ display: 'flex', gap: '8px' }}>
                                 {profile.whatsapp && (
-                                    <a href={`https://wa.me/${profile.whatsapp}`} target="_blank" className="btn btn-primary" style={{ flex: 1, height: '44px', gap: '8px', fontSize: '13px' }}>
-                                        <MessageCircle size={16} /> WHATSAPP
+                                    <a href={`https://wa.me/${profile.whatsapp}`} target="_blank" className="btn btn-primary" style={{ flex: 1, height: '40px', gap: '8px', fontSize: '11px', borderRadius: '0', background: 'var(--text-primary)', color: 'var(--bg-deep)', fontWeight: 800 }}>
+                                        WHATSAPP
                                     </a>
                                 )}
                                 {profile.telegram && (
-                                    <a href={`https://t.me/${profile.telegram}`} target="_blank" className="btn btn-ghost" style={{ flex: 1, height: '44px', gap: '8px', border: '1px solid #0088cc', fontSize: '13px' }}>
-                                        <Send size={16} /> TELEGRAM
+                                    <a href={`https://t.me/${profile.telegram}`} target="_blank" className="btn btn-ghost" style={{ flex: 1, height: '40px', gap: '8px', border: '1px solid var(--border-strong)', fontSize: '11px', borderRadius: '0', fontWeight: 800 }}>
+                                        TELEGRAM
                                     </a>
                                 )}
                             </div>
                         ) : (
-                            <button className="btn btn-ghost" style={{ width: '100%', height: '44px' }}>
-                                TRANSMIT MESSAGE <ExternalLink size={14} style={{ marginLeft: '8px' }} />
+                            <button className="btn btn-primary" style={{ width: '100%', height: '40px', borderRadius: '0', background: 'var(--text-primary)', color: 'var(--bg-deep)', fontSize: '11px', fontWeight: 800 }}>
+                                TRANSMIT_MESSAGE_SECURELY
                             </button>
                         )}
                     </div>
