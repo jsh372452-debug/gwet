@@ -3,9 +3,10 @@ import React from 'react';
 interface LogoProps {
     size?: number;
     className?: string;
+    style?: React.CSSProperties;
 }
 
-export const Logo: React.FC<LogoProps> = ({ size = 40, className = "" }) => {
+export const Logo: React.FC<LogoProps> = ({ size = 40, className = "", style = {} }) => {
     return (
         <div
             className={`logo-container ${className}`}
@@ -16,7 +17,8 @@ export const Logo: React.FC<LogoProps> = ({ size = 40, className = "" }) => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 position: 'relative',
-                transition: 'transform 0.3s ease'
+                transition: 'transform 0.3s ease',
+                ...style
             }}
         >
             <img 
