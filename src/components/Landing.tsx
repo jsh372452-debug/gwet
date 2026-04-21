@@ -63,7 +63,7 @@ export const Landing: React.FC<{ onLaunch: () => void }> = ({ onLaunch }) => {
                     <div className="hero-content">
                         <div className="chip chip-gold" style={{ marginBottom: '24px', background: 'rgba(251, 191, 36, 0.1)', color: 'var(--xp-gold)' }}>
                             <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--xp-gold)', marginRight: 8, boxShadow: '0 0 10px var(--xp-gold)' }} />
-                            JOIN 240,000+ GAMERS WORLDWIDE
+                            WELCOME TO GWET EARLY ACCESS
                         </div>
                         <h1 style={{ fontSize: 'clamp(2.5rem, 6vw, 4.5rem)', lineHeight: 1.1, marginBottom: '24px' }}>
                             Where Gamers<br/>
@@ -96,24 +96,7 @@ export const Landing: React.FC<{ onLaunch: () => void }> = ({ onLaunch }) => {
                 </div>
             </section>
 
-            {/* Stats Bar */}
-            <section style={{ 
-                background: 'var(--bg-surface)', padding: '32px 48px', 
-                borderTop: '1px solid var(--border-subtle)', borderBottom: '1px solid var(--border-subtle)',
-                display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '32px', textAlign: 'center'
-            }}>
-                {[
-                    { val: '240K+', label: 'Gamers' },
-                    { val: '12K', label: 'Active Clans' },
-                    { val: '4.8M', label: 'Messages/day' },
-                    { val: '99.9%', label: 'Uptime' }
-                ].map((s, i) => (
-                    <div key={i}>
-                        <div className="mono-font" style={{ fontSize: '32px', fontWeight: 800 }}>{s.val}</div>
-                        <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>{s.label}</div>
-                    </div>
-                ))}
-            </section>
+            {/* Stats Bar hidden for beta */}
 
             {/* Features section */}
             <section id="features" style={{ padding: '96px 48px', maxWidth: '1200px', margin: '0 auto' }}>
@@ -126,8 +109,8 @@ export const Landing: React.FC<{ onLaunch: () => void }> = ({ onLaunch }) => {
                         { icon: <Users />, title: 'Clan Management', desc: 'Build your squad, manage roles, and grow your community.' },
                         { icon: <Trophy />, title: 'Global Leaderboards', desc: 'Climb the ranks and earn exclusive badges for your profile.' },
                         { icon: <Play />, title: 'Stream Ready', desc: 'Broadcast your gameplay directly to your server with one click.' },
-                        { icon: <Shield />, title: 'Neural Security', desc: 'Built-in anti-cheat and moderation services for a toxic-free zone.' },
-                        { icon: <Globe />, title: 'Fast Global Nodes', desc: 'Powered by Cloudflare for sub-10ms response times everywhere.' }
+                        { icon: <Shield />, title: 'Community Safety', desc: 'Integrated moderation tools to keep your squad environment healthy.' },
+                        { icon: <Globe />, title: 'Global Connectivity', desc: 'Optimized network routing for low-ping performance across regions.' }
                     ].map((f, i) => (
                         <div key={i} className="card interactive" style={{ padding: '32px' }}>
                             <div style={{ 
@@ -143,40 +126,7 @@ export const Landing: React.FC<{ onLaunch: () => void }> = ({ onLaunch }) => {
                 </div>
             </section>
 
-            {/* Testimonials */}
-            <section style={{ padding: '96px 48px', background: 'rgba(19, 26, 46, 0.4)' }}>
-                <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-                    <div style={{ textAlign: 'center', marginBottom: '56px' }}>
-                        <h2 style={{ fontSize: '44px', fontWeight: 800 }}>Trusted by <span className="gradient-text">gamers worldwide</span></h2>
-                        <p style={{ color: 'var(--text-secondary)', display: 'block', marginTop: '12px' }}>From pro streamers to casual squads — Gwet is the storm's center.</p>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
-                        {[
-                            { name: "Sara 'Vortex' K.", role: "Valorant Streamer · 120K followers", quote: "Finally a platform that gets it. The voice quality is insane and finding my squad takes literally seconds.", games: ['VALORANT', 'CS2'] },
-                            { name: "Marcus 'Riot' D.", role: "Clan Leader · [STORM]", quote: "My clan grew from 5 to 200 members in a month. The clan tools on Gwet are unmatched.", games: ['APEX', 'FORTNITE'] },
-                            { name: "Yuki 'Nova' T.", role: "Pro Player · LoL EU Masters", quote: "Switched from Discord and never looked back. Gwet's tournament system is a game changer.", games: ['LEAGUE', 'DOTA 2'] }
-                        ].map((t, i) => (
-                            <div key={i} className="card" style={{ padding: '28px' }}>
-                                <div style={{ display: 'flex', gap: '4px', color: 'var(--xp-gold)', marginBottom: '14px' }}>
-                                    {[1,2,3,4,5].map(s => <Star key={s} size={14} fill="var(--xp-gold)" />)}
-                                </div>
-                                <p style={{ fontSize: '15px', lineHeight: 1.7, marginBottom: '20px', color: 'var(--text-primary)' }}>"{t.quote}"</p>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', borderTop: '1px solid var(--border-subtle)', paddingTop: '16px' }}>
-                                    <div className="avatar" style={{ width: '40px', height: '40px' }}>{t.name[0]}</div>
-                                    <div>
-                                        <div style={{ fontWeight: 700, fontSize: '14px' }}>{t.name}</div>
-                                        <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{t.role}</div>
-                                    </div>
-                                </div>
-                                <div style={{ display: 'flex', gap: '6px', marginTop: '14px' }}>
-                                    {t.games.map(g => <span key={g} className="chip chip-info" style={{ fontSize: '10px' }}>{g}</span>)}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </section>
+            {/* Testimonials hidden for beta */}
 
             {/* Footer */}
             <footer style={{ padding: '80px 48px', borderTop: '1px solid var(--border-subtle)', background: 'var(--bg-deep)' }}>
