@@ -87,69 +87,71 @@ function App() {
 
   if (loading) {
     return (
-    <div className="glow-mesh" />
-    <div className="scan-line" />
-    <div style={{ 
-        display: 'flex', justifyContent: 'center', alignItems: 'center', 
-        height: '100vh', background: 'var(--bg-deep)', 
-        fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' 
-    }}>
-        <div style={{ textAlign: 'center', width: '320px', position: 'relative' }}>
-          {!initTimeout ? (
-            <div className="animate-fade-in">
-              <div style={{ marginBottom: '40px', position: 'relative', display: 'inline-block' }}>
-                <div style={{ 
-                    width: '80px', height: '80px', border: '2px solid var(--border-subtle)', 
-                    borderTopColor: 'var(--brand-electric)', borderRadius: '50%',
-                    animation: 'spin 1s linear infinite', boxShadow: '0 0 20px var(--brand-glow)'
-                }} />
-                <div style={{ 
-                    position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center'
-                }}>
-                    <Logo size={32} />
+      <>
+        <div className="glow-mesh" />
+        <div className="scan-line" />
+        <div style={{ 
+            display: 'flex', justifyContent: 'center', alignItems: 'center', 
+            height: '100vh', background: 'var(--bg-deep)', 
+            fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' 
+        }}>
+            <div style={{ textAlign: 'center', width: '320px', position: 'relative' }}>
+            {!initTimeout ? (
+                <div className="animate-fade-in">
+                <div style={{ marginBottom: '40px', position: 'relative', display: 'inline-block' }}>
+                    <div style={{ 
+                        width: '80px', height: '80px', border: '2px solid var(--border-subtle)', 
+                        borderTopColor: 'var(--brand-electric)', borderRadius: '50%',
+                        animation: 'spin 1s linear infinite', boxShadow: '0 0 20px var(--brand-glow)'
+                    }} />
+                    <div style={{ 
+                        position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center'
+                    }}>
+                        <Logo size={32} />
+                    </div>
                 </div>
-              </div>
-              <div style={{ fontSize: '12px', fontWeight: 900, letterSpacing: '6px', textTransform: 'uppercase', marginBottom: '8px', color: 'var(--brand-electric)' }}>
-                {initStage}
-              </div>
-              <div style={{ fontSize: '10px', color: 'var(--text-muted)', letterSpacing: '2px', marginBottom: '24px' }}>
-                SYSTEM_STABILIZATION_IN_PROGRESS
-              </div>
-              <div style={{ height: '1px', width: '100%', background: 'var(--border-subtle)', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ 
-                    position: 'absolute', height: '100%', width: '40%', 
-                    background: 'var(--brand-electric)', boxShadow: '0 0 10px var(--brand-electric)',
-                    animation: 'scan 2s infinite ease-in-out' 
-                }} />
-              </div>
+                <div style={{ fontSize: '12px', fontWeight: 900, letterSpacing: '6px', textTransform: 'uppercase', marginBottom: '8px', color: 'var(--brand-electric)' }}>
+                    {initStage}
+                </div>
+                <div style={{ fontSize: '10px', color: 'var(--text-muted)', letterSpacing: '2px', marginBottom: '24px' }}>
+                    SYSTEM_STABILIZATION_IN_PROGRESS
+                </div>
+                <div style={{ height: '1px', width: '100%', background: 'var(--border-subtle)', position: 'relative', overflow: 'hidden' }}>
+                    <div style={{ 
+                        position: 'absolute', height: '100%', width: '40%', 
+                        background: 'var(--brand-electric)', boxShadow: '0 0 10px var(--brand-electric)',
+                        animation: 'scan 2s infinite ease-in-out' 
+                    }} />
+                </div>
+                </div>
+            ) : (
+                <div className="card" style={{ padding: '32px', background: 'var(--bg-elevated)', borderRadius: '0' }}>
+                <div style={{ color: 'var(--brand-orange)', fontSize: '14px', fontWeight: 900, marginBottom: '12px', letterSpacing: '2px' }}>LINK_TIMEOUT</div>
+                <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '32px', lineHeight: '1.6' }}>
+                    CRITICAL: The neural link failed to stabilize within the safety window. Manual reboot required.
+                </p>
+                <button 
+                    className="btn btn-primary" 
+                    onClick={() => window.location.reload()}
+                    style={{ width: '100%' }}
+                >
+                    REBOOT_SYSTEM_NODE
+                </button>
+                </div>
+            )}
             </div>
-          ) : (
-            <div className="card" style={{ padding: '32px', background: 'var(--bg-elevated)', borderRadius: '0' }}>
-              <div style={{ color: 'var(--brand-orange)', fontSize: '14px', fontWeight: 900, marginBottom: '12px', letterSpacing: '2px' }}>LINK_TIMEOUT</div>
-              <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '32px', lineHeight: '1.6' }}>
-                CRITICAL: The neural link failed to stabilize within the safety window. Manual reboot required.
-              </p>
-              <button 
-                className="btn btn-primary" 
-                onClick={() => window.location.reload()}
-                style={{ width: '100%' }}
-              >
-                REBOOT_SYSTEM_NODE
-              </button>
-            </div>
-          )}
+            <style>{`
+                @keyframes spin { to { transform: rotate(360deg); } }
+                @keyframes scan {
+                    0% { left: -40%; }
+                    100% { left: 100%; }
+                }
+                .animate-fade-in { animation: fadeIn 0.5s ease-out; }
+                @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+            `}</style>
         </div>
-        <style>{`
-            @keyframes spin { to { transform: rotate(360deg); } }
-            @keyframes scan {
-                0% { left: -40%; }
-                100% { left: 100%; }
-            }
-            .animate-fade-in { animation: fadeIn 0.5s ease-out; }
-            @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        `}</style>
-      </div>
+      </>
     );
   }
 
