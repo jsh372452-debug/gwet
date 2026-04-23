@@ -1,167 +1,166 @@
 import React, { useEffect, useState } from 'react';
-import { Zap, Shield, Trophy, Users, MessageSquare, Play, Globe, Star, ArrowRight } from 'lucide-react';
+import { Zap, Shield, Trophy, Users, MessageSquare, Play, Globe, Star, ArrowRight, ChevronRight, Activity, Terminal } from 'lucide-react';
 import { Logo } from './Logo';
 
 export const Landing: React.FC<{ onLaunch: () => void }> = ({ onLaunch }) => {
     const [scrolled, setScrolled] = useState(false);
 
     useEffect(() => {
-        const handleScroll = () => setScrolled(window.scrollY > 80);
+        const handleScroll = () => setScrolled(window.scrollY > 50);
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
     return (
-        <div className="landing-page" style={{ background: 'var(--bg-deep)', color: 'var(--text-primary)' }}>
-            {/* Navbar */}
-            <nav className={`glass-panel`} style={{ 
+        <div className="landing-page" style={{ background: 'var(--bg-deep)', color: 'var(--text-primary)', position: 'relative', overflow: 'hidden' }}>
+            <div className="glow-mesh" />
+            <div className="scan-line" />
+
+            {/* Premium Header */}
+            <nav style={{ 
                 position: 'fixed', top: 0, width: '100%', zIndex: 1000,
-                padding: '16px 48px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                padding: scrolled ? '12px 48px' : '24px 48px', 
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 background: scrolled ? 'var(--bg-surface)' : 'transparent',
-                borderBottom: scrolled ? '1px solid var(--border-subtle)' : 'none',
-                transition: 'all 0.3s ease'
+                backdropFilter: scrolled ? 'var(--glass-blur)' : 'none',
+                borderBottom: scrolled ? 'var(--glass-border)' : 'none',
+                transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <Logo size={32} />
-                    <span style={{ fontFamily: 'Space Grotesk', fontWeight: 800, fontSize: '20px', letterSpacing: '-0.5px' }}>Gwet</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}>
+                    <Logo size={scrolled ? 28 : 36} />
+                    <span style={{ 
+                        fontFamily: 'var(--font-sans)', fontWeight: 900, 
+                        fontSize: scrolled ? '18px' : '22px', letterSpacing: '2px',
+                        textTransform: 'uppercase'
+                    }}>GWET</span>
                 </div>
                 
-                <div className="hide-mobile" style={{ display: 'flex', gap: '32px', fontSize: '14px', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                    <a href="#features" style={{ color: 'inherit', textDecoration: 'none' }}>Features</a>
-                    <a href="#community" style={{ color: 'inherit', textDecoration: 'none' }}>Community</a>
-                    <a href="#events" style={{ color: 'inherit', textDecoration: 'none' }}>Events</a>
-                    <a href="#pricing" style={{ color: 'inherit', textDecoration: 'none' }}>Pricing</a>
+                <div className="hide-mobile" style={{ display: 'flex', gap: '40px', fontSize: '11px', fontWeight: 900, letterSpacing: '2px', textTransform: 'uppercase' }}>
+                    {['Tactics', 'Network', 'Leaderboard', 'HQ'].map(item => (
+                        <a key={item} href={`#${item.toLowerCase()}`} style={{ color: 'var(--text-secondary)', textDecoration: 'none', transition: 'color 0.2s' }}>{item}</a>
+                    ))}
                 </div>
 
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    <button className="btn btn-ghost hide-mobile" onClick={onLaunch}>Sign In</button>
-                    <button className="btn btn-primary" onClick={onLaunch} style={{ background: 'var(--text-primary)', color: 'var(--bg-deep)' }}>
-                        Initialize <ArrowRight size={16} />
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                    <button className="btn btn-ghost hide-mobile" onClick={onLaunch} style={{ border: 'none' }}>LOG_IN</button>
+                    <button className="btn btn-primary" onClick={onLaunch} style={{ height: '40px', padding: '0 24px', borderRadius: '0' }}>
+                        INITIALIZE <ChevronRight size={16} />
                     </button>
                 </div>
             </nav>
 
             {/* Hero Section */}
             <section style={{ 
-                minHeight: '92vh', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: '0 48px', overflow: 'hidden'
+                minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '0 48px', position: 'relative'
             }}>
-                {/* Background effects */}
-                <div style={{ 
-                    position: 'absolute', inset: 0, 
-                    backgroundImage: 'linear-gradient(var(--border-subtle) 1px, transparent 1px), linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px)',
-                    backgroundSize: '80px 80px', maskImage: 'radial-gradient(circle, black, transparent 85%)',
-                    opacity: 0.15, zIndex: 1
-                }} />
-
-                <div style={{ maxWidth: '1200px', width: '100%', display: 'grid', gridTemplateColumns: '1fr 400px', gap: '64px', alignItems: 'center', position: 'relative', zIndex: 2 }}>
-                    <div className="hero-content">
-                        <div className="chip" style={{ marginBottom: '24px', letterSpacing: '1px' }}>
-                            <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--text-primary)', marginRight: 8 }} />
-                            SYSTEM V1.0 ACTIVE
+                <div style={{ maxWidth: '1400px', width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '80px', alignItems: 'center' }}>
+                    <div className="hero-content" style={{ animation: 'fadeInUp 0.8s ease-out' }}>
+                        <div className="chip" style={{ marginBottom: '32px', color: 'var(--brand-electric)', background: 'var(--brand-glow)', border: '1px solid var(--border-active)' }}>
+                           <Activity size={12} style={{ marginRight: '8px' }} /> LIVE_SYSTEM_V1.1_ACTIVE
                         </div>
-                        <h1 style={{ fontSize: 'clamp(2.5rem, 6vw, 4.5rem)', lineHeight: 1.1, marginBottom: '24px', letterSpacing: '-1px' }}>
-                            Secure Protocol.<br/>
-                            <span>Digital Identity Matrix.</span>
-                        </h1>
-                        <p style={{ fontSize: '1.15rem', color: 'var(--text-secondary)', maxWidth: '560px', marginBottom: '32px' }}>
-                            Establish your credentials, synchronize with the global network, and secure your digital perimeter. Engineered for precision.
-                        </p>
-                        <div style={{ display: 'flex', gap: '16px' }}>
-                            <button className="btn btn-primary" style={{ padding: '16px 28px', fontSize: '16px', background: 'var(--text-primary)', color: 'var(--bg-deep)' }} onClick={onLaunch}>
-                                Enter System <ArrowRight size={18} />
-                            </button>
-                            <button className="btn btn-ghost" style={{ padding: '16px 28px', fontSize: '16px' }}>
-                                View Documentation
-                            </button>
-                        </div>
-                        <p style={{ marginTop: '20px', fontSize: '13px', color: 'var(--text-muted)' }}>
-                            End-to-end encrypted · Node decentralized
-                        </p>
-                    </div>
-
-                    <div className="hide-mobile" style={{ textAlign: 'center' }}>
-                        <div style={{ 
-                            animation: 'float 4s ease-in-out infinite',
-                            filter: 'drop-shadow(0 0 40px rgba(59, 130, 246, 0.3))'
+                        <h1 style={{ 
+                            fontSize: 'clamp(3rem, 8vw, 6rem)', lineHeight: 0.9, 
+                            fontWeight: 900, marginBottom: '32px', letterSpacing: '-2px',
+                            textTransform: 'uppercase'
                         }}>
-                             <Logo size={280} />
+                            Dominate the <span className="text-gradient">Registry.</span>
+                        </h1>
+                        <p style={{ fontSize: '1.25rem', color: 'var(--text-secondary)', maxWidth: '580px', marginBottom: '48px', lineHeight: 1.6 }}>
+                            The next generation of tactical coordination. Secure your squad, track global influence, and execute operations with zero latency.
+                        </p>
+                        <div style={{ display: 'flex', gap: '20px' }}>
+                            <button className="btn btn-primary" style={{ height: '56px', padding: '0 40px', fontSize: '14px' }} onClick={onLaunch}>
+                                ENTER_VAULT <Terminal size={18} style={{ marginLeft: '12px' }} />
+                            </button>
+                            <button className="btn btn-ghost" style={{ height: '56px', padding: '0 32px' }}>
+                                CORE_INTEL
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="hero-visual hide-mobile" style={{ position: 'relative' }}>
+                        <div style={{ 
+                            width: '500px', height: '500px', 
+                            background: 'radial-gradient(circle, var(--brand-glow) 0%, transparent 70%)',
+                            position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+                            zIndex: -1
+                        }} />
+                        <div style={{ animation: 'float 6s ease-in-out infinite', filter: 'drop-shadow(0 0 50px var(--brand-glow))' }}>
+                            <Logo size={450} />
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* Stats Bar hidden for beta */}
-
-            {/* Features section */}
-            <section id="features" style={{ padding: '96px 48px', maxWidth: '1200px', margin: '0 auto' }}>
-                <h2 style={{ fontSize: '44px', fontWeight: 800, textAlign: 'center', marginBottom: '56px' }}>
-                    Why <span className="gradient-text">Gwet</span>
-                </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }}>
-                    {[
-                        { icon: <Zap />, title: 'Crystal-clear voice', desc: 'Low-latency voice channels for competitive tactical comms.' },
-                        { icon: <Users />, title: 'Clan Management', desc: 'Build your squad, manage roles, and grow your community.' },
-                        { icon: <Trophy />, title: 'Global Leaderboards', desc: 'Climb the ranks and earn exclusive badges for your profile.' },
-                        { icon: <Play />, title: 'Stream Ready', desc: 'Broadcast your gameplay directly to your server with one click.' },
-                        { icon: <Shield />, title: 'Community Safety', desc: 'Integrated moderation tools to keep your squad environment healthy.' },
-                        { icon: <Globe />, title: 'Global Connectivity', desc: 'Optimized network routing for low-ping performance across regions.' }
-                    ].map((f, i) => (
-                        <div key={i} className="card interactive" style={{ padding: '32px' }}>
-                            <div style={{ 
-                                width: '48px', height: '48px', borderRadius: '12px', background: 'var(--gradient-bolt)', 
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', marginBottom: '20px'
-                            }}>
-                                {f.icon}
+            {/* Feature Grid */}
+            <section id="tactics" style={{ padding: '120px 48px', position: 'relative' }}>
+                <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+                    <div style={{ textAlign: 'center', marginBottom: '80px' }}>
+                        <h2 style={{ fontSize: '12px', fontWeight: 900, letterSpacing: '6px', color: 'var(--brand-electric)', marginBottom: '16px' }}>SYSTEM_CAPABILITIES</h2>
+                        <h3 style={{ fontSize: '48px', fontWeight: 900, textTransform: 'uppercase' }}>Tactical Infrastructure</h3>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '32px' }}>
+                        {[
+                            { icon: <Zap />, title: 'NEURAL_LINK', desc: 'Zero-latency synchronization for mission-critical squad updates.' },
+                            { icon: <Shield />, title: 'ENCRYPTED_COMMS', desc: 'Secure, private communication channels with multi-layered protection.' },
+                            { icon: <Trophy />, title: 'GLOBAL_INFLUENCE', desc: 'Real-time leaderboard tracking and tier-based reputation system.' },
+                            { icon: <Users />, title: 'SQUAD_ENGINE', desc: 'Advanced clan management with granular role and permission control.' },
+                            { icon: <Activity />, title: 'LIVE_ANALYTICS', desc: 'Monitor engagement metrics and node activity across all sectors.' },
+                            { icon: <Globe />, title: 'REGIONAL_NODES', desc: 'High-performance routing for seamless connectivity worldwide.' }
+                        ].map((f, i) => (
+                            <div key={i} className="card" style={{ padding: '40px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                                <div style={{ 
+                                    width: '56px', height: '56px', background: 'var(--bg-input)', 
+                                    border: '1px solid var(--border-subtle)', display: 'flex', 
+                                    alignItems: 'center', justifyContent: 'center', color: 'var(--brand-electric)'
+                                }}>
+                                    {f.icon}
+                                </div>
+                                <div>
+                                    <h4 style={{ fontSize: '18px', fontWeight: 900, marginBottom: '12px', letterSpacing: '1px' }}>{f.title}</h4>
+                                    <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.6 }}>{f.desc}</p>
+                                </div>
                             </div>
-                            <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '12px' }}>{f.title}</h3>
-                            <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>{f.desc}</p>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
             </section>
-
-            {/* Testimonials hidden for beta */}
 
             {/* Footer */}
-            <footer style={{ padding: '80px 48px', borderTop: '1px solid var(--border-subtle)', background: 'var(--bg-deep)' }}>
-                <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '48px' }}>
+            <footer style={{ padding: '100px 48px', borderTop: '1px solid var(--border-subtle)', background: 'var(--bg-surface)' }}>
+                <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '80px' }}>
                     <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                           <Logo size={24} />
-                           <span style={{ fontFamily: 'Space Grotesk', fontWeight: 800, fontSize: '18px' }}>Gwet</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
+                           <Logo size={32} />
+                           <span style={{ fontWeight: 900, fontSize: '20px', letterSpacing: '2px' }}>GWET</span>
                         </div>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Where Gamers Connect, Compete & Conquer.</p>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '14px', maxWidth: '300px', lineHeight: 1.6 }}>
+                            Engineered for high-stakes coordination and decentralized community growth.
+                        </p>
                     </div>
-                    {[
-                        { t: 'Product', l: ['Features', 'Download', 'Status', 'Changelog'] },
-                        { t: 'Community', l: ['Clans', 'Events', 'Streamers', 'Blog'] },
-                        { t: 'Company', l: ['About', 'Careers', 'Press', 'Contact'] }
-                    ].map(c => (
-                        <div key={c.t}>
-                            <h4 style={{ fontSize: '14px', fontWeight: 700, marginBottom: '20px', textTransform: 'uppercase', letterSpacing: '1px' }}>{c.t}</h4>
-                            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                {c.l.map(li => <li key={li} style={{ color: 'var(--text-muted)', fontSize: '14px', cursor: 'pointer' }}>{li}</li>)}
-                            </ul>
+                    {['Registry', 'Network', 'Legal'].map(cat => (
+                        <div key={cat}>
+                            <h5 style={{ fontSize: '11px', fontWeight: 900, letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '24px', color: 'var(--text-muted)' }}>{cat}</h5>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                {['Protocol', 'Sectors', 'Nodes', 'Intel'].map(item => (
+                                    <a key={item} href="#" style={{ color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '13px' }}>{item}</a>
+                                ))}
+                            </div>
                         </div>
                     ))}
-                </div>
-                <div style={{ maxWidth: '1200px', margin: '48px auto 0', paddingTop: '32px', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', color: 'var(--text-muted)', fontSize: '13px' }}>
-                    <div>© 2026 Gwet · Privacy · Terms · Cookies</div>
-                    <div>English ▾</div>
                 </div>
             </footer>
 
             <style>{`
-                @keyframes float {
-                    0%, 100% { transform: translateY(0); }
-                    50% { transform: translateY(-15px); }
+                @keyframes fadeInUp {
+                    from { opacity: 0; transform: translateY(30px); }
+                    to { opacity: 1; transform: translateY(0); }
                 }
-                .hero-content h1 .gradient-text {
-                    background: var(--gradient-bolt);
-                    -webkit-background-clip: text;
-                    background-clip: text;
-                    color: transparent;
+                @keyframes float {
+                    0%, 100% { transform: translateY(0) scale(1); }
+                    50% { transform: translateY(-20px) scale(1.02); }
                 }
             `}</style>
         </div>
