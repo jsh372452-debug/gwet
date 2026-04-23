@@ -25,17 +25,12 @@ export const Feed: React.FC = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
-        if (!content.trim()) return;
-        if (!user || posting) return;
-
+        if (!content.trim() || !user || posting) return;
         setPosting(true);
         try {
             await addPost(content, tag, mediaUrl);
             setContent('');
             setMediaUrl('');
-        } catch (err: any) {
-            console.error('Publish error:', err);
         } finally {
             setPosting(false);
         }
@@ -58,197 +53,180 @@ export const Feed: React.FC = () => {
 
     const handleLikeToggle = async (postId: string, userLiked: boolean) => {
         if (interacting) return;
-        if (userLiked) {
-            await unlikePost(postId);
-        } else {
-            await likePost(postId);
-        }
+        userLiked ? await unlikePost(postId) : await likePost(postId);
     };
 
     const getTier = (influence: number) => {
         if (influence > 5000) return 'MYTHIC';
         if (influence > 2500) return 'LEGEND';
         if (influence > 1000) return 'DIAMOND';
-        if (influence > 500) return 'PLATINUM';
-        if (influence > 250) return 'GOLD';
-        if (influence > 100) return 'SILVER';
         return 'BRONZE';
     };
 
     const filteredPosts = posts.filter(p =>
         (p.content?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-        (p.ownerName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-        (p.gameTag?.toLowerCase() || '').includes(searchQuery.toLowerCase())
+        (p.ownerName?.toLowerCase() || '').includes(searchQuery.toLowerCase())
     );
 
     return (
-        <div style={{ padding: '24px', maxWidth: '800px', margin: '0 auto', direction: isRTL ? 'rtl' : 'ltr' }}>
+        <div style={{ padding: '32px', maxWidth: '800px', margin: '0 auto', fontFamily: 'JetBrains Mono, monospace' }}>
             
-            {/* Feed Type Switcher */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '24px' }}>
+            {/* Feed Selection */}
+            <div style={{ display: 'flex', gap: '1px', background: 'var(--border-subtle)', marginBottom: '32px', border: '1px solid var(--border-subtle)' }}>
                 <button 
                     onClick={() => setFeedType('smart')}
-                    className={`btn ${feedType === 'smart' ? 'btn-primary' : 'btn-ghost'}`}
-                    style={{ flex: 1, height: '40px' }}
+                    style={{ 
+                        flex: 1, height: '44px', background: feedType === 'smart' ? 'var(--text-primary)' : 'var(--bg-surface)',
+                        color: feedType === 'smart' ? 'var(--bg-deep)' : 'var(--text-secondary)',
+                        border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 800, letterSpacing: '1px'
+                    }}
                 >
-                    <Zap size={16} fill={feedType === 'smart' ? 'white' : 'none'} /> {t('latest')}
+                    [ INTEL_STREAM ]
                 </button>
                 <button 
                     onClick={() => setFeedType('following')}
-                    className={`btn ${feedType === 'following' ? 'btn-primary' : 'btn-ghost'}`}
-                    style={{ flex: 1, height: '40px' }}
+                    style={{ 
+                        flex: 1, height: '44px', background: feedType === 'following' ? 'var(--text-primary)' : 'var(--bg-surface)',
+                        color: feedType === 'following' ? 'var(--bg-deep)' : 'var(--text-secondary)',
+                        border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: 800, letterSpacing: '1px'
+                    }}
                 >
-                    <Users size={16} fill={feedType === 'following' ? 'white' : 'none'} /> {t('joined')}
+                    [ SQUAD_ACTIVITY ]
                 </button>
             </div>
 
-            {/* Compose Area */}
-            <div className="card" style={{ padding: '20px', marginBottom: '32px', borderLeft: '1px solid var(--text-primary)' }}>
+            {/* Terminal Input */}
+            <div className="card" style={{ padding: '24px', marginBottom: '40px', borderLeft: '4px solid var(--text-primary)' }}>
                 <form onSubmit={handleSubmit}>
-                    <div style={{ display: 'flex', gap: '16px', marginBottom: '16px' }}>
-                        <div className="avatar" style={{ width: '48px', height: '48px', flexShrink: 0, borderRadius: '0' }}>
-                            {user?.avatarUrl ? <img src={user.avatarUrl} /> : (user?.displayName?.[0] || 'G').toUpperCase()}
+                    <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
+                        <div style={{ width: '40px', height: '40px', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', flexShrink: 0 }}>
+                            <img src={user?.avatarUrl || `https://api.dicebear.com/7.x/identicon/svg?seed=${user?.username}`} style={{ width: '100%', height: '100%' }} />
                         </div>
                         <textarea 
                             className="input" 
-                            placeholder={t('share')} 
+                            placeholder="ENCRYPT_MESSAGE_FOR_BROADCAST..." 
                             value={content} 
                             onChange={(e) => setContent(e.target.value)}
-                            style={{ minHeight: '100px', padding: '12px', resize: 'none', background: 'var(--bg-input)', borderRadius: '0' }}
+                            style={{ minHeight: '80px', padding: '12px', resize: 'none', background: 'var(--bg-input)', fontSize: '13px' }}
                         />
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            <select 
-                                className="input" 
-                                value={tag} 
-                                onChange={e => setTag(e.target.value)} 
-                                style={{ width: 'auto', height: '36px', fontSize: '11px', fontWeight: 700, padding: '0 12px', borderRadius: '0', textTransform: 'uppercase' }}
-                            >
-                                <option value="Global">Global</option>
-                                <option value="Valorant">Valorant</option>
-                                <option value="LoL">League of Legends</option>
-                                <option value="CS2">CS2</option>
-                            </select>
-                            <button type="button" className="btn btn-ghost btn-icon" style={{ width: '36px', height: '36px', borderRadius: '0' }}>
-                                <ImageIcon size={18} />
-                            </button>
-                        </div>
-                        <button type="submit" className="btn btn-primary" style={{ height: '36px', padding: '0 24px', background: 'var(--text-primary)', color: 'var(--bg-deep)', borderRadius: '0' }} disabled={!content.trim() || posting}>
-                            {posting ? <Loader size={16} className="spinner" /> : 'TRANSMIT'}
+                        <select 
+                            className="input" 
+                            value={tag} 
+                            onChange={e => setTag(e.target.value)} 
+                            style={{ width: 'auto', height: '36px', fontSize: '10px', fontWeight: 800, padding: '0 12px', textTransform: 'uppercase' }}
+                        >
+                            <option value="Global">GLOBAL_NET</option>
+                            <option value="Competitive">COMPETITIVE</option>
+                            <option value="Casual">CASUAL</option>
+                        </select>
+                        <button type="submit" className="btn" style={{ height: '36px', padding: '0 32px', background: 'var(--text-primary)', color: 'var(--bg-deep)', fontWeight: 900, fontSize: '11px', letterSpacing: '2px' }} disabled={!content.trim() || posting}>
+                            {posting ? 'SYNCHING...' : 'TRANSMIT_SIGNAL'}
                         </button>
                     </div>
                 </form>
             </div>
 
-            {/* Posts List */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Data Blocks */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                 {loading && posts.length === 0 && (
-                    <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
-                        <Loader size={32} className="spinner" />
-                        <p style={{ marginTop: '16px', fontWeight: 800, fontSize: '10px', letterSpacing: '2px' }}>SYNCHRONIZING_STORM_FEED...</p>
+                    <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)' }}>
+                        <Loader size={24} className="spinner" />
+                        <div style={{ marginTop: '20px', fontSize: '10px', fontWeight: 800, letterSpacing: '2px' }}>DECRYPTING_FEED_DATA...</div>
                     </div>
                 )}
 
                 {filteredPosts.map(post => (
-                    <div key={post.id} className="card interactive" style={{ padding: '24px', borderRadius: '0' }}>
-                        <div style={{ display: 'flex', gap: '16px' }}>
+                    <div key={post.id} className="card" style={{ padding: '24px', border: '1px solid var(--border-subtle)' }}>
+                        <div style={{ display: 'flex', gap: '20px' }}>
                             <div 
-                                className="avatar" 
-                                style={{ width: '44px', height: '44px', cursor: 'pointer', flexShrink: 0, borderRadius: '0' }}
+                                style={{ width: '48px', height: '48px', cursor: 'pointer', flexShrink: 0, background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)' }}
                                 onClick={() => setSelectedUserId(post.ownerId)}
                             >
-                                {post.ownerAvatar ? <img src={post.ownerAvatar} /> : post.ownerName?.charAt(0).toUpperCase()}
+                                <img src={post.ownerAvatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${post.ownerName}`} style={{ width: '100%', height: '100%' }} />
                             </div>
                             <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <span 
-                                                style={{ fontWeight: 800, cursor: 'pointer', fontSize: '14px', letterSpacing: '0.5px' }} 
-                                                onClick={() => setSelectedUserId(post.ownerId)}
-                                            >
-                                                {post.ownerName || 'ANON'}
-                                            </span>
-                                            <TierBadge tier={getTier(post.ownerInfluence)} size={16} />
+                                            <span style={{ fontWeight: 900, fontSize: '13px', letterSpacing: '1px' }}>{post.ownerName?.toUpperCase()}</span>
+                                            <TierBadge tier={getTier(post.ownerInfluence)} size={14} />
                                         </div>
-                                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                                            {new Date(post.createdAt).toLocaleDateString()} · {post.gameTag}
+                                        <div style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '4px', letterSpacing: '1px' }}>
+                                            {new Date(post.createdAt).toLocaleTimeString()} // SECTOR_{post.gameTag?.toUpperCase()}
                                         </div>
                                     </div>
-                                    <div className="chip" style={{ fontSize: '10px', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
-                                        LVL {Math.floor(post.ownerInfluence / 100) + 1}
+                                    <div style={{ fontSize: '9px', fontWeight: 800, padding: '4px 8px', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
+                                        LVL_{Math.floor(post.ownerInfluence / 100) + 1}
                                     </div>
                                 </div>
-                                <div style={{ marginTop: '16px', fontSize: '14px', lineHeight: 1.6, wordBreak: 'break-word', color: 'var(--text-primary)' }}>
+                                <div style={{ marginTop: '16px', fontSize: '14px', lineHeight: 1.6, color: 'var(--text-primary)' }}>
                                     {post.content}
                                 </div>
-                                {post.mediaUrl && (
-                                    <div style={{ marginTop: '16px', borderRadius: '0', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
-                                        <img src={post.mediaUrl} style={{ width: '100%', display: 'block' }} />
-                                    </div>
-                                )}
-
-                                {/* Actions */}
-                                <div style={{ display: 'flex', gap: '16px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid var(--border-subtle)' }}>
+                                
+                                {/* Data Actions */}
+                                <div style={{ display: 'flex', gap: '24px', marginTop: '24px', paddingTop: '16px', borderTop: '1px solid var(--border-subtle)' }}>
                                     <button 
-                                        className="btn btn-ghost" 
                                         onClick={() => handleLikeToggle(post.id, post.userLiked)}
-                                        style={{ height: '32px', color: post.userLiked ? 'var(--text-primary)' : 'var(--text-muted)', border: 'none', background: 'transparent', padding: '0 8px' }}
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: post.userLiked ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '11px', fontWeight: 800 }}
                                     >
-                                        <Flame size={14} fill={post.userLiked ? 'var(--text-primary)' : 'none'} /> {post.likeCount || 0}
+                                        <Zap size={14} fill={post.userLiked ? 'var(--text-primary)' : 'none'} /> {post.likeCount || 0}
                                     </button>
                                     <button 
-                                        className="btn btn-ghost" 
                                         onClick={() => handleToggleComments(post.id)}
-                                        style={{ height: '32px', color: 'var(--text-muted)', border: 'none', background: 'transparent', padding: '0 8px' }}
+                                        style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '11px', fontWeight: 800 }}
                                     >
                                         <MessageSquare size={14} /> {post.replyCount || 0}
                                     </button>
-                                    <button className="btn btn-ghost" style={{ height: '32px', color: 'var(--text-muted)', border: 'none', background: 'transparent', padding: '0 8px' }}>
+                                    <button style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)', fontSize: '11px', fontWeight: 800 }}>
                                         <Share2 size={14} />
                                     </button>
                                 </div>
+
+                                {/* Thread Expansion */}
+                                {expandedPost === post.id && (
+                                    <div style={{ marginTop: '20px', padding: '20px', background: 'var(--bg-input)', borderLeft: '2px solid var(--border-subtle)' }}>
+                                        <div style={{ display: 'flex', gap: '12px', marginBottom: '20px' }}>
+                                            <input 
+                                                className="input" 
+                                                placeholder="SECURE_REPLY..."
+                                                value={commentText} 
+                                                onChange={e => setCommentText(e.target.value)}
+                                                onKeyDown={e => { if (e.key === 'Enter') handleCommentSubmit(post.id); }}
+                                                style={{ height: '36px', fontSize: '12px' }}
+                                            />
+                                            <button onClick={() => handleCommentSubmit(post.id)} style={{ height: '36px', padding: '0 16px', background: 'var(--text-primary)', color: 'var(--bg-deep)', border: 'none', fontWeight: 900 }}>
+                                                <Send size={14} />
+                                            </button>
+                                        </div>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                            {(comments[post.id] || []).map(c => (
+                                                <div key={c.id} style={{ display: 'flex', gap: '12px' }}>
+                                                    <div style={{ width: '24px', height: '24px', background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', flexShrink: 0 }}>
+                                                        <img src={c.ownerAvatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${c.ownerName}`} style={{ width: '100%', height: '100%' }} />
+                                                    </div>
+                                                    <div>
+                                                        <div style={{ fontSize: '11px', fontWeight: 800, marginBottom: '4px' }}>{c.ownerName?.toUpperCase()}</div>
+                                                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{c.content}</div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
-
-                        {/* Comments Drawer */}
-                        {expandedPost === post.id && (
-                            <div style={{ marginTop: '20px', padding: '16px', background: 'var(--bg-input)', borderRadius: '0', borderLeft: '1px solid var(--border-subtle)' }}>
-                                <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-                                    <input 
-                                        className="input" 
-                                        placeholder="Enter secure message..."
-                                        value={commentText} 
-                                        onChange={e => setCommentText(e.target.value)}
-                                        onKeyDown={e => { if (e.key === 'Enter') handleCommentSubmit(post.id); }}
-                                        style={{ height: '36px', borderRadius: '0', fontSize: '13px' }}
-                                    />
-                                    <button className="btn btn-primary" onClick={() => handleCommentSubmit(post.id)} style={{ padding: '0 16px', borderRadius: '0', background: 'var(--text-primary)', color: 'var(--bg-deep)' }}>
-                                        <Send size={14} />
-                                    </button>
-                                </div>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                    {(comments[post.id] || []).map(c => (
-                                        <div key={c.id} style={{ display: 'flex', gap: '12px' }}>
-                                            <div className="avatar" style={{ width: '24px', height: '24px', borderRadius: '0' }}>
-                                                {c.ownerAvatar ? <img src={c.ownerAvatar} /> : c.ownerName.charAt(0)}
-                                            </div>
-                                            <div style={{ flex: 1 }}>
-                                                <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
-                                                    <span style={{ fontSize: '12px', fontWeight: 800 }}>{c.ownerName}</span>
-                                                    <span style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{new Date(c.createdAt).toLocaleTimeString()}</span>
-                                                </div>
-                                                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{c.content}</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
                     </div>
                 ))}
             </div>
+
+            {selectedUserId && (
+                <UserProfile userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
+            )}
+        </div>
+    );
+};
 
             {selectedUserId && (
                 <UserProfile userId={selectedUserId} onClose={() => setSelectedUserId(null)} />

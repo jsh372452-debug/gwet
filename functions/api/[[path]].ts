@@ -168,6 +168,7 @@ async function handleVerify(env: Env, sb: any, user: { id: string }, request: Re
         
     if (verifyErr) return error(verifyErr.message, 400);
     
+    console.log(`[GWET CORE] User verified: ${user.id}`);
     return json({ user: mapUser(updated) });
 }
 
@@ -235,9 +236,23 @@ async function handleSession(env: Env, user: { id: string }) {
 
     if (err || !profile) {
         // Fallback: If session user exists but profile doesn't, create it
-        // This can happen if register sync failed
         return handleRegister(env, sb, { id: user.id, username: 'player_' + user.id.slice(0, 5) });
     }
+
+    // AUTO-VERIFY: If email is confirmed in Supabase Auth but not in our profile, sync it
+    if (!profile.is_verified) {
+        const supabase = getSupabaseAdmin(env);
+        const { data: { user: authUser } } = await supabase.auth.admin.getUserById(user.id);
+        if (authUser?.email_confirmed_at) {
+            const { data: updated } = await sb.from('profiles')
+                .update({ is_verified: true, verification_code: null })
+                .eq('id', user.id)
+                .select()
+                .single();
+            if (updated) return json({ user: mapUser(updated) });
+        }
+    }
+
     return json({ user: mapUser(profile) });
 }
 

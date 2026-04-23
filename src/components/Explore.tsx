@@ -7,38 +7,13 @@ import { useTranslation } from '../i18n';
 
 export const Explore: React.FC = () => {
     const { communities, loadCommunities, joinCommunity } = useGameStore();
-    const { t, isRTL } = useTranslation();
-    const [searchQuery, setSearchQuery] = useState('');
+    const { t } = useTranslation();
 
     useEffect(() => {
         loadCommunities();
     }, [loadCommunities]);
 
-    const filteredCommunities = (communities || []).filter(c => 
-        (c.name || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
-        (c.gameTag || '').toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
     return (
-        <div style={{ padding: '24px', maxWidth: '1000px', margin: '0 auto', direction: isRTL ? 'rtl' : 'ltr' }}>
-            
-            {/* Header Area */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '40px' }}>
-                <div style={{ 
-                    width: '64px', height: '64px', background: 'var(--bg-elevated)', 
-                    borderRadius: '0px', display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                    color: 'var(--text-primary)', border: '1px solid var(--border-subtle)' 
-                }}>
-                    <Compass size={32} />
-                </div>
-                <div>
-                    <h2 style={{ fontSize: '24px', fontWeight: 800, fontFamily: 'Space Grotesk', letterSpacing: '-0.5px' }}>{t('explore').toUpperCase()}</h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '13px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Discover secure nodes and elite operative circles.</p>
-                </div>
-            </div>
-
-            {/* Search Bar */}
-            <div style={{ position: 'relative', marginBottom: '48px' }}>
                 <Search size={18} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                 <input 
                     className="input" 

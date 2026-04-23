@@ -40,6 +40,7 @@ function App() {
     // Check for success hash from email redirect
     if (window.location.hash.includes('access_token')) {
       useAuthStore.getState().setVerificationSuccess(true);
+      checkSession(); // Trigger immediate sync
       // Clean up hash after a delay
       setTimeout(() => {
           window.history.replaceState(null, '', window.location.pathname);

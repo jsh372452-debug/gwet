@@ -37,10 +37,17 @@ export const AuthUI: React.FC<AuthUIProps> = ({ onBack }) => {
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-                redirectTo: window.location.origin
+                redirectTo: `${window.location.origin}/`,
+                queryParams: {
+                    access_type: 'offline',
+                    prompt: 'consent',
+                }
             }
         });
-        if (error) console.error("Google Auth Error:", error);
+        if (error) {
+            console.error("Google Auth Error:", error);
+            alert("Auth failed: " + error.message);
+        }
     };
 
     return (
