@@ -227,10 +227,3 @@ export const Feed: React.FC = () => {
         </div>
     );
 };
-
-            {selectedUserId && (
-                <UserProfile userId={selectedUserId} onClose={() => setSelectedUserId(null)} />
-            )}
-        </div>
-    );
-};

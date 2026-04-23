@@ -12,7 +12,7 @@ import { ReputationHub } from './ReputationHub';
 import { Explore } from './Explore';
 import { Logo } from './Logo';
 import { ErrorBoundary } from './ErrorBoundary';
-import { Search, Bell, Plus, Settings } from 'lucide-react';
+import { Search, Bell, Plus, Settings, LogOut } from 'lucide-react';
 
 type Tab = 'feed' | 'communities' | 'reputation' | 'chat' | 'settings' | 'explore';
 
@@ -114,7 +114,7 @@ export const Dashboard: React.FC = () => {
                         <h3 style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '2px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Sector_Activity</h3>
                     </div>
                     <div style={{ flex: 1, padding: '24px', overflowY: 'auto' }} className="no-scrollbar">
-                        <ReputationHub minimalist />
+                        <ReputationHub />
                     </div>
                 </aside>
             </div>

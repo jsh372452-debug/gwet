@@ -90,10 +90,3 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         </aside>
     );
 };
-
-            <style>{`
-                .ch-voice-item:hover { background: rgba(255,255,255,0.02); }
-            `}</style>
-        </aside>
-    );
-};
