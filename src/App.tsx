@@ -62,16 +62,72 @@ function App() {
     document.body.style.direction = isRTL ? 'rtl' : 'ltr';
   }, [lang, isRTL]);
 
+  const [initTimeout, setInitTimeout] = React.useState(false);
+  const [initStage, setInitStage] = React.useState('ESTABLISHING_LINK');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (loading) setInitTimeout(true);
+    }, 10000); // 10 seconds timeout
+
+    const stages = ['ESTABLISHING_LINK', 'DECRYPTING_CREDENTIALS', 'SYNCING_SQUAD_DATA', 'FINALIZING_NODE'];
+    let stageIdx = 0;
+    const stageInterval = setInterval(() => {
+        if (loading) {
+            setInitStage(stages[stageIdx % stages.length]);
+            stageIdx++;
+        }
+    }, 2000);
+
+    return () => {
+        clearTimeout(timer);
+        clearInterval(stageInterval);
+    };
+  }, [loading]);
+
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: 'var(--bg-deep)' }}>
-        <div className="card" style={{ padding: '3rem 4rem', textAlign: 'center', borderRadius: '30px' }}>
-          <Loader2 className="spinner" size={48} color="var(--brand-electric)" style={{ marginBottom: '2rem' }} />
-          <div style={{ fontSize: '10px', fontWeight: 900, color: 'var(--brand-electric)', letterSpacing: '4px', textTransform: 'uppercase' }}>INITIALIZING NEURAL LINK</div>
-          <div style={{ marginTop: '1.5rem', height: '4px', width: '200px', borderRadius: '2px', background: 'rgba(255,255,255,0.05)', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: '60%', background: 'var(--brand-electric)', boxShadow: '0 0 15px var(--brand-electric)', borderRadius: '2px' }} />
-          </div>
+      <div style={{ 
+          display: 'flex', justifyContent: 'center', alignItems: 'center', 
+          height: '100vh', background: 'var(--bg-deep)', 
+          fontFamily: 'JetBrains Mono, monospace', color: 'var(--text-primary)' 
+      }}>
+        <div style={{ textAlign: 'center', width: '300px' }}>
+          {!initTimeout ? (
+            <>
+              <div style={{ marginBottom: '32px', position: 'relative', display: 'inline-block' }}>
+                <div className="spinner" style={{ width: '64px', height: '64px', border: '1px solid var(--border-subtle)', borderTopColor: 'var(--text-primary)' }} />
+                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate( -50%, -50%)', fontSize: '10px', fontWeight: 900 }}>GWET</div>
+              </div>
+              <div style={{ fontSize: '10px', fontWeight: 900, letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '16px' }}>{initStage}</div>
+              <div style={{ height: '1px', width: '100%', background: 'var(--border-subtle)', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ 
+                    position: 'absolute', height: '100%', width: '30%', 
+                    background: 'var(--text-primary)', 
+                    animation: 'scan 1.5s infinite linear' 
+                }} />
+              </div>
+            </>
+          ) : (
+            <div className="animate-fade-in">
+              <div style={{ color: 'var(--danger)', fontSize: '12px', fontWeight: 900, marginBottom: '8px', letterSpacing: '2px' }}>LINK_FAILURE // TIMEOUT</div>
+              <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '32px' }}>Connection to GWET_CENTRAL failed to stabilize.</p>
+              <button 
+                className="btn btn-primary" 
+                onClick={() => window.location.reload()}
+                style={{ width: '100%', background: 'var(--text-primary)', color: 'var(--bg-deep)' }}
+              >
+                REBOOT_NODE
+              </button>
+            </div>
+          )}
         </div>
+        <style>{`
+            @keyframes scan {
+                0% { left: -30%; }
+                100% { left: 100%; }
+            }
+        `}</style>
       </div>
     );
   }
