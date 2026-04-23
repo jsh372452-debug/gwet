@@ -119,7 +119,7 @@ export const Dashboard: React.FC = () => {
                     {/* Footer Status Bar */}
                     <footer style={{ 
                         height: '32px', background: 'var(--bg-surface)', borderTop: 'var(--glass-border)',
-                        display: 'flex', alignItems: 'center', px: '24px', justifyContent: 'space-between',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         fontSize: '9px', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '1px', padding: '0 24px'
                     }}>
                         <div style={{ display: 'flex', gap: '24px' }}>

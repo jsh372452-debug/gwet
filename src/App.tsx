@@ -9,6 +9,7 @@ import { useTranslation } from './i18n';
 import { VerificationUI } from './components/VerificationUI';
 import { Landing } from './components/Landing';
 import { GooglePasswordSetup } from './components/GooglePasswordSetup';
+import { Logo } from './components/Logo';
 import { Loader2 } from 'lucide-react';
 
 function App() {
