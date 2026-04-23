@@ -1,23 +1,24 @@
 :root {
-  --bg-deep: #02040a;
-  --bg-surface: rgba(13, 17, 23, 0.85);
-  --bg-elevated: rgba(22, 27, 34, 0.9);
-  --bg-input: rgba(1, 4, 9, 0.8);
+  --bg-deep: #05070a;
+  --bg-surface: rgba(10, 14, 20, 0.9);
+  --bg-elevated: rgba(18, 24, 32, 0.95);
+  --bg-input: rgba(1, 4, 9, 0.85);
   
-  --text-primary: #f0f6fc;
-  --text-secondary: #8b949e;
-  --text-muted: #484f58;
+  --text-primary: #e6edf3;
+  --text-secondary: #9198a1;
+  --text-muted: #5e6671;
   
-  --brand-electric: #00d2ff;
-  --brand-glow: rgba(0, 210, 255, 0.3);
-  --brand-orange: #ff4d00;
+  --brand-electric: #00f2ff;
+  --brand-glow: rgba(0, 242, 255, 0.4);
+  --brand-orange: #ff8c00;
+  --brand-orange-glow: rgba(255, 140, 0, 0.4);
   
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --border-active: rgba(0, 210, 255, 0.5);
+  --border-subtle: rgba(0, 242, 255, 0.1);
+  --border-active: rgba(0, 242, 255, 0.6);
   
-  --glass-blur: blur(12px);
-  --glass-border: 1px solid rgba(255, 255, 255, 0.1);
-  --shadow-premium: 0 10px 40px rgba(0, 0, 0, 0.5);
+  --glass-blur: blur(16px);
+  --glass-border: 1px solid rgba(0, 242, 255, 0.15);
+  --shadow-premium: 0 0 30px rgba(0, 0, 0, 0.8), 0 0 15px var(--brand-glow);
   
   --font-mono: 'JetBrains Mono', monospace;
   --font-sans: 'Space Grotesk', sans-serif;
