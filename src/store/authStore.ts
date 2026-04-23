@@ -99,15 +99,31 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
             setToken(session.access_token);
 
+            // Network Timeout for backend sync
+            const syncPromise = api.auth.session();
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('SYNC_TIMEOUT')), 5000)
+            );
+
             try {
-                const { user } = await api.auth.session();
+                const { user } = await Promise.race([syncPromise, timeoutPromise]) as any;
                 set({ user, loading: false, awaitingConfirmation: false });
             } catch (syncErr) {
-                console.warn('Backend sync failed:', syncErr);
-                set({ loading: false });
+                console.warn('Backend sync failed or timed out, using local session fallback');
+                // Fallback: Create a minimal user object from session metadata if sync fails
+                const fallbackUser: AAGUser = {
+                    id: session.user.id,
+                    username: session.user.user_metadata?.username || session.user.email?.split('@')[0] || 'Player',
+                    displayName: session.user.user_metadata?.display_name,
+                    avatarUrl: session.user.user_metadata?.avatar_url,
+                    influenceScore: 0,
+                    isOnboarded: true, // Assume onboarded to get them into dashboard
+                    isVerified: !!session.user.email_confirmed_at
+                };
+                set({ user: fallbackUser, loading: false });
             }
         } catch (err) {
-            console.error('Session check failed:', err);
+            console.error('Session check critical failure:', err);
             set({ user: null, loading: false });
         }
     },
