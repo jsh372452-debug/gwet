@@ -117,8 +117,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                     displayName: session.user.user_metadata?.display_name,
                     avatarUrl: session.user.user_metadata?.avatar_url,
                     influenceScore: 0,
-                    isOnboarded: true, // Assume onboarded to get them into dashboard
-                    isVerified: !!session.user.email_confirmed_at
+                    isOnboarded: true,
+                    isVerified: !!session.user.email_confirmed_at,
+                    bio: '',
+                    gamingPlatform: 'PC',
+                    country: 'US',
+                    language: 'en'
                 };
                 set({ user: fallbackUser, loading: false });
             }
