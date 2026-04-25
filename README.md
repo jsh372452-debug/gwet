@@ -1,5 +1,7 @@
 # GWET — The Ultimate Gaming Social Client 🌪️⚡
 
+**Live Link:** [https://gwet-0.pages.dev/](https://gwet-0.pages.dev/)
+
 **GWET** is a premium, high-performance gaming social network built for elite operatives and clans. This platform has been completely re-built from the ground up to provide a world-class, Discord-style localized experience.
 
 ---
