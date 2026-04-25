@@ -20,7 +20,7 @@ export const Dashboard: React.FC = () => {
             case 'explore': return <Explore />;
             case 'squads': return <Squads />;
             case 'reputation': return <ReputationHub />;
-            case 'profile': return <UserProfile />;
+            case 'profile': return <UserProfile userId={user?.id || ''} onClose={() => setActiveTab('feed')} />;
             case 'settings': return <SettingsHub />;
             case 'chat': return <ChatArea targetId="global" type="global" />;
             default: return <Feed />;

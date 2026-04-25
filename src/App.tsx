@@ -38,12 +38,12 @@ function App() {
     return (
       <>
         <Landing onShowAuth={() => setShowAuth(true)} />
-        {showAuth && <AuthUI onClose={() => setShowAuth(false)} />}
+        {showAuth && <AuthUI onBack={() => setShowAuth(false)} />}
       </>
     );
   }
 
-  if (requiresPasswordSetup) return <GooglePasswordSetup />;
+  if (requiresPasswordSetup) return <GooglePasswordSetup onComplete={() => checkSession()} />;
   if (awaitingConfirmation) return <VerificationUI />;
   if (!user.isOnboarded) return <ProfileOnboarding />;
 

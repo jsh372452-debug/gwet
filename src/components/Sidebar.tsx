@@ -52,7 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
             </div>
 
             <button
-                onClick={logout}
+                onClick={signOut}
                 style={{
                     display: 'flex', alignItems: 'center', gap: '12px',
                     padding: '12px 16px', borderRadius: 'var(--radius-sm)',
