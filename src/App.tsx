@@ -37,7 +37,7 @@ function App() {
   if (!user) {
     return (
       <>
-        <Landing onShowAuth={() => setShowAuth(true)} />
+        <Landing onLaunch={() => setShowAuth(true)} />
         {showAuth && <AuthUI onBack={() => setShowAuth(false)} />}
       </>
     );
