@@ -22,7 +22,7 @@ export const Dashboard: React.FC = () => {
             case 'reputation': return <ReputationHub />;
             case 'profile': return <UserProfile />;
             case 'settings': return <SettingsHub />;
-            case 'chat': return <ChatArea />;
+            case 'chat': return <ChatArea targetId="global" type="global" />;
             default: return <Feed />;
         }
     };

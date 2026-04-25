@@ -8,7 +8,7 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, onTabChange }) => {
-    const { logout } = useAuthStore();
+    const { signOut } = useAuthStore();
 
     const menuItems = [
         { id: 'feed', icon: Layout, label: 'Activity' },
