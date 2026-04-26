@@ -44,6 +44,10 @@ function App() {
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             style={{ height: '100vh', width: '100vw', background: 'var(--bg-app)' }}
           />
+        ) : awaitingConfirmation ? (
+          <motion.div key="verify" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <VerificationUI />
+          </motion.div>
         ) : !user ? (
           <motion.div 
             key="landing"
@@ -55,10 +59,6 @@ function App() {
         ) : requiresPasswordSetup ? (
           <motion.div key="pwd" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <GooglePasswordSetup onComplete={() => checkSession()} />
-          </motion.div>
-        ) : awaitingConfirmation ? (
-          <motion.div key="verify" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <VerificationUI />
           </motion.div>
         ) : !user.isOnboarded ? (
           <motion.div key="onboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
