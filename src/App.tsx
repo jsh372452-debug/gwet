@@ -4,12 +4,13 @@ import { AuthUI } from './components/Auth';
 import { Dashboard } from './components/Dashboard';
 import { ProfileOnboarding } from './components/ProfileOnboarding';
 import { useTranslation } from './i18n';
+import { VerificationUI } from './components/VerificationUI';
 import { Landing } from './components/Landing';
 import { GooglePasswordSetup } from './components/GooglePasswordSetup';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function App() {
-  const { user, checkSession, loading, requiresPasswordSetup } = useAuthStore();
+  const { user, checkSession, loading, awaitingConfirmation, requiresPasswordSetup } = useAuthStore();
   const { isRTL } = useTranslation();
   const [showAuth, setShowAuth] = React.useState(false);
 
@@ -54,6 +55,10 @@ function App() {
         ) : requiresPasswordSetup ? (
           <motion.div key="pwd" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <GooglePasswordSetup onComplete={() => checkSession()} />
+          </motion.div>
+        ) : awaitingConfirmation ? (
+          <motion.div key="verify" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <VerificationUI />
           </motion.div>
         ) : !user.isOnboarded ? (
           <motion.div key="onboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>

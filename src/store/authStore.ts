@@ -7,9 +7,12 @@ interface AuthState {
     user: AAGUser | null;
     loading: boolean;
     error: string | null;
+    awaitingConfirmation: boolean;
     pendingEmail: string | null;
+    isVerifySuccess: boolean;
     requiresPasswordSetup: boolean;
     setRequiresPasswordSetup: (val: boolean) => void;
+    setVerificationSuccess: (val: boolean) => void;
     login: (email: string, pass: string) => Promise<void>;
     register: (email: string, pass: string, username: string) => Promise<void>;
     signOut: () => void;
@@ -28,9 +31,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     user: null,
     loading: true,
     error: null,
+    awaitingConfirmation: false,
     pendingEmail: null,
+    isVerifySuccess: false,
     requiresPasswordSetup: false,
     setRequiresPasswordSetup: (val) => set({ requiresPasswordSetup: val }),
+    setVerificationSuccess: (val) => set({ isVerifySuccess: val }),
 
     setUser: (user) => set({ user }),
 
@@ -101,7 +107,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
             try {
                 const { user } = await Promise.race([syncPromise, timeoutPromise]) as any;
-                set({ user, loading: false });
+                set({ user, loading: false, awaitingConfirmation: false });
             } catch (syncErr) {
                 console.warn('Backend sync failed or timed out, using local session fallback');
                 // Fallback: Create a minimal user object from session metadata if sync fails
@@ -137,12 +143,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
             if (error) throw error;
 
-            // Email confirmation is enabled — notify user to disable it
+            // Email confirmation is enabled — no session returned
             if (!data.session) {
-                alert('عذراً، يجب عليك إيقاف ميزة "Confirm Email" من إعدادات Supabase (Authentication -> Providers -> Email) لتتمكن من الدخول مباشرة بدون رسالة تفعيل.');
                 set({ 
                     loading: false, 
-                    error: 'Email confirmation is required by Supabase. Please disable it in Supabase dashboard.' 
+                    awaitingConfirmation: true, 
+                    pendingEmail: email,
+                    error: null 
                 });
                 return;
             }
@@ -167,14 +174,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
             try {
                 const { user } = await api.auth.session();
-                set({ user, loading: false });
+                set({ user, loading: false, awaitingConfirmation: false });
             } catch {
                 const { user } = await api.auth.register(
                     data.user.user_metadata?.username || email.split('@')[0],
                     email,
                     data.user.id
                 );
-                set({ user, loading: false });
+                set({ user, loading: false, awaitingConfirmation: false });
             }
         } catch (err: any) {
             set({ error: err.message || 'Login failed', loading: false });
@@ -184,7 +191,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     signOut: async () => {
         await supabase.auth.signOut();
         clearToken();
-        set({ user: null, pendingEmail: null });
+        set({ user: null, awaitingConfirmation: false, pendingEmail: null });
     },
 }));
 
