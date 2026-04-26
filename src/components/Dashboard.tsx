@@ -9,6 +9,15 @@ import { ReputationHub } from './ReputationHub';
 import { ChatArea } from './ChatArea';
 import { useAuthStore } from '../store/authStore';
 import { Logo } from './Logo';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const pageVariants = {
+    initial: { opacity: 0, y: 8 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -8 }
+};
+
+const pageTransition = { duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number] };
 
 export const Dashboard: React.FC = () => {
     const { user } = useAuthStore();
@@ -41,27 +50,35 @@ export const Dashboard: React.FC = () => {
             }}>
                 {/* Header */}
                 <header style={{ 
-                    height: '64px', borderBottom: '1px solid var(--border-light)',
+                    height: '60px', borderBottom: '1px solid var(--border-light)',
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '0 32px', background: 'rgba(15, 23, 42, 0.8)',
-                    backdropFilter: 'blur(8px)', zIndex: 10
+                    padding: '0 28px', background: 'rgba(15, 23, 42, 0.6)',
+                    backdropFilter: 'blur(12px)', zIndex: 10
                 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <Logo size={28} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <Logo size={24} />
                         <span style={{ 
-                            fontWeight: 700, fontSize: '18px', letterSpacing: '-0.5px',
-                            background: 'linear-gradient(to right, #fff, #94a3b8)',
-                            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
+                            fontWeight: 700, fontSize: '16px', letterSpacing: '-0.3px',
+                            color: 'var(--text-main)'
                         }}>GWET</span>
+                        <span style={{ 
+                            fontSize: '11px', color: 'var(--text-muted)', 
+                            padding: '2px 8px', background: 'rgba(255,255,255,0.04)',
+                            borderRadius: '4px', marginLeft: '4px'
+                        }}>
+                            {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+                        </span>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                         <div style={{ textAlign: 'right' }}>
                             <div style={{ fontSize: '13px', fontWeight: 600 }}>{user?.displayName || user?.username}</div>
-                            <div style={{ fontSize: '11px', color: 'var(--text-dim)' }}>Level {Math.floor((user?.influenceScore || 0) / 100) + 1} Member</div>
+                            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                Level {Math.floor((user?.influenceScore || 0) / 100) + 1}
+                            </div>
                         </div>
                         <div style={{ 
-                            width: '36px', height: '36px', borderRadius: '50%',
+                            width: '32px', height: '32px', borderRadius: '50%',
                             background: 'var(--bg-sidebar)', border: '1px solid var(--border-light)',
                             overflow: 'hidden'
                         }}>
@@ -70,10 +87,23 @@ export const Dashboard: React.FC = () => {
                     </div>
                 </header>
 
-                <div style={{ flex: 1, overflowY: 'auto', padding: '32px' }}>
-                    <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-                        {renderContent()}
-                    </div>
+                {/* Content with cross-fade transition */}
+                <div style={{ flex: 1, overflowY: 'auto', position: 'relative' }}>
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={activeTab}
+                            variants={pageVariants}
+                            initial="initial"
+                            animate="animate"
+                            exit="exit"
+                            transition={pageTransition}
+                            style={{ padding: '28px', minHeight: '100%' }}
+                        >
+                            <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+                                {renderContent()}
+                            </div>
+                        </motion.div>
+                    </AnimatePresence>
                 </div>
             </main>
         </div>

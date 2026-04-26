@@ -1,9 +1,16 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { Target, Globe, Gamepad2, ArrowRight, ShieldCheck, Cpu, ChevronRight } from 'lucide-react';
+import { Globe, ArrowRight, User, Gamepad2 } from 'lucide-react';
 import Flag from './Flag';
 import { countries } from '../data/countries';
 import { Logo } from './Logo';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const stepVariants = {
+    enter: { opacity: 0, x: 30 },
+    center: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: -30 }
+};
 
 export const ProfileOnboarding: React.FC = () => {
     const { user, updateProfile } = useAuthStore();
@@ -29,7 +36,7 @@ export const ProfileOnboarding: React.FC = () => {
             });
         } catch (err: any) {
             console.error('Failed to complete onboarding:', err);
-            setError(err.message || 'Synchronization failed.');
+            setError(err.message || 'Something went wrong. Please try again.');
             setSaving(false);
         }
     };
@@ -37,147 +44,207 @@ export const ProfileOnboarding: React.FC = () => {
     return (
         <div style={{ 
             minHeight: '100vh', 
-            background: 'var(--bg-deep)',
-            color: 'var(--text-primary)',
+            background: 'var(--bg-app)',
+            color: 'var(--text-main)',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            padding: '24px',
-            position: 'relative',
-            overflow: 'hidden'
+            padding: '24px'
         }}>
-            {/* Energy Backgrounds */}
-            <div className="energy-blob blue-blob" style={{ top: '-10%', right: '-10%', opacity: 0.15 }} />
-            <div className="energy-blob purple-blob" style={{ bottom: '-10%', left: '-10%', opacity: 0.15 }} />
-
-            <div style={{ textAlign: 'center', marginBottom: '48px', zIndex: 10 }}>
-                <div style={{ margin: '0 auto 24px', display: 'flex', justifyContent: 'center' }}>
-                    <Logo size={80} />
-                </div>
-                <h1 style={{ fontSize: '32px', fontWeight: 800, fontFamily: 'Space Grotesk', marginBottom: '8px' }}>
-                    FORGE YOUR IDENTITY
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                style={{ textAlign: 'center', marginBottom: '40px' }}
+            >
+                <Logo size={56} style={{ margin: '0 auto 20px' }} />
+                <h1 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px', letterSpacing: '-0.5px' }}>
+                    Complete Your Profile
                 </h1>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                    <div style={{ width: '40px', height: '1px', background: 'var(--border-subtle)' }} />
-                    <p style={{ color: 'var(--brand-electric)', fontSize: '12px', fontWeight: 800, letterSpacing: '4px', textTransform: 'uppercase' }}>
-                        Protocol Initialize
-                    </p>
-                    <div style={{ width: '40px', height: '1px', background: 'var(--border-subtle)' }} />
+                <p style={{ color: 'var(--text-dim)', fontSize: '15px' }}>
+                    Tell us a bit about yourself to get started
+                </p>
+            </motion.div>
+
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.15 }}
+                className="card-professional" 
+                style={{ width: '100%', maxWidth: '480px', position: 'relative', overflow: 'hidden' }}
+            >
+                {/* Step Indicator */}
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '32px' }}>
+                    <div style={{ 
+                        flex: 1, height: '3px', borderRadius: '2px', 
+                        background: 'var(--brand-primary)',
+                        transition: 'all 0.4s ease'
+                    }} />
+                    <div style={{ 
+                        flex: 1, height: '3px', borderRadius: '2px', 
+                        background: step === 2 ? 'var(--brand-primary)' : 'rgba(255,255,255,0.06)',
+                        transition: 'all 0.4s ease'
+                    }} />
                 </div>
-            </div>
 
-            <div className="card" style={{ width: '100%', maxWidth: '540px', padding: '48px', zIndex: 10, position: 'relative' }}>
-                <div style={{ display: 'flex', gap: '8px', position: 'absolute', top: '24px', right: '24px' }}>
-                    <div style={{ width: '32px', height: '4px', borderRadius: '2px', background: step === 1 ? 'var(--brand-electric)' : 'var(--bg-elevated)', transition: '0.3s' }} />
-                    <div style={{ width: '32px', height: '4px', borderRadius: '2px', background: step === 2 ? 'var(--brand-electric)' : 'var(--bg-elevated)', transition: '0.3s' }} />
-                </div>
-
-                {step === 1 && (
-                    <div className="animate-fade-in">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
-                            <div style={{ padding: '12px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '12px', color: 'var(--brand-electric)' }}>
-                                <Cpu size={24} />
-                            </div>
-                            <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0 }}>Step 01: Core Loadout</h2>
-                        </div>
-                        
-                        <div style={{ marginBottom: '24px' }}>
-                            <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', display: 'block', textTransform: 'uppercase' }}>Operator Alias</label>
-                            <input 
-                                className="input" 
-                                placeholder="How shall the world know you?"
-                                value={displayName} 
-                                onChange={e => setDisplayName(e.target.value)} 
-                                style={{ height: '52px' }}
-                            />
-                        </div>
-
-                        <div style={{ marginBottom: '40px' }}>
-                            <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', display: 'block', textTransform: 'uppercase' }}>Primary Platform</label>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                {['PC', 'PlayStation', 'Xbox', 'Mobile'].map(platform => (
-                                    <button 
-                                        key={platform}
-                                        onClick={() => setGamingPlatform(platform)}
-                                        className={`btn ${gamingPlatform === platform ? 'btn-primary' : 'btn-ghost'}`}
-                                        style={{ height: '48px', border: gamingPlatform === platform ? 'none' : '1px solid var(--border-subtle)' }}
-                                    >
-                                        {platform}
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        <button className="btn btn-primary" style={{ width: '100%', height: '52px', fontSize: '16px' }} onClick={() => setStep(2)} disabled={!displayName.trim()}>
-                            PROCEED TO SYNC <ArrowRight size={18} style={{ marginLeft: '8px' }} />
-                        </button>
-                    </div>
-                )}
-
-                {step === 2 && (
-                    <div className="animate-fade-in">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
-                            <div style={{ padding: '12px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: '12px', color: 'var(--brand-electric)' }}>
-                                <Globe size={24} />
-                            </div>
-                            <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0 }}>Step 02: Neural Sync</h2>
-                        </div>
-                        
-                        <div style={{ marginBottom: '24px' }}>
-                            <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', display: 'block', textTransform: 'uppercase' }}>Operating Region</label>
-                            <div style={{ position: 'relative' }}>
-                                <div style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', zIndex: 1 }}>
-                                    <Flag code={country} size={20} />
+                <AnimatePresence mode="wait">
+                    {step === 1 && (
+                        <motion.div
+                            key="step1"
+                            variants={stepVariants}
+                            initial="enter" animate="center" exit="exit"
+                            transition={{ duration: 0.3 }}
+                        >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '28px' }}>
+                                <div style={{ 
+                                    padding: '10px', background: 'rgba(56, 189, 248, 0.08)', 
+                                    borderRadius: 'var(--radius-sm)', color: 'var(--brand-primary)' 
+                                }}>
+                                    <User size={20} />
                                 </div>
-                                <select 
-                                    className="input" 
-                                    value={country} 
-                                    onChange={e => setCountry(e.target.value)}
-                                    style={{ height: '52px', paddingLeft: '48px' }}
-                                >
-                                    <option value="Global">Universal Node</option>
-                                    {countries.map(c => (
-                                        <option key={c.code} value={c.code}>{c.name}</option>
+                                <div>
+                                    <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Personal Info</h2>
+                                    <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>Step 1 of 2</p>
+                                </div>
+                            </div>
+                            
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>Display Name</label>
+                                <input 
+                                    className="input-standard" 
+                                    placeholder="How should we call you?"
+                                    value={displayName} 
+                                    onChange={e => setDisplayName(e.target.value)} 
+                                    style={{ height: '48px', width: '100%' }}
+                                />
+                            </div>
+
+                            <div style={{ marginBottom: '28px' }}>
+                                <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>Platform</label>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                    {['PC', 'PlayStation', 'Xbox', 'Mobile'].map(platform => (
+                                        <motion.button 
+                                            key={platform}
+                                            whileHover={{ scale: 1.02, transition: { duration: 0.6, ease: "easeOut" } }}
+                                            whileTap={{ scale: 0.98 }}
+                                            onClick={() => setGamingPlatform(platform)}
+                                            style={{ 
+                                                height: '56px', borderRadius: 'var(--radius-sm)',
+                                                background: gamingPlatform === platform ? 'rgba(56, 189, 248, 0.1)' : 'transparent',
+                                                border: gamingPlatform === platform ? '1px solid var(--brand-primary)' : '1px solid var(--border-light)',
+                                                color: gamingPlatform === platform ? 'var(--brand-primary)' : 'var(--text-dim)',
+                                                cursor: 'pointer', fontWeight: 600, fontSize: '14px',
+                                                position: 'relative', overflow: 'hidden'
+                                            }}
+                                        >
+                                            {/* Note for User: Lottie animations go here. Replaced with motion hover for now as files were missing */}
+                                            {platform}
+                                        </motion.button>
                                     ))}
+                                </div>
+                            </div>
+
+                            <button 
+                                className="btn-primary" 
+                                style={{ width: '100%', height: '48px', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} 
+                                onClick={() => setStep(2)} 
+                                disabled={!displayName.trim()}
+                            >
+                                Continue <ArrowRight size={16} />
+                            </button>
+                        </motion.div>
+                    )}
+
+                    {step === 2 && (
+                        <motion.div
+                            key="step2"
+                            variants={stepVariants}
+                            initial="enter" animate="center" exit="exit"
+                            transition={{ duration: 0.3 }}
+                        >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '28px' }}>
+                                <div style={{ 
+                                    padding: '10px', background: 'rgba(56, 189, 248, 0.08)', 
+                                    borderRadius: 'var(--radius-sm)', color: 'var(--brand-primary)' 
+                                }}>
+                                    <Globe size={20} />
+                                </div>
+                                <div>
+                                    <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Location & Language</h2>
+                                    <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>Step 2 of 2</p>
+                                </div>
+                            </div>
+                            
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>Country</label>
+                                <div style={{ position: 'relative' }}>
+                                    <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', zIndex: 1 }}>
+                                        <Flag code={country} size={18} />
+                                    </div>
+                                    <select 
+                                        className="input-standard" 
+                                        value={country} 
+                                        onChange={e => setCountry(e.target.value)}
+                                        style={{ height: '48px', paddingLeft: '40px', width: '100%' }}
+                                    >
+                                        <option value="Global">Worldwide</option>
+                                        {countries.map(c => (
+                                            <option key={c.code} value={c.code}>{c.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div style={{ marginBottom: '28px' }}>
+                                <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>Language</label>
+                                <select 
+                                    className="input-standard" 
+                                    value={language} 
+                                    onChange={e => setLanguage(e.target.value)}
+                                    style={{ height: '48px', width: '100%' }}
+                                >
+                                    <option value="en">English</option>
+                                    <option value="ar">العربية</option>
                                 </select>
                             </div>
-                        </div>
 
-                        <div style={{ marginBottom: '40px' }}>
-                            <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px', display: 'block', textTransform: 'uppercase' }}>Communication Protocol</label>
-                            <select 
-                                className="input" 
-                                value={language} 
-                                onChange={e => setLanguage(e.target.value)}
-                                style={{ height: '52px' }}
-                            >
-                                <option value="en">ENGLISH MODULE</option>
-                                <option value="ar">ARABIC SYNC</option>
-                            </select>
-                        </div>
+                            {error && (
+                                <div style={{ 
+                                    padding: '12px', background: 'rgba(239, 68, 68, 0.08)', 
+                                    border: '1px solid rgba(239, 68, 68, 0.15)', 
+                                    color: '#f87171', fontSize: '13px', borderRadius: 'var(--radius-sm)',
+                                    marginBottom: '20px'
+                                }}>
+                                    {error}
+                                </div>
+                            )}
 
-                        {error && (
-                            <div style={{ color: 'var(--danger)', fontSize: '13px', fontWeight: 700, textAlign: 'center', background: 'rgba(239, 68, 68, 0.05)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.1)', marginBottom: '24px', display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
-                                <ShieldCheck size={16} /> {error}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2.5fr', gap: '8px' }}>
+                                <button 
+                                    style={{ 
+                                        height: '48px', background: 'transparent', 
+                                        border: '1px solid var(--border-light)', borderRadius: 'var(--radius-sm)',
+                                        color: 'var(--text-dim)', cursor: 'pointer', fontWeight: 600
+                                    }} 
+                                    onClick={() => setStep(1)} 
+                                    disabled={saving}
+                                >
+                                    Back
+                                </button>
+                                <button 
+                                    className="btn-primary" 
+                                    style={{ height: '48px', fontSize: '15px' }} 
+                                    onClick={handleComplete} 
+                                    disabled={saving}
+                                >
+                                    {saving ? 'Setting up...' : 'Complete Setup'}
+                                </button>
                             </div>
-                        )}
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 2.5fr', gap: '12px' }}>
-                            <button className="btn btn-ghost" style={{ height: '52px' }} onClick={() => setStep(1)} disabled={saving}>BACK</button>
-                            <button className="btn btn-primary" style={{ height: '52px', fontSize: '16px' }} onClick={handleComplete} disabled={saving}>
-                                {saving ? "DEPLOYING IDENTITY..." : "INITIALIZE HUB ACCESS"}
-                            </button>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            <div style={{ marginTop: '48px', color: 'var(--text-muted)', fontSize: '11px', fontWeight: 700, opacity: 0.5, letterSpacing: '2px', display: 'flex', alignItems: 'center', gap: '12px', zIndex: 10 }}>
-                <span className="mono-font">AAG_SECURE_BOOT_SEQUENCE</span>
-                <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--text-muted)' }} />
-                <span>VER_2.4.0</span>
-            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </motion.div>
         </div>
     );
 };

@@ -7,6 +7,7 @@ import { useTranslation } from './i18n';
 import { VerificationUI } from './components/VerificationUI';
 import { Landing } from './components/Landing';
 import { GooglePasswordSetup } from './components/GooglePasswordSetup';
+import { motion, AnimatePresence } from 'framer-motion';
 
 function App() {
   const { user, checkSession, loading, awaitingConfirmation, requiresPasswordSetup } = useAuthStore();
@@ -17,39 +18,64 @@ function App() {
     checkSession();
   }, [checkSession]);
 
-  if (loading) {
-    return (
-      <div style={{ 
-        height: '100vh', width: '100vw', background: 'var(--bg-app)', 
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexDirection: 'column', gap: '20px'
-      }}>
-        <div style={{
-          width: '32px', height: '32px', border: '2px solid var(--border-light)',
-          borderTopColor: 'var(--brand-primary)', borderRadius: '50%',
-          animation: 'spin 0.6s linear infinite'
-        }} />
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <>
-        <Landing onLaunch={() => setShowAuth(true)} />
-        {showAuth && <AuthUI onBack={() => setShowAuth(false)} />}
-      </>
-    );
-  }
-
-  if (requiresPasswordSetup) return <GooglePasswordSetup onComplete={() => checkSession()} />;
-  if (awaitingConfirmation) return <VerificationUI />;
-  if (!user.isOnboarded) return <ProfileOnboarding />;
+  // Silent Loading Bar logic
+  const [progress, setProgress] = React.useState(0);
+  useEffect(() => {
+    if (loading) {
+      const interval = setInterval(() => {
+        setProgress(prev => (prev < 90 ? prev + 10 : prev));
+      }, 200);
+      return () => clearInterval(interval);
+    } else {
+      setProgress(100);
+      const timeout = setTimeout(() => setProgress(0), 400);
+      return () => clearTimeout(timeout);
+    }
+  }, [loading]);
 
   return (
     <div className={`app-container ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
-      <Dashboard />
+      {progress > 0 && <div className="top-progress" style={{ width: `${progress}%` }} />}
+      
+      <AnimatePresence mode="wait">
+        {loading ? (
+          <motion.div 
+            key="loading"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ height: '100vh', width: '100vw', background: 'var(--bg-app)' }}
+          />
+        ) : !user ? (
+          <motion.div 
+            key="landing"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          >
+            <Landing onLaunch={() => setShowAuth(true)} />
+            {showAuth && <AuthUI onBack={() => setShowAuth(false)} />}
+          </motion.div>
+        ) : requiresPasswordSetup ? (
+          <motion.div key="pwd" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <GooglePasswordSetup onComplete={() => checkSession()} />
+          </motion.div>
+        ) : awaitingConfirmation ? (
+          <motion.div key="verify" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <VerificationUI />
+          </motion.div>
+        ) : !user.isOnboarded ? (
+          <motion.div key="onboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <ProfileOnboarding />
+          </motion.div>
+        ) : (
+          <motion.div 
+            key="dashboard"
+            initial={{ opacity: 0, y: 10 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          >
+            <Dashboard />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
