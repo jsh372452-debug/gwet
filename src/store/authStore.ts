@@ -138,7 +138,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
-                options: { data: { username } }
+                options: { 
+                    data: { username },
+                    emailRedirectTo: window.location.origin
+                }
             });
 
             if (error) throw error;
