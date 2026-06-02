@@ -2,7 +2,14 @@ import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { api, AAGUser } from '../lib/api';
 import { setToken, clearToken } from '../lib/api';
-import { authCallbackUrl, AUTH_CALLBACK_PATH, CUSTOMIZE_PATH, FEED_PATH, navigateTo } from '../lib/authRoutes';
+import {
+    authCallbackUrl,
+    clearAuthParamsFromUrl,
+    CUSTOMIZE_PATH,
+    FEED_PATH,
+    hasPendingAuthCallback,
+    navigateTo,
+} from '../lib/authRoutes';
 
 interface AuthState {
     user: AAGUser | null;
@@ -14,6 +21,7 @@ interface AuthState {
     isVerifySuccess: boolean;
     requiresPasswordSetup: boolean;
     authReady: boolean;
+    emailJustVerified: boolean;
     setRequiresPasswordSetup: (val: boolean) => void;
     setVerificationSuccess: (val: boolean) => void;
     login: (email: string, pass: string) => Promise<void>;
@@ -30,6 +38,51 @@ interface AuthState {
     verifyCode: (code: string) => Promise<void>;
     resendCode: () => Promise<void>;
     setUser: (user: AAGUser) => void;
+}
+
+let authUrlConsumePromise: Promise<boolean> | null = null;
+
+/** Exchange ?code= or read #access_token= from email link (works on / or /auth/callback) */
+async function consumeAuthFromUrl(): Promise<boolean> {
+    if (authUrlConsumePromise) return authUrlConsumePromise;
+
+    authUrlConsumePromise = (async () => {
+        const hash = window.location.hash?.slice(1) || '';
+        if (hash.includes('error=')) {
+            const params = new URLSearchParams(hash);
+            const desc = params.get('error_description') || params.get('error') || 'فشل تفعيل الحساب';
+            throw new Error(desc.replace(/\+/g, ' '));
+        }
+
+        const query = new URLSearchParams(window.location.search);
+        const code = query.get('code');
+
+        if (code) {
+            const { error } = await supabase.auth.exchangeCodeForSession(code);
+            if (error) throw error;
+            clearAuthParamsFromUrl();
+            return true;
+        }
+
+        const hashParams = new URLSearchParams(hash);
+        if (hashParams.has('access_token') || hashParams.get('type') === 'signup') {
+            // detectSessionInUrl parses hash on getSession()
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (error) throw error;
+            if (session) {
+                clearAuthParamsFromUrl();
+                return true;
+            }
+        }
+
+        return false;
+    })();
+
+    try {
+        return await authUrlConsumePromise;
+    } finally {
+        authUrlConsumePromise = null;
+    }
 }
 
 async function syncProfileFromSession(accessToken: string, sessionUser: { id: string; email?: string; user_metadata?: Record<string, unknown> }): Promise<AAGUser> {
@@ -69,6 +122,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     isVerifySuccess: false,
     requiresPasswordSetup: false,
     authReady: false,
+    emailJustVerified: false,
 
     setRequiresPasswordSetup: (val) => set({ requiresPasswordSetup: val }),
     setVerificationSuccess: (val) => set({ isVerifySuccess: val }),
@@ -128,63 +182,58 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
 
     handleEmailCallback: async () => {
-        set({ loading: true, error: null, awaitingConfirmation: false });
+        set({ loading: true, error: null, awaitingConfirmation: false, emailJustVerified: false });
 
-        const hash = window.location.hash;
-        if (hash.includes('error=')) {
-            const params = new URLSearchParams(hash.slice(1));
-            const desc = params.get('error_description') || params.get('error') || 'Auth callback failed';
-            set({ loading: false });
-            throw new Error(desc.replace(/\+/g, ' '));
-        }
+        try {
+            const fromEmailLink = await consumeAuthFromUrl();
 
-        // PKCE / magic-link: ?code= in query string
-        const query = new URLSearchParams(window.location.search);
-        const code = query.get('code');
-        if (code) {
-            const { error } = await supabase.auth.exchangeCodeForSession(code);
-            if (error) {
-                set({ loading: false });
-                throw error;
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            if (sessionError || !session) {
+                throw new Error('لم يتم العثور على جلسة بعد التفعيل. افتح الرابط من نفس المتصفح أو سجّل الدخول.');
             }
-            window.history.replaceState({}, '', AUTH_CALLBACK_PATH);
+
+            const profileUser = await syncProfileFromSession(session.access_token, session.user);
+
+            set({
+                user: profileUser,
+                loading: false,
+                awaitingConfirmation: false,
+                isVerifySuccess: true,
+                authReady: true,
+                emailJustVerified: fromEmailLink,
+                error: null,
+            });
+
+            clearAuthParamsFromUrl();
+            routeAfterAuth(profileUser);
+
+            return { isOnboarded: !!profileUser.isOnboarded };
+        } catch (err: any) {
+            set({ loading: false, authReady: true, error: err.message });
+            throw err;
         }
-
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError || !session) {
-            set({ loading: false });
-            throw new Error('لم يتم العثور على جلسة بعد التفعيل. افتح الرابط من نفس المتصفح أو سجّل الدخول.');
-        }
-
-        const profileUser = await syncProfileFromSession(session.access_token, session.user);
-
-        set({
-            user: profileUser,
-            loading: false,
-            awaitingConfirmation: false,
-            isVerifySuccess: true,
-            authReady: true,
-            error: null,
-        });
-
-        window.history.replaceState({}, '', AUTH_CALLBACK_PATH);
-        return { isOnboarded: !!profileUser.isOnboarded };
     },
 
     checkSession: async () => {
+        const hadAuthParams = hasPendingAuthCallback();
         set({ loading: true, error: null });
 
         try {
+            let fromEmailLink = false;
+            if (hadAuthParams) {
+                fromEmailLink = await consumeAuthFromUrl();
+            }
+
             const { data: { session } } = await supabase.auth.getSession();
 
             if (!session) {
-                set({ user: null, loading: false, authReady: true });
+                set({ user: null, loading: false, authReady: true, emailJustVerified: false });
                 return;
             }
 
             const syncPromise = syncProfileFromSession(session.access_token, session.user);
             const timeoutPromise = new Promise<never>((_, reject) =>
-                setTimeout(() => reject(new Error('SYNC_TIMEOUT')), 8000)
+                setTimeout(() => reject(new Error('SYNC_TIMEOUT')), 12000)
             );
 
             try {
@@ -194,7 +243,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                     loading: false,
                     awaitingConfirmation: false,
                     authReady: true,
+                    emailJustVerified: fromEmailLink || hadAuthParams,
                 });
+
+                if (fromEmailLink || hadAuthParams) {
+                    clearAuthParamsFromUrl();
+                    routeAfterAuth(user);
+                }
             } catch (syncErr) {
                 console.warn('Backend sync failed or timed out:', syncErr);
                 const fallbackUser: AAGUser = {
@@ -210,11 +265,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                     country: 'Global',
                     language: 'en',
                 };
-                set({ user: fallbackUser, loading: false, authReady: true });
+                set({
+                    user: fallbackUser,
+                    loading: false,
+                    authReady: true,
+                    emailJustVerified: fromEmailLink || hadAuthParams,
+                });
+                if (fromEmailLink || hadAuthParams) {
+                    clearAuthParamsFromUrl();
+                    routeAfterAuth(fallbackUser);
+                }
             }
-        } catch (err) {
-            console.error('Session check critical failure:', err);
-            set({ user: null, loading: false, authReady: true });
+        } catch (err: any) {
+            console.error('Session check failed:', err);
+            set({
+                user: null,
+                loading: false,
+                authReady: true,
+                error: err.message,
+                emailJustVerified: false,
+            });
         }
     },
 
@@ -276,15 +346,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             pendingEmail: null,
             pendingUsername: null,
             isVerifySuccess: false,
+            emailJustVerified: false,
         });
         navigateTo('/');
     },
 }));
 
-// Keep session in sync when Supabase refreshes tokens (prevents "lost session" flashes)
 supabase.auth.onAuthStateChange(async (event, session) => {
-    const state = useAuthStore.getState();
-
     if (event === 'SIGNED_OUT') {
         clearToken();
         useAuthStore.setState({ user: null });
@@ -293,10 +361,11 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 
     if (!session || event === 'INITIAL_SESSION') return;
 
+    if (event === 'SIGNED_IN' && hasPendingAuthCallback()) {
+        return;
+    }
+
     if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-        if (window.location.pathname === '/auth/callback' && event === 'SIGNED_IN') {
-            return;
-        }
         try {
             setToken(session.access_token);
             const user = await syncProfileFromSession(session.access_token, session.user);
@@ -307,7 +376,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
                 authReady: true,
             });
         } catch {
-            /* checkSession / callback will recover */
+            /* checkSession handles recovery */
         }
     }
 });

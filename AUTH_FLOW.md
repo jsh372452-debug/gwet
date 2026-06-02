@@ -15,7 +15,9 @@ Under **Authentication → URL Configuration**, add:
   - `http://localhost:5173/auth/callback`
   - `https://your-domain.pages.dev/auth/callback`
 
-Email templates should use the default confirmation link (PKCE). The app exchanges `?code=` on `/auth/callback`.
+Email templates should use the default confirmation link (PKCE).
+
+The app exchanges `?code=` (or `#access_token=`) **even if Supabase opens the site root `/`** — you are then sent to `/customize` automatically. New signups should still use redirect `.../auth/callback`.
 
 ## Routes
 
