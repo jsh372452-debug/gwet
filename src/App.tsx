@@ -37,11 +37,8 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (loading || !authReady) return;
-
+    if (!authReady) return;
     const current = normalizePath(window.location.pathname);
-
-    // Never kick user to landing while email link tokens are still in the URL
     if (hasPendingAuthCallback()) return;
 
     if (!user) {
@@ -52,8 +49,6 @@ function App() {
       return;
     }
 
-    if (shouldRunAuthCallback(current)) return;
-
     if (!user.isOnboarded && !isCustomizePath(current)) {
       navigateTo(CUSTOMIZE_PATH);
       setRoutePath(CUSTOMIZE_PATH);
@@ -61,33 +56,15 @@ function App() {
       navigateTo(FEED_PATH);
       setRoutePath(FEED_PATH);
     }
-  }, [user, loading, authReady]);
-
-  const [progress, setProgress] = React.useState(0);
-  useEffect(() => {
-    if (loading) {
-      const interval = setInterval(() => {
-        setProgress(prev => (prev < 90 ? prev + 10 : prev));
-      }, 200);
-      return () => clearInterval(interval);
-    }
-    setProgress(100);
-    const timeout = setTimeout(() => setProgress(0), 400);
-    return () => clearTimeout(timeout);
-  }, [loading]);
+  }, [user, authReady]);
 
   const path = routePath;
-  const authCallbackMode = shouldRunAuthCallback(path) || hasPendingAuthCallback();
+  const authCallbackMode = shouldRunAuthCallback(path, !!user);
+  const showBootLoading = loading && !authCallbackMode && !user && authReady === false;
 
   const renderMain = () => {
-    if (authCallbackMode) {
-      return <AuthCallback key="callback" />;
-    }
-
-    if (awaitingConfirmation) {
-      return <VerificationUI key="verify" />;
-    }
-
+    if (authCallbackMode) return <AuthCallback key="callback" />;
+    if (awaitingConfirmation) return <VerificationUI key="verify" />;
     if (!user) {
       return (
         <>
@@ -96,46 +73,23 @@ function App() {
         </>
       );
     }
-
-    if (requiresPasswordSetup) {
-      return <GooglePasswordSetup onComplete={() => checkSession()} />;
-    }
-
-    if (!user.isOnboarded || isCustomizePath(path)) {
-      return <ProfileOnboarding key="onboard" />;
-    }
-
+    if (requiresPasswordSetup) return <GooglePasswordSetup onComplete={() => checkSession()} />;
+    if (!user.isOnboarded || isCustomizePath(path)) return <ProfileOnboarding key="onboard" />;
     return <Dashboard key="dashboard" initialTab="feed" />;
   };
 
-  const showLoading = loading || (authCallbackMode && !authReady);
-
   return (
     <div className={`app-container ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
-      {progress > 0 && <div className="top-progress" style={{ width: `${progress}%` }} />}
-
       <AnimatePresence mode="wait">
-        {showLoading ? (
-          <motion.div
-            key="loading"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="gwet-loading-screen"
-          >
+        {showBootLoading ? (
+          <motion.div key="boot" className="gwet-loading-screen" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <div className="gwet-loading-inner">
               <div className="gwet-spinner-ring" />
-              <p>جاري تجهيز حسابك...</p>
+              <p>جاري تحميل GWET...</p>
             </div>
           </motion.div>
         ) : (
-          <motion.div
-            key={path + (user?.id || 'guest') + String(authCallbackMode)}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.35, ease: 'easeOut' }}
-          >
+          <motion.div key={path + (user?.id || 'guest')} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             {renderMain()}
           </motion.div>
         )}

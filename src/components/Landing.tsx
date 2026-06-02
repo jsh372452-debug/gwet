@@ -1,10 +1,18 @@
 import React from 'react';
 import { GamingShell } from './GamingShell';
 import { motion } from 'framer-motion';
+import { Users, MessageCircle, Trophy, Zap } from 'lucide-react';
 
 interface LandingProps {
     onLaunch: () => void;
 }
+
+const PREVIEW = [
+    { icon: <Users size={20} />, title: 'مجتمعات', desc: 'انضم لسكوادات وألعابك المفضلة', tag: 'LIVE' },
+    { icon: <MessageCircle size={20} />, title: 'شات فوري', desc: 'رسائل خاصة بسرعة واتساب', tag: 'E2E' },
+    { icon: <Trophy size={20} />, title: 'Play With Pro', desc: 'اعثر على محترفين حسب أسلوب لعبك', tag: 'NEW' },
+    { icon: <Zap size={20} />, title: 'نشاطك', desc: 'شارات، إطارات، وتقدم Gaming CV', tag: 'XP' },
+];
 
 export const Landing: React.FC<LandingProps> = ({ onLaunch }) => {
     React.useEffect(() => {
@@ -16,42 +24,43 @@ export const Landing: React.FC<LandingProps> = ({ onLaunch }) => {
 
     return (
         <GamingShell>
-            <div className="gwet-landing-grid">
-                <motion.div
-                    className="gwet-landing-copy"
-                    initial={{ opacity: 0, x: -24 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.6 }}
-                >
-                    <h5 className="font-nav gwet-tagline">GAMERS CONNECT. PLAY. WIN.</h5>
-                    <h1 className="font-heading gwet-hero-title">GWET</h1>
-                    <p className="gwet-landing-desc">
-                        منصة اجتماعية للجيمرز — منشورات، شات، مجتمعات، و Play With Pro.
-                        تجربة سريعة قريبة من <span className="gwet-highlight">Discord</span> و{' '}
-                        <span className="gwet-highlight">Twitch</span> بدون احتكاك.
-                    </p>
-                    <p className="gwet-landing-sub">
-                        ONE PLATFORM. <strong>MILLIONS OF GAMERS.</strong>
-                    </p>
-                </motion.div>
+            <div className="gwet-landing-layout">
+                <motion.div className="gwet-landing-hero" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                    <p className="gwet-eyebrow font-nav">THE GAMER&apos;S OS</p>
+                    <h1 className="gwet-hero-glow font-display">GWET</h1>
+                    <p className="gwet-hero-ar">النظام البيئي الرقمي للجيمر — سريع، مجتمعي، بدون احتكاك.</p>
+                    <p className="gwet-hero-en">Electric speed. Neon community. One platform.</p>
 
-                <motion.div
-                    className="gwet-landing-cta"
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.55, delay: 0.15 }}
-                >
-                    <div className="gwet-enter-ring group">
-                        <div className="gwet-enter-glow" />
-                        <div className="gwet-enter-border" />
-                        <button type="button" className="gwet-enter-btn font-heading" onClick={onLaunch}>
-                            ENTER
+                    <div className="gwet-hero-actions">
+                        <button type="button" className="btn-gaming btn-gaming-lg" onClick={onLaunch}>
+                            ابدأ مجاناً
+                        </button>
+                        <button type="button" className="btn-gaming-outline" onClick={onLaunch}>
+                            تسجيل الدخول
                         </button>
                     </div>
-                    <button type="button" className="gwet-signin-link" onClick={onLaunch}>
-                        لديك حساب؟ تسجيل الدخول
-                    </button>
                 </motion.div>
+
+                <motion.section
+                    className="gwet-preview-grid"
+                    initial={{ opacity: 0, y: 24 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.12 }}
+                >
+                    <p className="gwet-preview-label">استكشف قبل التسجيل</p>
+                    {PREVIEW.map((item, i) => (
+                        <div key={i} className="gwet-preview-card glass-card">
+                            <div className="gwet-preview-icon">{item.icon}</div>
+                            <div>
+                                <div className="gwet-preview-head">
+                                    <h3>{item.title}</h3>
+                                    <span className="gwet-tag">{item.tag}</span>
+                                </div>
+                                <p>{item.desc}</p>
+                            </div>
+                        </div>
+                    ))}
+                </motion.section>
             </div>
         </GamingShell>
     );

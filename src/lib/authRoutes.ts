@@ -37,8 +37,11 @@ export function isAuthCallbackPath(pathname: string): boolean {
     return normalizePath(pathname) === AUTH_CALLBACK_PATH;
 }
 
-export function shouldRunAuthCallback(pathname: string): boolean {
-    return isAuthCallbackPath(pathname) || hasPendingAuthCallback();
+/** Only while verifying — not forever on /auth/callback after login */
+export function shouldRunAuthCallback(pathname: string, isLoggedIn = false): boolean {
+    if (hasPendingAuthCallback()) return true;
+    if (!isLoggedIn && isAuthCallbackPath(pathname)) return true;
+    return false;
 }
 
 export function isCustomizePath(pathname: string): boolean {

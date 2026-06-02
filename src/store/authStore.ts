@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import { api, AAGUser } from '../lib/api';
-import { setToken, clearToken } from '../lib/api';
+import { clearToken, setToken } from '../lib/api';
 import {
     authCallbackUrl,
     clearAuthParamsFromUrl,
@@ -11,6 +11,7 @@ import {
     navigateTo,
 } from '../lib/authRoutes';
 import { consumeEmailVerificationFromUrl } from '../lib/emailAuth';
+import { syncProfileFast } from '../lib/profileSync';
 
 interface AuthState {
     user: AAGUser | null;
@@ -41,46 +42,21 @@ interface AuthState {
     setUser: (user: AAGUser) => void;
 }
 
-async function syncProfileFromSession(accessToken: string, sessionUser: { id: string; email?: string; user_metadata?: Record<string, unknown> }): Promise<AAGUser> {
-    setToken(accessToken);
-
-    try {
-        const { user } = await api.auth.session();
-        return user;
-    } catch {
-        const username = (sessionUser.user_metadata?.username as string)
-            || sessionUser.email?.split('@')[0]
-            || 'Player';
-        const { user } = await api.auth.register(
-            username,
-            sessionUser.email || '',
-            sessionUser.id
-        );
-        return user;
-    }
-}
-
 function routeAfterAuth(user: AAGUser): void {
-    if (!user.isOnboarded) {
-        navigateTo(CUSTOMIZE_PATH);
-    } else {
-        navigateTo(FEED_PATH);
-    }
+    navigateTo(!user.isOnboarded ? CUSTOMIZE_PATH : FEED_PATH);
 }
 
 async function finishEmailVerification(set: (p: Partial<AuthState>) => void): Promise<{ isOnboarded: boolean }> {
-    const fromEmailLink = await consumeEmailVerificationFromUrl();
+    await consumeEmailVerificationFromUrl();
 
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     if (sessionError || !session) {
         throw new Error(
-            fromEmailLink
-                ? 'تم التفعيل في Supabase لكن الجلسة لم تُحفظ. افتح الموقع من Chrome وسجّل دخولك بنفس الإيميل وكلمة المرور.'
-                : 'لم يتم العثور على رابط تفعيل صالح. اطلب رابطاً جديداً.'
+            'تم التفعيل لكن الجلسة لم تُحفظ. سجّل دخولك بنفس الإيميل وكلمة المرور — حسابك مفعّل في Supabase.'
         );
     }
 
-    const profileUser = await syncProfileFromSession(session.access_token, session.user);
+    const profileUser = await syncProfileFast(session.access_token, session.user);
 
     set({
         user: profileUser,
@@ -113,32 +89,23 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     setRequiresPasswordSetup: (val) => set({ requiresPasswordSetup: val }),
     setVerificationSuccess: (val) => set({ isVerifySuccess: val }),
     setUser: (user) => set({ user }),
-
     routeAfterAuth,
 
     updateProfile: async (data) => {
-        try {
-            const mappedData: Record<string, unknown> = {};
-            if (data.displayName !== undefined) mappedData.display_name = data.displayName;
-            if (data.avatarUrl !== undefined) mappedData.avatar_url = data.avatarUrl;
-            if (data.bio !== undefined) mappedData.bio = data.bio;
-            if (data.gamingPlatform !== undefined) mappedData.gaming_platform = data.gamingPlatform;
-            if (data.country !== undefined) mappedData.country = data.country;
-            if (data.language !== undefined) mappedData.language = data.language;
-            if (data.isOnboarded !== undefined) mappedData.is_onboarded = data.isOnboarded;
-            if (data.isVerified !== undefined) mappedData.is_verified = data.isVerified;
-            if (data.username !== undefined) mappedData.username = data.username;
+        const mappedData: Record<string, unknown> = {};
+        if (data.displayName !== undefined) mappedData.display_name = data.displayName;
+        if (data.avatarUrl !== undefined) mappedData.avatar_url = data.avatarUrl;
+        if (data.bio !== undefined) mappedData.bio = data.bio;
+        if (data.gamingPlatform !== undefined) mappedData.gaming_platform = data.gamingPlatform;
+        if (data.country !== undefined) mappedData.country = data.country;
+        if (data.language !== undefined) mappedData.language = data.language;
+        if (data.isOnboarded !== undefined) mappedData.is_onboarded = data.isOnboarded;
+        if (data.isVerified !== undefined) mappedData.is_verified = data.isVerified;
+        if (data.username !== undefined) mappedData.username = data.username;
 
-            const { user: updatedUser } = await api.auth.updateProfile(mappedData);
-            set({ user: updatedUser });
-
-            if (data.isOnboarded) {
-                routeAfterAuth(updatedUser);
-            }
-        } catch (err) {
-            console.error('Update profile failed:', err);
-            throw err;
-        }
+        const { user: updatedUser } = await api.auth.updateProfile(mappedData);
+        set({ user: updatedUser });
+        if (data.isOnboarded) routeAfterAuth(updatedUser);
     },
 
     verifyCode: async (_code) => {
@@ -168,11 +135,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
 
     handleEmailCallback: async () => {
-        set({ loading: true, error: null, awaitingConfirmation: false });
-
         const existing = get().user;
-        if (existing?.isVerified && get().emailJustVerified) {
-            set({ loading: false, authReady: true });
+        if (existing && get().emailJustVerified) {
             routeAfterAuth(existing);
             return { isOnboarded: !!existing.isOnboarded };
         }
@@ -180,61 +144,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         try {
             return await finishEmailVerification(set);
         } catch (err: any) {
-            set({ loading: false, authReady: true, error: err.message });
+            set({ authReady: true, error: err.message });
             throw err;
         }
     },
 
     checkSession: async () => {
-        const pendingEmailLink = hasPendingAuthCallback();
-        set({ loading: true, error: null });
-
-        // Email link handled only in AuthCallback (prevents double code exchange)
-        if (pendingEmailLink) {
+        if (hasPendingAuthCallback()) {
             set({ loading: false, authReady: true });
             return;
         }
+
+        set({ loading: true, error: null });
 
         try {
             const { data: { session } } = await supabase.auth.getSession();
 
             if (!session) {
-                set({ user: null, loading: false, authReady: true, emailJustVerified: false });
+                set({ user: null, loading: false, authReady: true });
                 return;
             }
 
-            const syncPromise = syncProfileFromSession(session.access_token, session.user);
-            const timeoutPromise = new Promise<never>((_, reject) =>
-                setTimeout(() => reject(new Error('SYNC_TIMEOUT')), 12000)
-            );
-
-            try {
-                const user = await Promise.race([syncPromise, timeoutPromise]);
-                set({
-                    user,
-                    loading: false,
-                    awaitingConfirmation: false,
-                    authReady: true,
-                });
-            } catch (syncErr) {
-                console.warn('Backend sync failed or timed out:', syncErr);
-                const fallbackUser: AAGUser = {
-                    id: session.user.id,
-                    username: (session.user.user_metadata?.username as string) || session.user.email?.split('@')[0] || 'Player',
-                    displayName: (session.user.user_metadata?.display_name as string) || '',
-                    avatarUrl: (session.user.user_metadata?.avatar_url as string) || '',
-                    influenceScore: 0,
-                    isOnboarded: false,
-                    isVerified: !!session.user.email_confirmed_at,
-                    bio: '',
-                    gamingPlatform: '',
-                    country: 'Global',
-                    language: 'en',
-                };
-                set({ user: fallbackUser, loading: false, authReady: true });
-            }
+            const user = await syncProfileFast(session.access_token, session.user);
+            set({ user, loading: false, awaitingConfirmation: false, authReady: true });
         } catch (err: any) {
-            console.error('Session check failed:', err);
             set({ user: null, loading: false, authReady: true, error: err.message });
         }
     },
@@ -245,31 +178,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             const { data, error } = await supabase.auth.signUp({
                 email,
                 password,
-                options: {
-                    data: { username },
-                    emailRedirectTo: authCallbackUrl(),
-                },
+                options: { data: { username }, emailRedirectTo: authCallbackUrl() },
             });
-
             if (error) throw error;
 
             if (!data.session) {
-                set({
-                    loading: false,
-                    awaitingConfirmation: true,
-                    pendingEmail: email,
-                    pendingUsername: username,
-                    error: null,
-                });
+                set({ loading: false, awaitingConfirmation: true, pendingEmail: email, pendingUsername: username });
                 return;
             }
 
-            setToken(data.session.access_token);
-            const { user: profileUser } = await api.auth.register(username, email, data.session.user.id);
-            set({ user: profileUser, loading: false, awaitingConfirmation: false });
-            routeAfterAuth(profileUser);
+            const user = await syncProfileFast(data.session.access_token, data.session.user);
+            set({ user, loading: false, awaitingConfirmation: false });
+            routeAfterAuth(user);
         } catch (err: any) {
-            console.error('Registration failed:', err);
             set({ error: err.message || 'Registration failed', loading: false });
         }
     },
@@ -279,8 +200,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         try {
             const { data, error } = await supabase.auth.signInWithPassword({ email, password });
             if (error) throw error;
-
-            const user = await syncProfileFromSession(data.session.access_token, data.user);
+            const user = await syncProfileFast(data.session.access_token, data.user);
             set({ user, loading: false, awaitingConfirmation: false });
             routeAfterAuth(user);
         } catch (err: any) {
@@ -291,14 +211,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     signOut: async () => {
         await supabase.auth.signOut();
         clearToken();
-        set({
-            user: null,
-            awaitingConfirmation: false,
-            pendingEmail: null,
-            pendingUsername: null,
-            isVerifySuccess: false,
-            emailJustVerified: false,
-        });
+        set({ user: null, awaitingConfirmation: false, pendingEmail: null, pendingUsername: null, isVerifySuccess: false, emailJustVerified: false });
         navigateTo('/');
     },
 }));
@@ -309,23 +222,13 @@ supabase.auth.onAuthStateChange(async (event, session) => {
         useAuthStore.setState({ user: null });
         return;
     }
+    if (!session || event === 'INITIAL_SESSION' || hasPendingAuthCallback()) return;
 
-    if (!session || event === 'INITIAL_SESSION') return;
-    if (hasPendingAuthCallback()) return;
-
-    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+    if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         try {
-            setToken(session.access_token);
-            const user = await syncProfileFromSession(session.access_token, session.user);
-            useAuthStore.setState({
-                user,
-                loading: false,
-                awaitingConfirmation: false,
-                authReady: true,
-            });
-        } catch {
-            /* handleEmailCallback / checkSession recover */
-        }
+            const user = await syncProfileFast(session.access_token, session.user);
+            useAuthStore.setState({ user, loading: false, authReady: true, awaitingConfirmation: false });
+        } catch { /* noop */ }
     }
 });
 
