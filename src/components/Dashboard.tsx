@@ -19,9 +19,13 @@ const pageVariants = {
 
 const pageTransition = { duration: 0.25, ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number] };
 
-export const Dashboard: React.FC = () => {
+interface DashboardProps {
+    initialTab?: string;
+}
+
+export const Dashboard: React.FC<DashboardProps> = ({ initialTab = 'feed' }) => {
     const { user } = useAuthStore();
-    const [activeTab, setActiveTab] = React.useState('feed');
+    const [activeTab, setActiveTab] = React.useState(initialTab);
 
     const renderContent = () => {
         switch (activeTab) {

@@ -1,250 +1,234 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { Globe, ArrowRight, User, Gamepad2 } from 'lucide-react';
-import Flag from './Flag';
-import { countries } from '../data/countries';
-import { Logo } from './Logo';
+import { ArrowRight, User, Camera, Gamepad2, Sparkles } from 'lucide-react';
+import { GamingShell } from './GamingShell';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const PLAY_STYLES = [
+    'Competitive', 'Casual', 'Survival', 'Strategy',
+    'Sandbox', 'Shooter', 'Racing', 'RPG',
+] as const;
+
+const INTERESTS = [
+    'Streaming', 'Esports', 'Team Play', 'Tournaments', 'Content Creation',
+] as const;
 
 const stepVariants = {
     enter: { opacity: 0, x: 30 },
     center: { opacity: 1, x: 0 },
-    exit: { opacity: 0, x: -30 }
+    exit: { opacity: 0, x: -30 },
 };
+
+function buildBio(userBio: string, interests: string[]): string {
+    const base = userBio.trim();
+    const tag = interests.length ? `\n[GWET] ${interests.join(' · ')}` : '';
+    return (base + tag).trim();
+}
 
 export const ProfileOnboarding: React.FC = () => {
     const { user, updateProfile } = useAuthStore();
     const [step, setStep] = useState(1);
-    
-    const [displayName, setDisplayName] = useState(user?.username || '');
-    const [gamingPlatform, setGamingPlatform] = useState('PC');
-    const [country, setCountry] = useState('Global');
-    const [language, setLanguage] = useState('en');
+    const fileRef = useRef<HTMLInputElement>(null);
+
+    const [username, setUsername] = useState(user?.username || '');
+    const [displayName, setDisplayName] = useState(user?.displayName || user?.username || '');
+    const [bio, setBio] = useState(user?.bio?.split('\n[GWET]')[0]?.trim() || '');
+    const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || '');
+    const [playStyle, setPlayStyle] = useState(user?.gamingPlatform || 'Competitive');
+    const [interests, setInterests] = useState<string[]>([]);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const toggleInterest = (item: string) => {
+        setInterests(prev =>
+            prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item]
+        );
+    };
+
+    const onAvatarPick = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => setAvatarUrl(String(reader.result));
+        reader.readAsDataURL(file);
+    };
 
     const handleComplete = async () => {
         setSaving(true);
         setError(null);
         try {
             await updateProfile({
-                displayName,
-                gamingPlatform,
-                country,
-                language,
-                isOnboarded: true
+                username: username.trim() || user?.username,
+                displayName: displayName.trim(),
+                avatarUrl,
+                bio: buildBio(bio, interests),
+                gamingPlatform: playStyle,
+                isOnboarded: true,
             });
         } catch (err: any) {
-            console.error('Failed to complete onboarding:', err);
-            setError(err.message || 'Something went wrong. Please try again.');
+            setError(err.message || 'حدث خطأ، حاول مرة أخرى');
             setSaving(false);
         }
     };
 
     return (
-        <div style={{ 
-            minHeight: '100vh', 
-            background: 'var(--bg-app)',
-            color: 'var(--text-main)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '24px'
-        }}>
-            <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                style={{ textAlign: 'center', marginBottom: '40px' }}
-            >
-                <Logo size={56} style={{ margin: '0 auto 20px' }} />
-                <h1 style={{ fontSize: '28px', fontWeight: 700, marginBottom: '8px', letterSpacing: '-0.5px' }}>
-                    Complete Your Profile
-                </h1>
-                <p style={{ color: 'var(--text-dim)', fontSize: '15px' }}>
-                    Tell us a bit about yourself to get started
-                </p>
-            </motion.div>
+        <GamingShell compact>
+            <div className="gwet-onboard-wrap">
+                <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="gwet-onboard-intro"
+                >
+                    <h1 className="font-heading gwet-hero-title-sm">SETUP YOUR GAMER ID</h1>
+                    <p className="gwet-text-dim">خطوة سريعة قبل دخول عالم GWET — مثل Discord، بدون تعقيد</p>
+                </motion.div>
 
-            <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.15 }}
-                className="card-professional" 
-                style={{ width: '100%', maxWidth: '480px', position: 'relative', overflow: 'hidden' }}
-            >
-                {/* Step Indicator */}
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '32px' }}>
-                    <div style={{ 
-                        flex: 1, height: '3px', borderRadius: '2px', 
-                        background: 'var(--brand-primary)',
-                        transition: 'all 0.4s ease'
-                    }} />
-                    <div style={{ 
-                        flex: 1, height: '3px', borderRadius: '2px', 
-                        background: step === 2 ? 'var(--brand-primary)' : 'rgba(255,255,255,0.06)',
-                        transition: 'all 0.4s ease'
-                    }} />
-                </div>
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1 }}
+                    className="gwet-glass-card gwet-onboard-card"
+                >
+                    <div className="gwet-step-bar">
+                        <span className={step >= 1 ? 'active' : ''} />
+                        <span className={step >= 2 ? 'active' : ''} />
+                    </div>
 
-                <AnimatePresence mode="wait">
-                    {step === 1 && (
-                        <motion.div
-                            key="step1"
-                            variants={stepVariants}
-                            initial="enter" animate="center" exit="exit"
-                            transition={{ duration: 0.3 }}
-                        >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '28px' }}>
-                                <div style={{ 
-                                    padding: '10px', background: 'rgba(56, 189, 248, 0.08)', 
-                                    borderRadius: 'var(--radius-sm)', color: 'var(--brand-primary)' 
-                                }}>
+                    <AnimatePresence mode="wait">
+                        {step === 1 && (
+                            <motion.div
+                                key="s1"
+                                variants={stepVariants}
+                                initial="enter"
+                                animate="center"
+                                exit="exit"
+                                transition={{ duration: 0.25 }}
+                            >
+                                <div className="gwet-step-head">
                                     <User size={20} />
+                                    <div>
+                                        <h2>البيانات الأساسية</h2>
+                                        <p>الخطوة 1 من 2</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Personal Info</h2>
-                                    <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>Step 1 of 2</p>
-                                </div>
-                            </div>
-                            
-                            <div style={{ marginBottom: '20px' }}>
-                                <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>Display Name</label>
-                                <input 
-                                    className="input-standard" 
-                                    placeholder="How should we call you?"
-                                    value={displayName} 
-                                    onChange={e => setDisplayName(e.target.value)} 
-                                    style={{ height: '48px', width: '100%' }}
-                                />
-                            </div>
 
-                            <div style={{ marginBottom: '28px' }}>
-                                <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>Platform</label>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                                    {['PC', 'PlayStation', 'Xbox', 'Mobile'].map(platform => (
-                                        <motion.button 
-                                            key={platform}
-                                            whileHover={{ scale: 1.02, transition: { duration: 0.6, ease: "easeOut" } }}
-                                            whileTap={{ scale: 0.98 }}
-                                            onClick={() => setGamingPlatform(platform)}
-                                            style={{ 
-                                                height: '56px', borderRadius: 'var(--radius-sm)',
-                                                background: gamingPlatform === platform ? 'rgba(56, 189, 248, 0.1)' : 'transparent',
-                                                border: gamingPlatform === platform ? '1px solid var(--brand-primary)' : '1px solid var(--border-light)',
-                                                color: gamingPlatform === platform ? 'var(--brand-primary)' : 'var(--text-dim)',
-                                                cursor: 'pointer', fontWeight: 600, fontSize: '14px',
-                                                position: 'relative', overflow: 'hidden'
-                                            }}
+                                <button
+                                    type="button"
+                                    className="gwet-avatar-picker"
+                                    onClick={() => fileRef.current?.click()}
+                                >
+                                    {avatarUrl ? (
+                                        <img src={avatarUrl} alt="" />
+                                    ) : (
+                                        <Camera size={28} />
+                                    )}
+                                    <span>الصورة الشخصية</span>
+                                </button>
+                                <input ref={fileRef} type="file" accept="image/*" hidden onChange={onAvatarPick} />
+
+                                <label className="gwet-label">اسم المستخدم</label>
+                                <input
+                                    className="input-gaming"
+                                    value={username}
+                                    onChange={e => setUsername(e.target.value)}
+                                    placeholder="xPro_Gamer"
+                                />
+
+                                <label className="gwet-label">الاسم الظاهر</label>
+                                <input
+                                    className="input-gaming"
+                                    value={displayName}
+                                    onChange={e => setDisplayName(e.target.value)}
+                                    placeholder="كيف يراك اللاعبون؟"
+                                />
+
+                                <label className="gwet-label">نبذة قصيرة</label>
+                                <textarea
+                                    className="input-gaming"
+                                    rows={3}
+                                    value={bio}
+                                    onChange={e => setBio(e.target.value)}
+                                    placeholder="فريقك، ألعابك المفضلة، أسلوبك..."
+                                />
+
+                                <button
+                                    type="button"
+                                    className="btn-gaming"
+                                    disabled={!displayName.trim() || !username.trim()}
+                                    onClick={() => setStep(2)}
+                                >
+                                    التالي <ArrowRight size={16} />
+                                </button>
+                            </motion.div>
+                        )}
+
+                        {step === 2 && (
+                            <motion.div
+                                key="s2"
+                                variants={stepVariants}
+                                initial="enter"
+                                animate="center"
+                                exit="exit"
+                                transition={{ duration: 0.25 }}
+                            >
+                                <div className="gwet-step-head">
+                                    <Gamepad2 size={20} />
+                                    <div>
+                                        <h2>أسلوب اللعب والاهتمامات</h2>
+                                        <p>الخطوة 2 من 2</p>
+                                    </div>
+                                </div>
+
+                                <label className="gwet-label">نوع اللعب المفضل</label>
+                                <div className="gwet-chip-grid">
+                                    {PLAY_STYLES.map(style => (
+                                        <button
+                                            key={style}
+                                            type="button"
+                                            className={`gwet-chip ${playStyle === style ? 'active' : ''}`}
+                                            onClick={() => setPlayStyle(style)}
                                         >
-                                            {/* Note for User: Lottie animations go here. Replaced with motion hover for now as files were missing */}
-                                            {platform}
-                                        </motion.button>
+                                            {style}
+                                        </button>
                                     ))}
                                 </div>
-                            </div>
 
-                            <button 
-                                className="btn-primary" 
-                                style={{ width: '100%', height: '48px', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }} 
-                                onClick={() => setStep(2)} 
-                                disabled={!displayName.trim()}
-                            >
-                                Continue <ArrowRight size={16} />
-                            </button>
-                        </motion.div>
-                    )}
+                                <label className="gwet-label gwet-label-spaced">
+                                    <Sparkles size={14} /> اهتماماتك
+                                </label>
+                                <div className="gwet-chip-grid">
+                                    {INTERESTS.map(item => (
+                                        <button
+                                            key={item}
+                                            type="button"
+                                            className={`gwet-chip ${interests.includes(item) ? 'active' : ''}`}
+                                            onClick={() => toggleInterest(item)}
+                                        >
+                                            {item}
+                                        </button>
+                                    ))}
+                                </div>
 
-                    {step === 2 && (
-                        <motion.div
-                            key="step2"
-                            variants={stepVariants}
-                            initial="enter" animate="center" exit="exit"
-                            transition={{ duration: 0.3 }}
-                        >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '28px' }}>
-                                <div style={{ 
-                                    padding: '10px', background: 'rgba(56, 189, 248, 0.08)', 
-                                    borderRadius: 'var(--radius-sm)', color: 'var(--brand-primary)' 
-                                }}>
-                                    <Globe size={20} />
-                                </div>
-                                <div>
-                                    <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Location & Language</h2>
-                                    <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>Step 2 of 2</p>
-                                </div>
-                            </div>
-                            
-                            <div style={{ marginBottom: '20px' }}>
-                                <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>Country</label>
-                                <div style={{ position: 'relative' }}>
-                                    <div style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', zIndex: 1 }}>
-                                        <Flag code={country} size={18} />
-                                    </div>
-                                    <select 
-                                        className="input-standard" 
-                                        value={country} 
-                                        onChange={e => setCountry(e.target.value)}
-                                        style={{ height: '48px', paddingLeft: '40px', width: '100%' }}
+                                {error && <div className="gwet-error-banner">{error}</div>}
+
+                                <div className="gwet-onboard-actions">
+                                    <button type="button" className="btn-gaming-ghost" onClick={() => setStep(1)} disabled={saving}>
+                                        رجوع
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="btn-gaming"
+                                        onClick={handleComplete}
+                                        disabled={saving}
                                     >
-                                        <option value="Global">Worldwide</option>
-                                        {countries.map(c => (
-                                            <option key={c.code} value={c.code}>{c.name}</option>
-                                        ))}
-                                    </select>
+                                        {saving ? 'جاري تجهيز حسابك...' : 'ادخل عالم GWET'}
+                                    </button>
                                 </div>
-                            </div>
-
-                            <div style={{ marginBottom: '28px' }}>
-                                <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-dim)', marginBottom: '8px', display: 'block' }}>Language</label>
-                                <select 
-                                    className="input-standard" 
-                                    value={language} 
-                                    onChange={e => setLanguage(e.target.value)}
-                                    style={{ height: '48px', width: '100%' }}
-                                >
-                                    <option value="en">English</option>
-                                    <option value="ar">العربية</option>
-                                </select>
-                            </div>
-
-                            {error && (
-                                <div style={{ 
-                                    padding: '12px', background: 'rgba(239, 68, 68, 0.08)', 
-                                    border: '1px solid rgba(239, 68, 68, 0.15)', 
-                                    color: '#f87171', fontSize: '13px', borderRadius: 'var(--radius-sm)',
-                                    marginBottom: '20px'
-                                }}>
-                                    {error}
-                                </div>
-                            )}
-
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2.5fr', gap: '8px' }}>
-                                <button 
-                                    style={{ 
-                                        height: '48px', background: 'transparent', 
-                                        border: '1px solid var(--border-light)', borderRadius: 'var(--radius-sm)',
-                                        color: 'var(--text-dim)', cursor: 'pointer', fontWeight: 600
-                                    }} 
-                                    onClick={() => setStep(1)} 
-                                    disabled={saving}
-                                >
-                                    Back
-                                </button>
-                                <button 
-                                    className="btn-primary" 
-                                    style={{ height: '48px', fontSize: '15px' }} 
-                                    onClick={handleComplete} 
-                                    disabled={saving}
-                                >
-                                    {saving ? 'Setting up...' : 'Complete Setup'}
-                                </button>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </motion.div>
-        </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </motion.div>
+            </div>
+        </GamingShell>
     );
 };

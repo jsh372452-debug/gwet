@@ -7,18 +7,57 @@ import { useTranslation } from './i18n';
 import { VerificationUI } from './components/VerificationUI';
 import { Landing } from './components/Landing';
 import { GooglePasswordSetup } from './components/GooglePasswordSetup';
+import { AuthCallback } from './components/AuthCallback';
 import { motion, AnimatePresence } from 'framer-motion';
+import {
+  isAuthCallbackPath,
+  isCustomizePath,
+  isFeedPath,
+  normalizePath,
+  navigateTo,
+  CUSTOMIZE_PATH,
+  FEED_PATH,
+} from './lib/authRoutes';
 
 function App() {
-  const { user, checkSession, loading, awaitingConfirmation, requiresPasswordSetup } = useAuthStore();
+  const { user, checkSession, loading, awaitingConfirmation, requiresPasswordSetup, authReady } = useAuthStore();
   const { isRTL } = useTranslation();
   const [showAuth, setShowAuth] = React.useState(false);
+  const [routePath, setRoutePath] = React.useState(() => normalizePath(window.location.pathname));
 
   useEffect(() => {
     checkSession();
   }, [checkSession]);
 
-  // Silent Loading Bar logic
+  useEffect(() => {
+    const onPop = () => setRoutePath(normalizePath(window.location.pathname));
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
+  useEffect(() => {
+    if (loading || !authReady) return;
+
+    const current = normalizePath(window.location.pathname);
+
+    if (!user) {
+      if (isFeedPath(current) || isCustomizePath(current)) {
+        navigateTo('/');
+      }
+      return;
+    }
+
+    if (isAuthCallbackPath(current)) return;
+
+    if (!user.isOnboarded && !isCustomizePath(current) && current !== '/') {
+      navigateTo(CUSTOMIZE_PATH);
+      setRoutePath(CUSTOMIZE_PATH);
+    } else if (user.isOnboarded && isCustomizePath(current)) {
+      navigateTo(FEED_PATH);
+      setRoutePath(FEED_PATH);
+    }
+  }, [user, loading, authReady]);
+
   const [progress, setProgress] = React.useState(0);
   useEffect(() => {
     if (loading) {
@@ -26,53 +65,70 @@ function App() {
         setProgress(prev => (prev < 90 ? prev + 10 : prev));
       }, 200);
       return () => clearInterval(interval);
-    } else {
-      setProgress(100);
-      const timeout = setTimeout(() => setProgress(0), 400);
-      return () => clearTimeout(timeout);
     }
+    setProgress(100);
+    const timeout = setTimeout(() => setProgress(0), 400);
+    return () => clearTimeout(timeout);
   }, [loading]);
+
+  const path = routePath;
+
+  const renderMain = () => {
+    if (isAuthCallbackPath(path)) {
+      return <AuthCallback key="callback" />;
+    }
+
+    if (awaitingConfirmation) {
+      return <VerificationUI key="verify" />;
+    }
+
+    if (!user) {
+      return (
+        <>
+          <Landing onLaunch={() => setShowAuth(true)} />
+          {showAuth && <AuthUI onBack={() => setShowAuth(false)} />}
+        </>
+      );
+    }
+
+    if (requiresPasswordSetup) {
+      return <GooglePasswordSetup onComplete={() => checkSession()} />;
+    }
+
+    if (!user.isOnboarded || isCustomizePath(path)) {
+      return <ProfileOnboarding key="onboard" />;
+    }
+
+    return <Dashboard key="dashboard" initialTab={isFeedPath(path) ? 'feed' : 'feed'} />;
+  };
 
   return (
     <div className={`app-container ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
       {progress > 0 && <div className="top-progress" style={{ width: `${progress}%` }} />}
-      
+
       <AnimatePresence mode="wait">
-        {loading ? (
-          <motion.div 
+        {loading && !isAuthCallbackPath(path) ? (
+          <motion.div
             key="loading"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            style={{ height: '100vh', width: '100vw', background: 'var(--bg-app)' }}
-          />
-        ) : awaitingConfirmation ? (
-          <motion.div key="verify" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <VerificationUI />
-          </motion.div>
-        ) : !user ? (
-          <motion.div 
-            key="landing"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="gwet-loading-screen"
           >
-            <Landing onLaunch={() => setShowAuth(true)} />
-            {showAuth && <AuthUI onBack={() => setShowAuth(false)} />}
-          </motion.div>
-        ) : requiresPasswordSetup ? (
-          <motion.div key="pwd" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <GooglePasswordSetup onComplete={() => checkSession()} />
-          </motion.div>
-        ) : !user.isOnboarded ? (
-          <motion.div key="onboard" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <ProfileOnboarding />
+            <div className="gwet-loading-inner">
+              <div className="gwet-spinner-ring" />
+              <p>جاري تجهيز حسابك...</p>
+            </div>
           </motion.div>
         ) : (
-          <motion.div 
-            key="dashboard"
-            initial={{ opacity: 0, y: 10 }} 
-            animate={{ opacity: 1, y: 0 }} 
+          <motion.div
+            key={path + (user?.id || 'guest')}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
           >
-            <Dashboard />
+            {renderMain()}
           </motion.div>
         )}
       </AnimatePresence>

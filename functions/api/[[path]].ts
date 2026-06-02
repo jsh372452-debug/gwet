@@ -112,13 +112,15 @@ function mapUser(dbUser: any) {
     return {
         id: dbUser.id,
         username: dbUser.username,
-        displayName: dbUser.display_name,
-        avatarUrl: dbUser.avatar_url,
-        bio: dbUser.bio,
-        gamingPlatform: dbUser.gaming_platform,
+        displayName: dbUser.display_name || dbUser.username,
+        avatarUrl: dbUser.avatar_url || '',
+        bio: dbUser.bio || '',
+        gamingPlatform: dbUser.gaming_platform || '',
         influenceScore: dbUser.influence_score || 0,
-        language: dbUser.language,
-        isVerified: !!dbUser.is_verified
+        language: dbUser.language || 'en',
+        country: dbUser.country || 'Global',
+        isOnboarded: !!dbUser.is_onboarded,
+        isVerified: !!dbUser.is_verified,
     };
 }
 
@@ -140,7 +142,8 @@ async function handleRegister(env: Env, sb: any, user: { id: string, username: s
         id: user.id,
         username: finalUsername,
         display_name: finalUsername,
-        is_verified: false // Will be set to true when Supabase confirms email
+        is_verified: false,
+        is_onboarded: false,
     }).select().single();
 
     if (err) return error(err.message, 400);
@@ -257,8 +260,24 @@ async function handleSession(env: Env, user: { id: string }) {
 }
 
 async function handleUpdateProfile(env: Env, request: Request, user: { id: string }) {
-    const data = await request.json() as any;
+    const raw = await request.json() as Record<string, unknown>;
     const sb = getSupabaseAdmin(env);
+
+    const data: Record<string, unknown> = {};
+    const map: Record<string, string> = {
+        display_name: 'display_name', displayName: 'display_name',
+        avatar_url: 'avatar_url', avatarUrl: 'avatar_url',
+        bio: 'bio',
+        gaming_platform: 'gaming_platform', gamingPlatform: 'gaming_platform',
+        country: 'country',
+        language: 'language',
+        is_onboarded: 'is_onboarded', isOnboarded: 'is_onboarded',
+        is_verified: 'is_verified', isVerified: 'is_verified',
+        username: 'username',
+    };
+    for (const [key, col] of Object.entries(map)) {
+        if (raw[key] !== undefined) data[col] = raw[key];
+    }
 
     const { data: updated, error: err } = await sb.from('profiles')
         .update(data)

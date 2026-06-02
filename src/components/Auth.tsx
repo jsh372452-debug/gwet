@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
-import { useTranslation } from '../i18n';
-import { Logo } from './Logo';
-import { Mail, Lock, User as UserIcon, Eye, EyeOff, ArrowLeft, X } from 'lucide-react';
+import { Mail, Lock, User as UserIcon, Eye, EyeOff, X } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface AuthUIProps {
     onBack?: () => void;
@@ -15,150 +14,112 @@ export const AuthUI: React.FC<AuthUIProps> = ({ onBack }) => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const { login, register, loading, error } = useAuthStore();
-    const { isRTL } = useTranslation();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         useAuthStore.setState({ error: null });
-        
+
         if (isLogin) {
             await login(email, password);
         } else {
             if (password.length < 8) {
-                alert("Password must be at least 8 characters.");
+                useAuthStore.setState({ error: 'كلمة المرور 8 أحرف على الأقل' });
                 return;
             }
-            await register(email, password, username);
+            if (!username.trim()) {
+                useAuthStore.setState({ error: 'اسم المستخدم مطلوب' });
+                return;
+            }
+            await register(email, password, username.trim());
         }
     };
 
     return (
-        <div style={{ 
-            position: 'fixed', inset: 0, zIndex: 10000,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: '20px', background: 'rgba(0,0,0,0.85)',
-            backdropFilter: 'blur(10px)'
-        }}>
-            <div className="card-professional animate-fade" style={{ 
-                width: '100%', maxWidth: '440px', position: 'relative',
-                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
-            }}>
-                <button 
-                    onClick={onBack}
-                    style={{ 
-                        position: 'absolute', top: '20px', right: '20px',
-                        background: 'transparent', border: 'none', color: 'var(--text-dim)',
-                        cursor: 'pointer', padding: '4px'
-                    }}
-                >
+        <div className="gwet-auth-overlay">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.96 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="gwet-glass-card gwet-auth-form-card"
+            >
+                <button type="button" className="gwet-auth-close" onClick={onBack} aria-label="Close">
                     <X size={20} />
                 </button>
 
-                <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-                    <Logo size={48} style={{ margin: '0 auto 16px' }} />
-                    <h2 style={{ fontSize: '24px', fontWeight: 700, marginBottom: '8px' }}>
-                        {isLogin ? 'Welcome Back' : 'Create Account'}
-                    </h2>
-                    <p style={{ color: 'var(--text-dim)', fontSize: '14px' }}>
-                        {isLogin ? 'Enter your credentials to continue' : 'Join our professional network today'}
-                    </p>
-                </div>
+                <h2 className="font-heading gwet-heading-sm">
+                    {isLogin ? 'مرحباً بعودتك' : 'انضم لعالم GWET'}
+                </h2>
+                <p className="gwet-text-dim" style={{ marginBottom: '24px' }}>
+                    {isLogin ? 'سجّل دخولك وتابع من حيث توقفت' : 'حساب جديد في ثوانٍ — بدون تعقيد'}
+                </p>
 
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <form onSubmit={handleSubmit} className="gwet-form-stack">
                     {!isLogin && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-dim)' }}>Username</label>
-                            <div style={{ position: 'relative' }}>
-                                <UserIcon size={18} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--text-muted)' }} />
-                                <input 
-                                    className="input-standard" 
-                                    style={{ width: '100%', paddingLeft: '40px' }}
-                                    placeholder="johndoe"
+                        <div>
+                            <label className="gwet-label">اسم المستخدم</label>
+                            <div className="gwet-input-wrap">
+                                <UserIcon size={18} />
+                                <input
+                                    className="input-gaming"
+                                    placeholder="GamerTag"
                                     required
                                     value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
+                                    onChange={e => setUsername(e.target.value)}
                                 />
                             </div>
                         </div>
                     )}
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-dim)' }}>Email Address</label>
-                        <div style={{ position: 'relative' }}>
-                            <Mail size={18} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--text-muted)' }} />
-                            <input 
-                                className="input-standard" 
-                                style={{ width: '100%', paddingLeft: '40px' }}
+                    <div>
+                        <label className="gwet-label">البريد الإلكتروني</label>
+                        <div className="gwet-input-wrap">
+                            <Mail size={18} />
+                            <input
+                                className="input-gaming"
                                 type="email"
-                                placeholder="name@company.com"
+                                placeholder="you@email.com"
                                 required
                                 value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                onChange={e => setEmail(e.target.value)}
                             />
                         </div>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-dim)' }}>Password</label>
-                        <div style={{ position: 'relative' }}>
-                            <Lock size={18} style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--text-muted)' }} />
-                            <input 
-                                className="input-standard" 
-                                style={{ width: '100%', paddingLeft: '40px', paddingRight: '40px' }}
+                    <div>
+                        <label className="gwet-label">كلمة المرور</label>
+                        <div className="gwet-input-wrap">
+                            <Lock size={18} />
+                            <input
+                                className="input-gaming"
                                 type={showPassword ? 'text' : 'password'}
                                 placeholder="••••••••"
                                 required
                                 value={password}
-                                onChange={(e) => setPassword(e.target.value)}
+                                onChange={e => setPassword(e.target.value)}
                             />
-                            <button 
+                            <button
                                 type="button"
+                                className="gwet-eye-btn"
                                 onClick={() => setShowPassword(!showPassword)}
-                                style={{ 
-                                    position: 'absolute', right: '12px', top: '12px',
-                                    background: 'transparent', border: 'none', color: 'var(--text-muted)',
-                                    cursor: 'pointer'
-                                }}
                             >
                                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                             </button>
                         </div>
                     </div>
 
-                    {error && (
-                        <div style={{ 
-                            padding: '12px', background: 'rgba(239, 68, 68, 0.1)', 
-                            border: '1px solid rgba(239, 68, 68, 0.2)', 
-                            color: '#f87171', fontSize: '13px', borderRadius: 'var(--radius-sm)'
-                        }}>
-                            {error}
-                        </div>
-                    )}
+                    {error && <div className="gwet-error-banner">{error}</div>}
 
-                    <button 
-                        className="btn-primary" 
-                        disabled={loading}
-                        style={{ height: '48px', marginTop: '12px' }}
-                    >
-                        {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Create Account')}
+                    <button type="submit" className="btn-gaming" disabled={loading}>
+                        {loading ? 'جاري تجهيز حسابك...' : (isLogin ? 'تسجيل الدخول' : 'إنشاء حساب')}
                     </button>
                 </form>
 
-                <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '14px' }}>
-                    <span style={{ color: 'var(--text-dim)' }}>
-                        {isLogin ? "Don't have an account?" : "Already have an account?"}
-                    </span>
-                    <button 
-                        onClick={() => setIsLogin(!isLogin)}
-                        style={{ 
-                            background: 'transparent', border: 'none', color: 'var(--brand-primary)',
-                            fontWeight: 600, marginLeft: '8px', cursor: 'pointer'
-                        }}
-                    >
-                        {isLogin ? 'Sign Up' : 'Sign In'}
+                <p className="gwet-auth-switch">
+                    {isLogin ? 'ليس لديك حساب؟' : 'لديك حساب بالفعل؟'}
+                    <button type="button" onClick={() => setIsLogin(!isLogin)}>
+                        {isLogin ? 'إنشاء حساب' : 'تسجيل الدخول'}
                     </button>
-                </div>
-            </div>
+                </p>
+            </motion.div>
         </div>
     );
 };

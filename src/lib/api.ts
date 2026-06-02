@@ -155,8 +155,8 @@ export const api = {
         updateProfile: (data: Partial<{
             displayName: string; avatarUrl: string; country: string;
             language: string; isOnboarded: boolean; bio: string;
-            gamingPlatform: string;
-        }>) =>
+            gamingPlatform: string; username: string;
+        }> | Record<string, unknown>) =>
             request<{ user: AAGUser }>('auth/profile', {
                 method: 'PUT', body: JSON.stringify(data)
             }),

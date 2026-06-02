@@ -8,4 +8,11 @@ if (!supabaseUrl || !supabaseKey) {
   console.warn('Supabase credentials missing. Check your .env.local file.');
 }
 
-export const supabase = createClient(supabaseUrl || '', supabaseKey || '');
+export const supabase = createClient(supabaseUrl || '', supabaseKey || '', {
+  auth: {
+    detectSessionInUrl: true,
+    persistSession: true,
+    autoRefreshToken: true,
+    flowType: 'pkce',
+  },
+});

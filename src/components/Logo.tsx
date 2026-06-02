@@ -21,8 +21,9 @@ export const Logo: React.FC<LogoProps> = ({ size = 40, className = "", style = {
             }}
         >
             <img 
-                src="/logo.svg" 
-                alt="Gwet Logo" 
+                src="/assets/gwet-logo-3d.png"
+                alt="Gwet Logo"
+                onError={(e) => { (e.target as HTMLImageElement).src = '/logo.svg'; }} 
                 style={{ 
                     width: '100%', 
                     height: '100%', 

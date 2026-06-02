@@ -1,0 +1,4 @@
+/auth/callback  /index.html  200
+/customize      /index.html  200
+/feed           /index.html  200
+/Feed           /index.html  200
