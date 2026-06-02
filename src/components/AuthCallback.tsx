@@ -2,11 +2,10 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { Logo } from './Logo';
 import { motion } from 'framer-motion';
-import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { CheckCircle, AlertCircle, Loader2, LogIn } from 'lucide-react';
 
 type CallbackPhase = 'loading' | 'success' | 'error';
 
-/** Shown while email verification link is processed — then store routes to /customize */
 export const AuthCallback: React.FC = () => {
     const { handleEmailCallback, user, loading } = useAuthStore();
     const [phase, setPhase] = useState<CallbackPhase>('loading');
@@ -73,16 +72,27 @@ export const AuthCallback: React.FC = () => {
                         <div className="gwet-status-icon gwet-status-error">
                             <AlertCircle size={32} />
                         </div>
-                        <h2 className="gwet-heading-sm">حدث خطأ، حاول مرة أخرى</h2>
-                        <p className="gwet-text-dim">{message}</p>
-                        <button
-                            type="button"
-                            className="btn-gaming"
-                            style={{ width: '100%', marginTop: '24px' }}
-                            onClick={() => { window.location.href = '/'; }}
-                        >
-                            العودة للرئيسية
-                        </button>
+                        <h2 className="gwet-heading-sm">تعذّر إكمال التفعيل تلقائياً</h2>
+                        <p className="gwet-text-dim" style={{ textAlign: 'start', lineHeight: 1.7 }}>{message}</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '24px' }}>
+                            <button
+                                type="button"
+                                className="btn-gaming"
+                                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                                onClick={() => { window.location.href = '/?login=1'; }}
+                            >
+                                <LogIn size={16} />
+                                تسجيل الدخول (إذا تم التفعيل)
+                            </button>
+                            <button
+                                type="button"
+                                className="btn-gaming-ghost"
+                                style={{ width: '100%' }}
+                                onClick={() => { window.location.href = '/'; }}
+                            >
+                                العودة للرئيسية
+                            </button>
+                        </div>
                     </>
                 )}
             </motion.div>

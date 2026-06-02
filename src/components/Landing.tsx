@@ -7,6 +7,13 @@ interface LandingProps {
 }
 
 export const Landing: React.FC<LandingProps> = ({ onLaunch }) => {
+    React.useEffect(() => {
+        if (new URLSearchParams(window.location.search).get('login') === '1') {
+            onLaunch();
+            window.history.replaceState({}, '', '/');
+        }
+    }, [onLaunch]);
+
     return (
         <GamingShell>
             <div className="gwet-landing-grid">

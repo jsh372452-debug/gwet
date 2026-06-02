@@ -17,7 +17,15 @@ Under **Authentication → URL Configuration**, add:
 
 Email templates should use the default confirmation link (PKCE).
 
-The app exchanges `?code=` (or `#access_token=`) **even if Supabase opens the site root `/`** — you are then sent to `/customize` automatically. New signups should still use redirect `.../auth/callback`.
+The app supports:
+
+- `?token_hash=` (best — works from Gmail / phone mail apps)
+- `#access_token=` (implicit flow)
+- `?code=` (PKCE — same browser only)
+
+You are then sent to `/customize` automatically.
+
+**If auto-activation fails:** the account may still be verified in Supabase — use **تسجيل الدخول** with email + password.
 
 ## Routes
 

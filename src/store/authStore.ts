@@ -10,6 +10,7 @@ import {
     hasPendingAuthCallback,
     navigateTo,
 } from '../lib/authRoutes';
+import { consumeEmailVerificationFromUrl } from '../lib/emailAuth';
 
 interface AuthState {
     user: AAGUser | null;
@@ -40,51 +41,6 @@ interface AuthState {
     setUser: (user: AAGUser) => void;
 }
 
-let authUrlConsumePromise: Promise<boolean> | null = null;
-
-/** Exchange ?code= or read #access_token= from email link (works on / or /auth/callback) */
-async function consumeAuthFromUrl(): Promise<boolean> {
-    if (authUrlConsumePromise) return authUrlConsumePromise;
-
-    authUrlConsumePromise = (async () => {
-        const hash = window.location.hash?.slice(1) || '';
-        if (hash.includes('error=')) {
-            const params = new URLSearchParams(hash);
-            const desc = params.get('error_description') || params.get('error') || 'فشل تفعيل الحساب';
-            throw new Error(desc.replace(/\+/g, ' '));
-        }
-
-        const query = new URLSearchParams(window.location.search);
-        const code = query.get('code');
-
-        if (code) {
-            const { error } = await supabase.auth.exchangeCodeForSession(code);
-            if (error) throw error;
-            clearAuthParamsFromUrl();
-            return true;
-        }
-
-        const hashParams = new URLSearchParams(hash);
-        if (hashParams.has('access_token') || hashParams.get('type') === 'signup') {
-            // detectSessionInUrl parses hash on getSession()
-            const { data: { session }, error } = await supabase.auth.getSession();
-            if (error) throw error;
-            if (session) {
-                clearAuthParamsFromUrl();
-                return true;
-            }
-        }
-
-        return false;
-    })();
-
-    try {
-        return await authUrlConsumePromise;
-    } finally {
-        authUrlConsumePromise = null;
-    }
-}
-
 async function syncProfileFromSession(accessToken: string, sessionUser: { id: string; email?: string; user_metadata?: Record<string, unknown> }): Promise<AAGUser> {
     setToken(accessToken);
 
@@ -110,6 +66,36 @@ function routeAfterAuth(user: AAGUser): void {
     } else {
         navigateTo(FEED_PATH);
     }
+}
+
+async function finishEmailVerification(set: (p: Partial<AuthState>) => void): Promise<{ isOnboarded: boolean }> {
+    const fromEmailLink = await consumeEmailVerificationFromUrl();
+
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError || !session) {
+        throw new Error(
+            fromEmailLink
+                ? 'تم التفعيل في Supabase لكن الجلسة لم تُحفظ. افتح الموقع من Chrome وسجّل دخولك بنفس الإيميل وكلمة المرور.'
+                : 'لم يتم العثور على رابط تفعيل صالح. اطلب رابطاً جديداً.'
+        );
+    }
+
+    const profileUser = await syncProfileFromSession(session.access_token, session.user);
+
+    set({
+        user: profileUser,
+        loading: false,
+        awaitingConfirmation: false,
+        isVerifySuccess: true,
+        authReady: true,
+        emailJustVerified: true,
+        error: null,
+    });
+
+    clearAuthParamsFromUrl();
+    routeAfterAuth(profileUser);
+
+    return { isOnboarded: !!profileUser.isOnboarded };
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -182,32 +168,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
 
     handleEmailCallback: async () => {
-        set({ loading: true, error: null, awaitingConfirmation: false, emailJustVerified: false });
+        set({ loading: true, error: null, awaitingConfirmation: false });
+
+        const existing = get().user;
+        if (existing?.isVerified && get().emailJustVerified) {
+            set({ loading: false, authReady: true });
+            routeAfterAuth(existing);
+            return { isOnboarded: !!existing.isOnboarded };
+        }
 
         try {
-            const fromEmailLink = await consumeAuthFromUrl();
-
-            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-            if (sessionError || !session) {
-                throw new Error('لم يتم العثور على جلسة بعد التفعيل. افتح الرابط من نفس المتصفح أو سجّل الدخول.');
-            }
-
-            const profileUser = await syncProfileFromSession(session.access_token, session.user);
-
-            set({
-                user: profileUser,
-                loading: false,
-                awaitingConfirmation: false,
-                isVerifySuccess: true,
-                authReady: true,
-                emailJustVerified: fromEmailLink,
-                error: null,
-            });
-
-            clearAuthParamsFromUrl();
-            routeAfterAuth(profileUser);
-
-            return { isOnboarded: !!profileUser.isOnboarded };
+            return await finishEmailVerification(set);
         } catch (err: any) {
             set({ loading: false, authReady: true, error: err.message });
             throw err;
@@ -215,15 +186,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     },
 
     checkSession: async () => {
-        const hadAuthParams = hasPendingAuthCallback();
+        const pendingEmailLink = hasPendingAuthCallback();
         set({ loading: true, error: null });
 
-        try {
-            let fromEmailLink = false;
-            if (hadAuthParams) {
-                fromEmailLink = await consumeAuthFromUrl();
-            }
+        // Email link handled only in AuthCallback (prevents double code exchange)
+        if (pendingEmailLink) {
+            set({ loading: false, authReady: true });
+            return;
+        }
 
+        try {
             const { data: { session } } = await supabase.auth.getSession();
 
             if (!session) {
@@ -243,13 +215,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                     loading: false,
                     awaitingConfirmation: false,
                     authReady: true,
-                    emailJustVerified: fromEmailLink || hadAuthParams,
                 });
-
-                if (fromEmailLink || hadAuthParams) {
-                    clearAuthParamsFromUrl();
-                    routeAfterAuth(user);
-                }
             } catch (syncErr) {
                 console.warn('Backend sync failed or timed out:', syncErr);
                 const fallbackUser: AAGUser = {
@@ -265,26 +231,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                     country: 'Global',
                     language: 'en',
                 };
-                set({
-                    user: fallbackUser,
-                    loading: false,
-                    authReady: true,
-                    emailJustVerified: fromEmailLink || hadAuthParams,
-                });
-                if (fromEmailLink || hadAuthParams) {
-                    clearAuthParamsFromUrl();
-                    routeAfterAuth(fallbackUser);
-                }
+                set({ user: fallbackUser, loading: false, authReady: true });
             }
         } catch (err: any) {
             console.error('Session check failed:', err);
-            set({
-                user: null,
-                loading: false,
-                authReady: true,
-                error: err.message,
-                emailJustVerified: false,
-            });
+            set({ user: null, loading: false, authReady: true, error: err.message });
         }
     },
 
@@ -360,10 +311,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     }
 
     if (!session || event === 'INITIAL_SESSION') return;
-
-    if (event === 'SIGNED_IN' && hasPendingAuthCallback()) {
-        return;
-    }
+    if (hasPendingAuthCallback()) return;
 
     if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
         try {
@@ -376,7 +324,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
                 authReady: true,
             });
         } catch {
-            /* checkSession handles recovery */
+            /* handleEmailCallback / checkSession recover */
         }
     }
 });

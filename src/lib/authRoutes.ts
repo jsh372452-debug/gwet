@@ -16,6 +16,11 @@ export function normalizePath(pathname: string): string {
 export function hasPendingAuthCallback(): boolean {
     const query = new URLSearchParams(window.location.search);
     if (query.has('code')) return true;
+    if (query.has('token_hash')) return true;
+    if (query.get('error') || query.get('error_description')) return true;
+
+    const type = query.get('type');
+    if (type === 'signup' || type === 'email' || type === 'magiclink') return true;
 
     const hash = window.location.hash?.slice(1) || '';
     if (!hash) return false;

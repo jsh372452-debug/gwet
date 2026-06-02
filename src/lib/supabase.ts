@@ -8,11 +8,12 @@ if (!supabaseUrl || !supabaseKey) {
   console.warn('Supabase credentials missing. Check your .env.local file.');
 }
 
+// implicit: email confirmation works when user opens link outside signup browser (Gmail app, etc.)
 export const supabase = createClient(supabaseUrl || '', supabaseKey || '', {
   auth: {
     detectSessionInUrl: true,
     persistSession: true,
     autoRefreshToken: true,
-    flowType: 'pkce',
+    flowType: 'implicit',
   },
 });
